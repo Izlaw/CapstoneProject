@@ -1,0 +1,83 @@
+@page "/dashboard"
+
+<PageTitle>Customer Dashboard — ThreadStudio</PageTitle>
+
+<div class="pa-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
+    <MudText Typo="Typo.h4" Class="mb-4" Style="font-weight: 600; color: var(--text-primary);">My Orders</MudText>
+    
+    <MudPaper Elevation="0" Class="pa-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
+        <MudTable Items="@Orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;">
+            <HeaderContent>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Order ID</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Type</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Date</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Status</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Total</MudText></MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Order ID">#@context.Id.Substring(0, 8)</MudTd>
+                <MudTd DataLabel="Type">
+                    @if (context.OrderType == "custom")
+                    {
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Text">Custom Design</MudChip>
+                    }
+                    else if (context.OrderType == "collection")
+                    {
+                        <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Text">Collection</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">Uploaded</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Date">@context.CreatedAt.ToString("MMM dd, yyyy")</MudTd>
+                <MudTd DataLabel="Status">
+                    @if (context.Status == "Pending")
+                    {
+                        <MudChip T="string" Color="Color.Warning" Size="Size.Small">Pending</MudChip>
+                    }
+                    else if (context.Status == "Completed")
+                    {
+                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Completed</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Info" Size="Size.Small">@context.Status</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Total">₱@context.TotalPrice.ToString("N2")</MudTd>
+                <MudTd DataLabel="Action">
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small">View QR</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>No orders found.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</div>
+
+@code {
+    private List<CapstoneProject.Models.AppOrderModel> Orders = new();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        // For now, generate some dummy data so the skeleton looks good
+        Orders.Add(new CapstoneProject.Models.AppOrderModel { 
+            Id = Guid.NewGuid().ToString(),
+            OrderType = "custom",
+            Status = "Pending",
+            TotalPrice = 1250.00m,
+            CreatedAt = DateTime.UtcNow.AddDays(-1)
+        });
+        
+        Orders.Add(new CapstoneProject.Models.AppOrderModel { 
+            Id = Guid.NewGuid().ToString(),
+            OrderType = "collection",
+            Status = "Completed",
+            TotalPrice = 850.00m,
+            CreatedAt = DateTime.UtcNow.AddDays(-14)
+        });
+    }
+}

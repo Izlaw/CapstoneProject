@@ -1,39 +1,45 @@
-using System.Net.Http.Json;
+using Supabase;
+using CapstoneProject.Models;
+using Supabase.Gotrue;
 
 namespace CapstoneProject.Services;
 
 public class SupabaseService
 {
-    public const string ProjectUrl = "https://jvljcrwazmlcjkqomwdz.supabase.co";
-    public const string AnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bGpjcndhem1sY2prcW9td2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxODM4MzYsImV4cCI6MjA5MDc1OTgzNn0.siWFE9V5QhJbNdCxq6U4wvfXhmemt1YzG6mx9p_pbO8";
+    private readonly Supabase.Client _supabase;
 
-    private readonly HttpClient _http;
-
-    public SupabaseService()
+    public SupabaseService(Supabase.Client supabase)
     {
-        _http = new HttpClient();
-        _http.BaseAddress = new Uri(ProjectUrl);
-        _http.DefaultRequestHeaders.Add("apikey", AnonKey);
-        _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {AnonKey}");
+        _supabase = supabase;
     }
 
     /// <summary>
-    /// Save a design record to the "designs" table.
+    /// Save a design record to the orders table.
     /// </summary>
     public async Task<bool> SaveDesignAsync(string name, string shirtColor, string? textOverlay, string? textureUrl)
     {
         try
         {
-            var payload = new
+            // Note: Since we consolidated, saving a design is now placing an order.
+            // But if this is just a raw save (before order placement), we might save it as a pending order.
+            // For now, mapping to the new AppOrderModel:
+            var order = new AppOrderModel
             {
-                name,
-                shirt_color = shirtColor,
-                text_overlay = textOverlay,
-                texture_url = textureUrl
+                OrderType = "custom",
+                Status = "Pending",
+                TotalPrice = 0, // Placeholder
+                DesignReference = textureUrl,
+                CreatedAt = DateTime.UtcNow
             };
+            
+            // Set the customer ID if logged in
+            if (_supabase.Auth.CurrentUser != null)
+            {
+                order.CustomerId = _supabase.Auth.CurrentUser.Id;
+            }
 
-            var response = await _http.PostAsJsonAsync("/rest/v1/designs", payload);
-            return response.IsSuccessStatusCode;
+            var response = await _supabase.From<AppOrderModel>().Insert(order);
+            return response.Models.Count > 0;
         }
         catch
         {
@@ -42,81 +48,46 @@ public class SupabaseService
     }
 
     /// <summary>
-    /// Fetch all designs from the "designs" table.
+    /// Fetch all custom orders from the orders table.
     /// </summary>
-    public async Task<List<SupabaseDesignDto>> GetDesignsAsync()
+    public async Task<List<AppOrderModel>> GetDesignsAsync()
     {
         try
         {
-            // Fetch all designs, ordered by created_at descending
-            var response = await _http.GetFromJsonAsync<List<SupabaseDesignDto>>("/rest/v1/designs?select=*&order=created_at.desc");
-            return response ?? new List<SupabaseDesignDto>();
+            var response = await _supabase.From<AppOrderModel>()
+                .Where(x => x.OrderType == "custom")
+                .Order(x => x.CreatedAt, Postgrest.Constants.Ordering.Descending)
+                .Get();
+                
+            return response.Models;
         }
         catch
         {
-            return new List<SupabaseDesignDto>();
+            return new List<AppOrderModel>();
         }
     }
 
-    public void SetAuthToken(string? token)
+    public async Task<Session?> LoginAsync(string email, string password)
     {
-        _http.DefaultRequestHeaders.Remove("Authorization");
-        if (!string.IsNullOrWhiteSpace(token))
-        {
-            _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {token}");
-        }
-        else
-        {
-            _http.DefaultRequestHeaders.Add("Authorization", $"Bearer {AnonKey}");
-        }
+        var session = await _supabase.Auth.SignIn(email, password);
+        return session;
     }
 
-    public async Task<AuthResponse?> LoginAsync(string email, string password)
+    public async Task<Session?> RegisterAsync(string email, string password, string fullName)
     {
-        var payload = new { email, password };
-        var response = await _http.PostAsJsonAsync("/auth/v1/token?grant_type=password", payload);
-        if (response.IsSuccessStatusCode)
+        var options = new SignUpOptions
         {
-            return await response.Content.ReadFromJsonAsync<AuthResponse>();
-        }
-        var errorContent = await response.Content.ReadAsStringAsync();
-        throw new Exception($"Login failed: {errorContent}");
+            Data = new Dictionary<string, object>
+            {
+                { "full_name", fullName }
+            }
+        };
+        var session = await _supabase.Auth.SignUp(email, password, options);
+        return session;
     }
 
-    public async Task<AuthResponse?> RegisterAsync(string email, string password)
+    public async Task LogoutAsync()
     {
-        var payload = new { email, password };
-        var response = await _http.PostAsJsonAsync("/auth/v1/signup", payload);
-        if (response.IsSuccessStatusCode)
-        {
-            return await response.Content.ReadFromJsonAsync<AuthResponse>();
-        }
-        var errorContent = await response.Content.ReadAsStringAsync();
-        throw new Exception($"Signup failed: {errorContent}");
+        await _supabase.Auth.SignOut();
     }
-}
-
-public class AuthResponse
-{
-    public string access_token { get; set; } = "";
-    public string token_type { get; set; } = "";
-    public int expires_in { get; set; }
-    public string refresh_token { get; set; } = "";
-    public SupabaseUser user { get; set; } = new();
-}
-
-public class SupabaseUser
-{
-    public string id { get; set; } = "";
-    public string email { get; set; } = "";
-}
-
-public class SupabaseDesignDto
-{
-    public Guid id { get; set; }
-    public string name { get; set; } = "";
-    public string shirt_color { get; set; } = "";
-    public string? text_overlay { get; set; }
-    public string? texture_url { get; set; }
-    public DateTime created_at { get; set; }
 }

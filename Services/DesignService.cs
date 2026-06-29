@@ -4,7 +4,7 @@ namespace CapstoneProject.Services;
 
 public class DesignService
 {
-    public ShirtDesign CurrentDesign { get; private set; } = new();
+    public ShirtDesignModel CurrentDesign { get; private set; } = new();
 
     public event Action? OnDesignChanged;
 
@@ -41,7 +41,7 @@ public class DesignService
 
     public void ResetToNew()
     {
-        CurrentDesign = new ShirtDesign();
+        CurrentDesign = new ShirtDesignModel();
         OnDesignChanged?.Invoke();
     }
 }

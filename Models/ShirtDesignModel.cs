@@ -1,6 +1,6 @@
 namespace CapstoneProject.Models;
 
-public class ShirtDesign
+public class ShirtDesignModel
 {
     public Guid Id { get; set; } = Guid.NewGuid();
     public string Name { get; set; } = "My Design";

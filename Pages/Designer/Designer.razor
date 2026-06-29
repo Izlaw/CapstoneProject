@@ -8,18 +8,15 @@
 
 <PageTitle>Designer — ThreadStudio</PageTitle>
 
-<div class="designer-layout">
+<div class="designer-canvas-area" style="height: calc(100vh - 64px); width: 100%; position: relative;">
+    <ShirtCanvas @ref="_shirtCanvas" 
+                 OnModuleReady="OnModuleReady"
+                 OnObjectSelected="HandleObjectSelected"
+                 OnObjectCleared="HandleObjectCleared" />
+</div>
 
-    <!-- ── 3D Canvas Area ──────────────────────────────── -->
-    <div class="designer-canvas-area">
-        <ShirtCanvas @ref="_shirtCanvas" 
-                     OnModuleReady="OnModuleReady"
-                     OnObjectSelected="HandleObjectSelected"
-                     OnObjectCleared="HandleObjectCleared" />
-    </div>
-
-    <!-- ── Tools Sidebar ──────────────────────────────── -->
-    <div class="designer-tools-area">
+<MudDrawer Open="true" Anchor="Anchor.End" Variant="DrawerVariant.Persistent" Resizeable="true" Width="380px" MinWidth="300px" MaxWidth="800px" ClipMode="DrawerClipMode.Never" Elevation="2" Breakpoint="Breakpoint.None">
+    <div class="designer-tools-area" style="padding: 1rem; height: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem;">
         <DesignToolbar @ref="_toolbar"
             OnColorChanged="HandleColorChanged"
             OnTextAdded="HandleTextAdded"
@@ -33,8 +30,7 @@
             OnSave="HandleSave"
             IsSaving="_isSaving" />
     </div>
-
-</div>
+</MudDrawer>
 
 @code {
     private ShirtCanvas _shirtCanvas = default!;

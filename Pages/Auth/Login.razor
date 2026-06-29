@@ -1,0 +1,27 @@
+@page "/login"
+
+<PageTitle>Login — ThreadStudio</PageTitle>
+
+<div style="height: 100vh; display: flex; align-items: center; justify-content: center; background-color: var(--bg-base);">
+    <MudPaper Class="pa-8" Elevation="4" Style="width: 100%; max-width: 400px; border-radius: 12px; background-color: var(--bg-surface);">
+        <div class="d-flex justify-center mb-6">
+            <h2 class="nav-brand">THREAD<span class="brand-accent">STUDIO</span></h2>
+        </div>
+        
+        <MudTextField @bind-Value="Email" Label="Email" Variant="Variant.Outlined" Class="mb-4" />
+        <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-6" />
+        
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large" Class="mb-4" Style="border-radius: 100px;">Log in</MudButton>
+        
+        <div class="d-flex justify-center mt-4">
+            <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">
+                Don't have an account? <MudLink Href="/register" Color="Color.Primary">Sign up!</MudLink>
+            </MudText>
+        </div>
+    </MudPaper>
+</div>
+
+@code {
+    public string Email { get; set; } = "";
+    public string Password { get; set; } = "";
+}

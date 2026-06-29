@@ -1,0 +1,51 @@
+@page "/register"
+
+<PageTitle>Register — ThreadStudio</PageTitle>
+
+<div class="d-flex justify-center align-center py-12" style="min-height: 100vh; background-color: var(--bg-base);">
+    <MudPaper Class="pa-8" Elevation="4" Style="width: 100%; max-width: 600px; border-radius: 12px; background-color: var(--bg-surface);">
+        <div class="d-flex flex-column align-center mb-6">
+            <h2 class="nav-brand mb-2">THREAD<span class="brand-accent">STUDIO</span></h2>
+            <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Create an account to start customizing!</MudText>
+        </div>
+        
+        <MudGrid>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="FirstName" Label="First Name" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="LastName" Label="Last Name" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Email" Label="Email Address" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Contact" Label="Contact Number" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12" sm="6">
+                <MudTextField @bind-Value="ConfirmPassword" Label="Confirm Password" InputType="InputType.Password" Variant="Variant.Outlined" />
+            </MudItem>
+            <MudItem xs="12">
+                <MudTextField @bind-Value="Address" Label="Address" Variant="Variant.Outlined" Lines="2" />
+            </MudItem>
+        </MudGrid>
+        
+        <div class="d-flex justify-center gap-4 mt-8">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;">Register</MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;" Href="/login">Already registered?</MudButton>
+        </div>
+    </MudPaper>
+</div>
+
+@code {
+    public string FirstName { get; set; } = "";
+    public string LastName { get; set; } = "";
+    public string Email { get; set; } = "";
+    public string Contact { get; set; } = "";
+    public string Password { get; set; } = "";
+    public string ConfirmPassword { get; set; } = "";
+    public string Address { get; set; } = "";
+}

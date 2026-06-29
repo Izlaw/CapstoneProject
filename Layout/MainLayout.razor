@@ -77,10 +77,11 @@
 
     [Inject] private Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
     [Inject] private NavigationManager NavManager { get; set; } = default!;
+    [Inject] private CapstoneProject.Services.SupabaseService SupabaseSvc { get; set; } = default!;
 
     private async Task HandleLogout()
     {
-        await ((CapstoneProject.Services.SupabaseAuthStateProvider)AuthStateProvider).LogoutAsync();
+        await SupabaseSvc.LogoutAsync();
         NavManager.NavigateTo("/");
     }
 }
