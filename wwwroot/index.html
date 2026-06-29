@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="ThreadStudio — Design custom shirts in 3D and bring your fashion ideas to life. Real-time 3D preview, color picker, text and logo tools." />
+    <title>ThreadStudio — 3D Shirt Designer</title>
+    <base href="/" />
+
+    <!-- Google Fonts: Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- MudBlazor CSS -->
+    <link href="_content/MudBlazor/MudBlazor.min.css" rel="stylesheet" />
+
+    <!-- App CSS -->
+    <link rel="stylesheet" href="css/app.css?v=3" />
+    <link rel="icon" type="image/png" href="favicon.png" />
+    <link href="CapstoneProject.styles.css" rel="stylesheet" />
+
+    <!-- Three.js Import Map (must be before any module scripts) -->
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.168.0/build/three.module.js",
+        "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.168.0/examples/jsm/"
+      }
+    }
+    </script>
+
+    <!-- Fabric.js (global, non-module) -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+
+<body>
+    <div id="app">
+        <div class="app-loading">
+            <div class="loading-logo">
+                Thread<span class="accent">Studio</span>
+            </div>
+            <div class="loading-spinner"></div>
+            <div class="loading-bar-track">
+                <div class="loading-bar-fill"></div>
+            </div>
+            <p class="loading-text">Initializing 3D Engine...</p>
+        </div>
+    </div>
+
+    <div id="blazor-error-ui">
+        An unhandled error has occurred.
+        <a href="." class="reload">Reload</a>
+        <span class="dismiss">&#x2715;</span>
+    </div>
+
+    <!-- MudBlazor JS -->
+    <script src="_content/MudBlazor/MudBlazor.min.js"></script>
+    <script src="_framework/blazor.webassembly.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,143 @@
+@page "/designer"
+@inject DesignService DesignSvc
+@inject ExportService ExportSvc
+@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject ISnackbar Snackbar
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<PageTitle>Designer — ThreadStudio</PageTitle>
+
+<div class="designer-layout">
+
+    <!-- ── 3D Canvas Area ──────────────────────────────── -->
+    <div class="designer-canvas-area">
+        <ShirtCanvas @ref="_shirtCanvas" 
+                     OnModuleReady="OnModuleReady"
+                     OnObjectSelected="HandleObjectSelected"
+                     OnObjectCleared="HandleObjectCleared" />
+    </div>
+
+    <!-- ── Tools Sidebar ──────────────────────────────── -->
+    <div class="designer-tools-area">
+        <DesignToolbar @ref="_toolbar"
+            OnColorChanged="HandleColorChanged"
+            OnTextAdded="HandleTextAdded"
+            OnTextUpdated="HandleTextUpdated"
+            OnLogoUploaded="HandleLogoUploaded"
+            OnClearDesign="HandleClearDesign"
+            OnDeleteSelected="HandleDeleteSelected" />
+
+        <ExportPanel
+            OnExport="HandleExport"
+            OnSave="HandleSave"
+            IsSaving="_isSaving" />
+    </div>
+
+</div>
+
+@code {
+    private ShirtCanvas _shirtCanvas = default!;
+    private DesignToolbar _toolbar = default!;
+    private bool _isSaving = false;
+
+    private void OnModuleReady()
+    {
+        StateHasChanged();
+    }
+
+    private void HandleObjectSelected(Dictionary<string, object> properties)
+    {
+        _toolbar.SetSelectedObject(properties);
+    }
+
+    private void HandleObjectCleared()
+    {
+        _toolbar.ClearSelectedObject();
+    }
+
+    private async Task HandleColorChanged(string hex)
+    {
+        DesignSvc.SetColor(hex);
+        await _shirtCanvas.SetColorAsync(hex);
+    }
+
+    private async Task HandleTextAdded((string text, int size, string color, string font) args)
+    {
+        DesignSvc.SetTextOverlay(args.text, args.size, args.color, args.font);
+        await _shirtCanvas.AddTextAsync(args.text, args.size, args.color, args.font);
+    }
+
+    private async Task HandleTextUpdated((string text, int size, string color, string font) args)
+    {
+        // Update the active object without registering as a brand new element in DesignSvc 
+        // unless you want to track it, but for real-time sync this is enough.
+        await _shirtCanvas.UpdateSelectedTextAsync(args.text, args.size, args.color, args.font);
+    }
+
+    private async Task HandleLogoUploaded(string dataUrl)
+    {
+        DesignSvc.SetLogo(dataUrl);
+        await _shirtCanvas.AddImageAsync(dataUrl);
+    }
+
+    private async Task HandleClearDesign()
+    {
+        DesignSvc.ClearDesign();
+        await _shirtCanvas.ClearDesignAsync();
+    }
+
+    private async Task HandleDeleteSelected()
+    {
+        await _shirtCanvas.DeleteSelectedAsync();
+    }
+
+    private async Task HandleExport()
+    {
+        if (_shirtCanvas.Module is null) return;
+        await ExportSvc.DownloadPngAsync(_shirtCanvas.Module);
+    }
+
+    private async Task HandleSave()
+    {
+        if (_shirtCanvas.Module is null) return;
+        
+        _isSaving = true;
+        StateHasChanged();
+
+        try
+        {
+            var dataUrl = await _shirtCanvas.Module.InvokeAsync<string>("exportPng");
+            
+            bool success = await SupabaseSvc.SaveDesignAsync(
+                DesignSvc.CurrentDesign.Name,
+                DesignSvc.CurrentDesign.ShirtColor,
+                DesignSvc.CurrentDesign.TextOverlay,
+                dataUrl
+            );
+
+            if (success)
+            {
+                Snackbar.Add("Design saved to Gallery!", Severity.Success);
+            }
+            else
+            {
+                Snackbar.Add("Failed to save design. Check Supabase table.", Severity.Error);
+            }
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
+        }
+        finally
+        {
+            _isSaving = false;
+            StateHasChanged();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _shirtCanvas.DisposeAsync();
+    }
+}

@@ -1,0 +1,275 @@
+@inject IJSRuntime JS
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  COLOR SECTION                                           -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="tool-section">
+    <p class="tool-section-title">🎨 &nbsp;Shirt Color</p>
+    <div class="color-swatches">
+        @foreach (var swatch in _swatches)
+        {
+            <div class="color-swatch @(_selectedColor == swatch ? "active" : "")"
+                 style="background-color: @swatch;"
+                 title="@swatch"
+                 id="swatch-@swatch.Replace("#","")"
+                 @onclick="() => SelectColor(swatch)">
+            </div>
+        }
+    </div>
+    <div style="display:flex; gap:0.75rem; align-items:center; margin-top:1rem;">
+        <input type="color"
+               value="@_selectedColor"
+               id="custom-color-input"
+               style="width:40px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
+               @oninput="OnCustomColorInput" />
+        <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom color</MudText>
+        <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@_selectedColor</MudText>
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  TEXT SECTION                                            -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="tool-section">
+    <p class="tool-section-title">✏️ &nbsp;Text Overlay</p>
+    <MudTextField @bind-Value="_textInput"
+                  Label="Your text"
+                  Variant="Variant.Outlined"
+                  Margin="Margin.Dense"
+                  id="text-overlay-input"
+                  Style="font-family:'Outfit',sans-serif;"
+                  Immediate="true"
+                  OnKeyUp="@(async () => await LiveUpdateText())" />
+    <div style="display:flex; gap:0.75rem; margin-top:0.75rem; align-items:center;">
+        <MudNumericField @bind-Value="_textSize"
+                         Label="Size"
+                         Variant="Variant.Outlined"
+                         Margin="Margin.Dense"
+                         Min="12" Max="120"
+                         Style="width:90px;"
+                         id="text-size-input"
+                         Immediate="true"
+                         OnBlur="@(async () => await LiveUpdateText())" />
+        <div style="flex:1;">
+            <MudSelect T="string"
+                       Value="@_textFont"
+                       ValueChanged="HandleFontChange"
+                       Label="Font"
+                       Variant="Variant.Outlined"
+                       Margin="Margin.Dense"
+                       id="text-font-select">
+                @foreach (var f in _fonts)
+                {
+                    <MudSelectItem Value="@f">@f</MudSelectItem>
+                }
+            </MudSelect>
+        </div>
+        <input type="color"
+               value="@_textColor"
+               id="text-color-input"
+               style="width:40px; height:40px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
+               @onchange="OnTextColorChange" />
+    </div>
+    
+    @if (_isUpdating)
+    {
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true"
+                   Class="mt-3" Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600;"
+                   OnClick="DeselectText">
+            Done Editing
+        </MudButton>
+    }
+    else
+    {
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+                   Class="mt-3" id="add-text-btn"
+                   Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600;"
+                   OnClick="AddText">
+            + Add New Text
+        </MudButton>
+    }
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  2D MAP (INTERACTIVE TEXTURE EDITING)                    -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="fabric-overlay-container tool-section mb-3" style="padding: 0; min-height: 280px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative;">
+    <div class="fabric-overlay-header" style="position: absolute; top: 0.5rem; left: 50%; transform: translateX(-50%); z-index: 10;">
+        <span>2D Map (Drag to Move)</span>
+    </div>
+    <!-- The canvas element must match the id used in shirt-designer.js -->
+    <canvas id="fabric-canvas"></canvas>
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  LOGO / IMAGE SECTION                                    -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="tool-section">
+    <p class="tool-section-title">🖼️ &nbsp;Logo / Image</p>
+    <InputFile id="logo-upload-input" OnChange="OnLogoSelected" accept="image/*"
+               style="display:none;" />
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
+               id="logo-upload-btn"
+               Style="border-radius:8px; font-family:'Outfit',sans-serif;"
+               OnClick="TriggerFilePicker">
+        📁 &nbsp;Upload Image or Logo
+    </MudButton>
+    @if (_hasLogo)
+    {
+        <MudText Typo="Typo.caption" Style="color:#06b6d4; margin-top:0.5rem; display:block;">
+            ✓ Logo applied — drag it on the shirt to reposition
+        </MudText>
+    }
+</div>
+
+<!-- ════════════════════════════════════════════════════════ -->
+<!--  ACTIONS SECTION                                         -->
+<!-- ════════════════════════════════════════════════════════ -->
+<div class="tool-section">
+    <p class="tool-section-title">⚙️ &nbsp;Actions</p>
+    <div style="display:flex; flex-direction:column; gap:0.5rem;">
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true"
+                   id="delete-selected-btn"
+                   Style="border-radius:8px; font-family:'Outfit',sans-serif; border-color: rgba(124,58,237,0.3);"
+                   OnClick="DeleteSelected">
+            🗑 &nbsp;Delete Selected
+        </MudButton>
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true"
+                   id="clear-design-btn"
+                   Style="border-radius:8px; font-family:'Outfit',sans-serif;"
+                   OnClick="ClearDesign">
+            ✕ &nbsp;Clear All
+        </MudButton>
+    </div>
+</div>
+
+@code {
+    [Parameter] public EventCallback<string> OnColorChanged { get; set; }
+    [Parameter] public EventCallback<(string, int, string, string)> OnTextAdded { get; set; }
+    [Parameter] public EventCallback<(string, int, string, string)> OnTextUpdated { get; set; }
+    [Parameter] public EventCallback<string> OnLogoUploaded { get; set; }
+    [Parameter] public EventCallback OnClearDesign { get; set; }
+    [Parameter] public EventCallback OnDeleteSelected { get; set; }
+
+    // Color state
+    private string _selectedColor = "#ffffff";
+    private readonly string[] _swatches =
+    [
+        "#ffffff", "#f8fafc", "#1e293b", "#0f172a",
+        "#dc2626", "#ea580c", "#d97706", "#ca8a04",
+        "#65a30d", "#16a34a", "#0d9488", "#0284c7",
+        "#2563eb", "#7c3aed", "#9333ea", "#db2777",
+        "#f472b6", "#fb923c", "#34d399", "#38bdf8"
+    ];
+
+    // Text state
+    private string _textInput = "";
+    private int _textSize = 36;
+    private string _textColor = "#000000";
+    private string _textFont = "Arial";
+    private readonly string[] _fonts = ["Arial", "Georgia", "Impact", "Courier New", "Trebuchet MS", "Verdana"];
+    
+    private bool _isUpdating = false;
+
+    // Logo state
+    private bool _hasLogo = false;
+
+    public void SetSelectedObject(Dictionary<string, object> props)
+    {
+        if (props.TryGetValue("type", out var type) && type?.ToString() == "text")
+        {
+            _isUpdating = true;
+            if (props.TryGetValue("text", out var t)) _textInput = t.ToString() ?? "";
+            if (props.TryGetValue("fontSize", out var s) && int.TryParse(s.ToString(), out var parsedSize)) _textSize = parsedSize;
+            if (props.TryGetValue("fill", out var c)) _textColor = c.ToString() ?? "#000000";
+            if (props.TryGetValue("fontFamily", out var f)) _textFont = f.ToString() ?? "Arial";
+            StateHasChanged();
+        }
+    }
+
+    public void ClearSelectedObject()
+    {
+        _isUpdating = false;
+        StateHasChanged();
+    }
+
+    private async Task SelectColor(string hex)
+    {
+        _selectedColor = hex;
+        await OnColorChanged.InvokeAsync(hex);
+    }
+
+    private async Task OnCustomColorInput(ChangeEventArgs e)
+    {
+        _selectedColor = e.Value?.ToString() ?? "#ffffff";
+        await OnColorChanged.InvokeAsync(_selectedColor);
+    }
+
+    private async Task OnTextColorChange(ChangeEventArgs e)
+    {
+        _textColor = e.Value?.ToString() ?? "#000000";
+        await LiveUpdateText();
+    }
+
+    private async Task HandleFontChange(string font)
+    {
+        _textFont = font;
+        await LiveUpdateText();
+    }
+
+    private async Task LiveUpdateText()
+    {
+        if (_isUpdating)
+        {
+            await OnTextUpdated.InvokeAsync((_textInput, _textSize, _textColor, _textFont));
+        }
+    }
+
+    private async Task AddText()
+    {
+        if (string.IsNullOrWhiteSpace(_textInput)) return;
+        await OnTextAdded.InvokeAsync((_textInput, _textSize, _textColor, _textFont));
+    }
+
+    private async Task DeselectText()
+    {
+        // Actually we just clear local editing mode
+        ClearSelectedObject();
+        await JS.InvokeVoidAsync("fabricCanvas.discardActiveObject");
+        await JS.InvokeVoidAsync("fabricCanvas.renderAll");
+    }
+
+    private async Task TriggerFilePicker()
+    {
+        await JS.InvokeVoidAsync("eval", "document.getElementById('logo-upload-input').click()");
+    }
+
+    private async Task OnLogoSelected(InputFileChangeEventArgs e)
+    {
+        var file = e.File;
+        if (file is null) return;
+
+        using var stream = file.OpenReadStream(maxAllowedSize: 5 * 1024 * 1024); // 5 MB
+        using var ms = new MemoryStream();
+        await stream.CopyToAsync(ms);
+        var base64 = Convert.ToBase64String(ms.ToArray());
+        var dataUrl = $"data:{file.ContentType};base64,{base64}";
+
+        _hasLogo = true;
+        await OnLogoUploaded.InvokeAsync(dataUrl);
+    }
+
+    private async Task DeleteSelected()
+    {
+        await OnDeleteSelected.InvokeAsync();
+    }
+
+    private async Task ClearDesign()
+    {
+        _hasLogo = false;
+        _textInput = "";
+        _selectedColor = "#ffffff";
+        ClearSelectedObject();
+        await OnClearDesign.InvokeAsync();
+    }
+}

@@ -1,0 +1,86 @@
+@inherits LayoutComponentBase
+
+<MudThemeProvider Theme="_theme" IsDarkMode="true" />
+<MudPopoverProvider />
+<MudDialogProvider />
+<MudSnackbarProvider />
+
+<MudLayout>
+    <MudAppBar Elevation="0" Style="backdrop-filter: blur(20px); background: rgba(24,26,47,0.85); border-bottom: 1px solid rgba(180,24,45,0.15);">
+        <a href="/" class="nav-brand" style="text-decoration: none; color: inherit;">
+            7 Guys <span class="brand-accent">House of Fashion</span>
+        </a>
+        <MudSpacer />
+        <MudButton Href="/" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: #9998b3;">
+            Home
+        </MudButton>
+        <MudButton Href="/gallery" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: #9998b3; margin-left: 8px;">
+            Gallery
+        </MudButton>
+        
+        <AuthorizeView>
+            <Authorized>
+                <MudText Typo="Typo.body2" Style="color:#FDA481; margin-right: 16px;">
+                    @context.User.Identity?.Name
+                </MudText>
+                <MudButton OnClick="HandleLogout" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Style="border-radius:100px;">
+                    Logout
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Href="/login" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Style="border-radius:100px; margin-right: 8px;">
+                    Login
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
+
+        <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary"
+                   Size="Size.Small" Class="ml-2"
+                   Style="border-radius:100px; font-family:'Outfit',sans-serif; font-weight:600; letter-spacing:0.03em;">
+            Start Designing
+        </MudButton>
+    </MudAppBar>
+
+    <MudMainContent Style="padding: 0; margin-top: 64px;">
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code {
+    private readonly MudTheme _theme = new()
+    {
+        PaletteDark = new PaletteDark
+        {
+            Primary           = "#B4182D",
+            PrimaryDarken     = "#54162B",
+            PrimaryLighten    = "#FDA481",
+            Secondary         = "#FDA481",
+            Background        = "#181A2F",
+            BackgroundGray    = "#242E49",
+            Surface           = "#37415C",
+            DrawerBackground  = "#242E49",
+            AppbarBackground  = "rgba(24,26,47,0.85)",
+            TextPrimary       = "#f1f0ff",
+            TextSecondary     = "#cbd5e1",
+            ActionDefault     = "#cbd5e1",
+            Divider           = "rgba(180,24,45,0.2)",
+            OverlayLight      = "rgba(0,0,0,0.6)",
+        },
+        Typography = new Typography
+        {
+            Default = new DefaultTypography
+            {
+                FontFamily = ["Outfit", "-apple-system", "BlinkMacSystemFont", "sans-serif"],
+            }
+        }
+    };
+
+    [Inject] private Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
+    [Inject] private NavigationManager NavManager { get; set; } = default!;
+
+    private async Task HandleLogout()
+    {
+        await ((CapstoneProject.Services.SupabaseAuthStateProvider)AuthStateProvider).LogoutAsync();
+        NavManager.NavigateTo("/");
+    }
+}

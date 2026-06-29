@@ -1,0 +1,128 @@
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<!-- Three.js render target -->
+<div id="shirt-canvas-container" class="three-canvas-container" style="position:relative;">
+    @if (!_isReady)
+    {
+        <div class="canvas-loading">
+            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Large" />
+            <p style="color:#9998b3; margin-top:1rem; font-size:0.85rem; font-family:'Outfit',sans-serif;">
+                Loading 3D Model...
+            </p>
+        </div>
+    }
+    else
+    {
+        <div style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:10;">
+            <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled" OverrideStyles="false">
+                <MudButton OnClick="@(() => SetCameraViewAsync("front"))">Front</MudButton>
+                <MudButton OnClick="@(() => SetCameraViewAsync("back"))">Back</MudButton>
+                <MudButton OnClick="@(() => SetCameraViewAsync("left"))">Side</MudButton>
+            </MudButtonGroup>
+        </div>
+    }
+</div>
+
+
+
+@code {
+    [Parameter] public EventCallback OnModuleReady { get; set; }
+    [Parameter] public EventCallback<Dictionary<string, object>> OnObjectSelected { get; set; }
+    [Parameter] public EventCallback OnObjectCleared { get; set; }
+
+    public IJSObjectReference? Module { get; private set; }
+    private bool _isReady = false;
+    private DotNetObjectReference<ShirtCanvas>? _objRef;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!firstRender) return;
+
+        _objRef = DotNetObjectReference.Create(this);
+        Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shirt-designer.js");
+        await Module.InvokeVoidAsync("init", "shirt-canvas-container", "fabric-canvas", _objRef);
+
+        await Task.Delay(600); // allow model to begin loading
+        _isReady = true;
+        await OnModuleReady.InvokeAsync();
+        StateHasChanged();
+    }
+
+    public async Task SetColorAsync(string hex)
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("setColor", hex);
+    }
+
+    public async Task AddTextAsync(string text, int fontSize, string color, string font)
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("addText", text, fontSize, color, font);
+    }
+
+    public async Task UpdateSelectedTextAsync(string text, int fontSize, string color, string font)
+    {
+        if (Module is null) return;
+        var props = new Dictionary<string, object>
+        {
+            { "text", text },
+            { "fontSize", fontSize },
+            { "fill", color },
+            { "fontFamily", font }
+        };
+        await Module.InvokeVoidAsync("updateSelectedText", props);
+    }
+
+    public async Task AddImageAsync(string dataUrl)
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("addImageFromDataUrl", dataUrl);
+    }
+
+    public async Task ClearDesignAsync()
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("clearDesign");
+    }
+
+    public async Task DeleteSelectedAsync()
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("deleteSelected");
+    }
+    
+    public async Task SetCameraViewAsync(string view)
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("setCameraView", view);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        if (Module is not null)
+        {
+            try { await Module.InvokeVoidAsync("dispose"); } catch { }
+            await Module.DisposeAsync();
+        }
+        _objRef?.Dispose();
+    }
+
+    [JSInvokable]
+    public async Task HandleObjectSelected(Dictionary<string, object> properties)
+    {
+        if (OnObjectSelected.HasDelegate)
+        {
+            await OnObjectSelected.InvokeAsync(properties);
+        }
+    }
+
+    [JSInvokable]
+    public async Task HandleObjectCleared()
+    {
+        if (OnObjectCleared.HasDelegate)
+        {
+            await OnObjectCleared.InvokeAsync();
+        }
+    }
+}

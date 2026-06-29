@@ -1,0 +1,27 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "build and run",
+            "type": "shell",
+            "options": {
+                "shell": {
+                    "executable": "powershell.exe",
+                    "args": [
+                        "-NoProfile",
+                        "-ExecutionPolicy",
+                        "Bypass",
+                        "-Command"
+                    ]
+                }
+            },
+            "command": "$pid_file = Join-Path $env:TEMP 'capstone_run.pid'; if (Test-Path $pid_file) { $old = Get-Content $pid_file; try { Stop-Process -Id $old -Force -ErrorAction Stop; Start-Sleep -Milliseconds 600 } catch {}; Remove-Item $pid_file }; dotnet build '${workspaceFolder}/CapstoneProject.csproj' /property:GenerateFullPaths=true '/consoleloggerparameters:NoSummary;ForceNoAlign'; if ($LASTEXITCODE -eq 0) { $p = Start-Process dotnet -ArgumentList 'run --no-build --project ${workspaceFolder}/CapstoneProject.csproj' -PassThru -NoNewWindow; $p.Id | Out-File $pid_file; $p.WaitForExit() }",
+            "presentation": {
+                "panel": "dedicated",
+                "reveal": "always",
+                "clear": true
+            },
+            "problemMatcher": "$msCompile"
+        }
+    ]
+}

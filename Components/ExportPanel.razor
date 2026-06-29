@@ -1,0 +1,43 @@
+<div class="export-section">
+    <p class="tool-section-title">📤 &nbsp;Export &amp; Save</p>
+
+    <MudSelect T="string" Label="Shirt Size" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mb-4">
+        <MudSelectItem Value="@("S")">Small (S)</MudSelectItem>
+        <MudSelectItem Value="@("M")">Medium (M)</MudSelectItem>
+        <MudSelectItem Value="@("L")">Large (L)</MudSelectItem>
+        <MudSelectItem Value="@("XL")">Extra Large (XL)</MudSelectItem>
+    </MudSelect>
+
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
+               id="export-png-btn"
+               Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:700; letter-spacing:0.05em; margin-bottom:0.5rem;"
+               OnClick="() => OnExport.InvokeAsync()">
+        📸 &nbsp;Export as PNG
+    </MudButton>
+
+    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true"
+               id="save-design-btn"
+               Disabled="@IsSaving"
+               Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600;"
+               OnClick="() => OnSave.InvokeAsync()">
+        @if (IsSaving)
+        {
+            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+            <span>Saving...</span>
+        }
+        else
+        {
+            <span>☁️ &nbsp;Save to Gallery</span>
+        }
+    </MudButton>
+
+    <MudText Typo="Typo.caption" Style="color:#5c5b7a; margin-top:0.75rem; display:block; text-align:center; font-size:0.72rem;">
+        Tip: Rotate the shirt with drag · Zoom with scroll
+    </MudText>
+</div>
+
+@code {
+    [Parameter] public EventCallback OnExport { get; set; }
+    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public bool IsSaving { get; set; }
+}
