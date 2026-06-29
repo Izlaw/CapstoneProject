@@ -1,4 +1,6 @@
 @page "/register"
+@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject NavigationManager NavManager
 
 <PageTitle>Register — ThreadStudio</PageTitle>
 
@@ -9,33 +11,48 @@
             <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Create an account to start customizing!</MudText>
         </div>
         
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+        }
+
         <MudGrid>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="FirstName" Label="First Name" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="FirstName" Label="First Name" Variant="Variant.Outlined" Disabled="@_isLoading" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="LastName" Label="Last Name" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="LastName" Label="Last Name" Variant="Variant.Outlined" Disabled="@_isLoading" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="Email" Label="Email Address" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="Email" Label="Email Address" Variant="Variant.Outlined" Disabled="@_isLoading" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="Contact" Label="Contact Number" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="Contact" Label="Contact Number" Variant="Variant.Outlined" Disabled="@_isLoading" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Disabled="@_isLoading" />
             </MudItem>
             <MudItem xs="12" sm="6">
-                <MudTextField @bind-Value="ConfirmPassword" Label="Confirm Password" InputType="InputType.Password" Variant="Variant.Outlined" />
+                <MudTextField @bind-Value="ConfirmPassword" Label="Confirm Password" InputType="InputType.Password" Variant="Variant.Outlined" Disabled="@_isLoading" />
             </MudItem>
             <MudItem xs="12">
-                <MudTextField @bind-Value="Address" Label="Address" Variant="Variant.Outlined" Lines="2" />
+                <MudTextField @bind-Value="Address" Label="Address" Variant="Variant.Outlined" Lines="2" Disabled="@_isLoading" />
             </MudItem>
         </MudGrid>
         
         <div class="d-flex justify-center gap-4 mt-8">
-            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;">Register</MudButton>
-            <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;" Href="/login">Already registered?</MudButton>
+            <MudButton OnClick="HandleRegister" Disabled="@_isLoading" Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;">
+                @if (_isLoading)
+                {
+                    <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                    <MudText Class="ms-2">Registering</MudText>
+                }
+                else
+                {
+                    <MudText>Register</MudText>
+                }
+            </MudButton>
+            <MudButton Disabled="@_isLoading" Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;" Href="/login">Already registered?</MudButton>
         </div>
     </MudPaper>
 </div>
@@ -48,4 +65,45 @@
     public string Password { get; set; } = "";
     public string ConfirmPassword { get; set; } = "";
     public string Address { get; set; } = "";
+    
+    private bool _isLoading = false;
+    private string _errorMessage = "";
+
+    private async Task HandleRegister()
+    {
+        if (Password != ConfirmPassword)
+        {
+            _errorMessage = "Passwords do not match.";
+            return;
+        }
+
+        _isLoading = true;
+        _errorMessage = "";
+
+        try
+        {
+            var fullName = $"{FirstName} {LastName}".Trim();
+            var session = await SupabaseSvc.RegisterAsync(Email, Password, fullName);
+            
+            if (session != null && session.User != null)
+            {
+                // After registration, update their profile with Address/Phone
+                // The trigger already created the profile, so we just update it.
+                // We'll add an UpdateProfile method to SupabaseService later, but for now they are registered!
+                NavManager.NavigateTo("/dashboard", forceLoad: true);
+            }
+            else
+            {
+                _errorMessage = "Registration failed. Please check your details.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
 }

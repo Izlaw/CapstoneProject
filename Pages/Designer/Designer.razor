@@ -3,6 +3,8 @@
 @inject ExportService ExportSvc
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
 @inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
@@ -27,7 +29,7 @@
 
         <ExportPanel
             OnExport="HandleExport"
-            OnSave="HandleSave"
+            OnCheckout="HandleCheckout"
             IsSaving="_isSaving" />
     </div>
 </MudDrawer>
@@ -94,7 +96,7 @@
         await ExportSvc.DownloadPngAsync(_shirtCanvas.Module);
     }
 
-    private async Task HandleSave()
+    private async Task HandleCheckout((string size, string fabric, int quantity) args)
     {
         if (_shirtCanvas.Module is null) return;
         
@@ -105,20 +107,36 @@
         {
             var dataUrl = await _shirtCanvas.Module.InvokeAsync<string>("exportPng");
             
-            bool success = await SupabaseSvc.SaveDesignAsync(
-                DesignSvc.CurrentDesign.Name,
+            string? orderId = await SupabaseSvc.PlaceOrderAsync(
+                DesignSvc.CurrentDesign.Name ?? "Custom Order",
                 DesignSvc.CurrentDesign.ShirtColor,
                 DesignSvc.CurrentDesign.TextOverlay,
-                dataUrl
+                dataUrl,
+                args.size,
+                args.fabric,
+                args.quantity
             );
 
-            if (success)
+            if (!string.IsNullOrEmpty(orderId))
             {
-                Snackbar.Add("Design saved to Gallery!", Severity.Success);
+                Snackbar.Add("Order successfully placed!", Severity.Success);
+                
+                var parameters = new DialogParameters<CapstoneProject.Components.OrderSuccessDialog>
+                {
+                    { x => x.OrderId, orderId },
+                    { x => x.PreviewUrl, NavManager.ToAbsoluteUri($"/order-preview/{orderId}").ToString() }
+                };
+                
+                var options = new DialogOptions { CloseOnEscapeKey = false, BackdropClick = false, MaxWidth = MaxWidth.Small };
+                var dialog = await DialogService.ShowAsync<CapstoneProject.Components.OrderSuccessDialog>("Success", parameters, options);
+                var result = await dialog.Result;
+                
+                // After they close it, redirect to dashboard or clear design
+                NavManager.NavigateTo("/dashboard");
             }
             else
             {
-                Snackbar.Add("Failed to save design. Check Supabase table.", Severity.Error);
+                Snackbar.Add("Failed to place order. Check Supabase table.", Severity.Error);
             }
         }
         catch (Exception ex)

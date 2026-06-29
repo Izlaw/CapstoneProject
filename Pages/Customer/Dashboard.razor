@@ -1,4 +1,6 @@
 @page "/dashboard"
+@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Customer Dashboard — ThreadStudio</PageTitle>
 
@@ -60,24 +62,22 @@
 
 @code {
     private List<CapstoneProject.Models.AppOrderModel> Orders = new();
+    private bool _isLoading = true;
     
     protected override async Task OnInitializedAsync()
     {
-        // For now, generate some dummy data so the skeleton looks good
-        Orders.Add(new CapstoneProject.Models.AppOrderModel { 
-            Id = Guid.NewGuid().ToString(),
-            OrderType = "custom",
-            Status = "Pending",
-            TotalPrice = 1250.00m,
-            CreatedAt = DateTime.UtcNow.AddDays(-1)
-        });
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
         
-        Orders.Add(new CapstoneProject.Models.AppOrderModel { 
-            Id = Guid.NewGuid().ToString(),
-            OrderType = "collection",
-            Status = "Completed",
-            TotalPrice = 850.00m,
-            CreatedAt = DateTime.UtcNow.AddDays(-14)
-        });
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            var userId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (!string.IsNullOrEmpty(userId))
+            {
+                Orders = await SupabaseSvc.GetCustomerOrdersAsync(userId);
+            }
+        }
+        
+        _isLoading = false;
     }
 }

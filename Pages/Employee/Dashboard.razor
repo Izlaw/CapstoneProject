@@ -1,0 +1,96 @@
+@page "/employee/dashboard"
+@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject ISnackbar Snackbar
+
+<PageTitle>Employee Dashboard — ThreadStudio</PageTitle>
+
+<div class="pa-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
+    <div class="d-flex justify-space-between align-center mb-6">
+        <MudText Typo="Typo.h4" Style="font-weight: 600; color: var(--text-primary);">Order Management</MudText>
+        
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadOrders">
+            Refresh
+        </MudButton>
+    </div>
+    
+    <MudPaper Elevation="0" Class="pa-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
+        <MudTable Items="@Orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;" Loading="@_isLoading">
+            <HeaderContent>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Order ID</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Customer</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Type</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Date</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Status</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Total</MudText></MudTh>
+                <MudTh></MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Order ID">#@context.Id.Substring(0, 8)</MudTd>
+                <MudTd DataLabel="Customer">@context.CustomerId?.Substring(0, 8)</MudTd>
+                <MudTd DataLabel="Type">
+                    @if (context.OrderType == "custom")
+                    {
+                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Text">Custom</MudChip>
+                    }
+                    else if (context.OrderType == "collection")
+                    {
+                        <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Text">Collection</MudChip>
+                    }
+                    else
+                    {
+                        <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">Uploaded</MudChip>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Date">@context.CreatedAt.ToString("MMM dd, yyyy")</MudTd>
+                <MudTd DataLabel="Status">
+                    <MudSelect T="string" Value="@context.Status" ValueChanged="@(async (string s) => await UpdateStatus(context, s))" Margin="Margin.Dense" Variant="Variant.Outlined" Style="width: 140px; background-color: var(--bg-base);">
+                        <MudSelectItem Value="@("Pending")">Pending</MudSelectItem>
+                        <MudSelectItem Value="@("In Progress")">In Progress</MudSelectItem>
+                        <MudSelectItem Value="@("Shipped")">Shipped</MudSelectItem>
+                        <MudSelectItem Value="@("Completed")">Completed</MudSelectItem>
+                        <MudSelectItem Value="@("Cancelled")">Cancelled</MudSelectItem>
+                    </MudSelect>
+                </MudTd>
+                <MudTd DataLabel="Total">₱@context.TotalPrice.ToString("N2")</MudTd>
+                <MudTd DataLabel="Action">
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small">Details</MudButton>
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText>No orders found.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </MudPaper>
+</div>
+
+@code {
+    private List<CapstoneProject.Models.AppOrderModel> Orders = new();
+    private bool _isLoading = true;
+    
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        _isLoading = true;
+        Orders = await SupabaseSvc.GetAllOrdersAsync();
+        _isLoading = false;
+    }
+
+    private async Task UpdateStatus(CapstoneProject.Models.AppOrderModel order, string newStatus)
+    {
+        order.Status = newStatus;
+        bool success = await SupabaseSvc.UpdateOrderStatusAsync(order.Id, newStatus);
+        
+        if (success)
+        {
+            Snackbar.Add($"Order #{order.Id.Substring(0, 8)} status updated to {newStatus}", Severity.Success);
+        }
+        else
+        {
+            Snackbar.Add("Failed to update order status.", Severity.Error);
+        }
+    }
+}

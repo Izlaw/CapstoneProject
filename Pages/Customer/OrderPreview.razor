@@ -1,0 +1,196 @@
+@page "/order-preview/{Id}"
+@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@layout MainLayout
+
+<PageTitle>Digital Receipt — ThreadStudio</PageTitle>
+
+<div class="pa-4 pa-md-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
+    @if (_isLoading)
+    {
+        <div class="d-flex justify-center align-center" style="height: 60vh;">
+            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
+        </div>
+    }
+    else if (_order == null)
+    {
+        <div class="d-flex flex-column justify-center align-center text-center" style="height: 60vh;">
+            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Style="font-size: 64px; margin-bottom: 16px;" />
+            <MudText Typo="Typo.h5" Style="font-weight: 600; color: var(--text-primary);">Order Not Found</MudText>
+            <MudText Typo="Typo.body1" Style="color: var(--text-secondary);">The order you are looking for does not exist or has been deleted.</MudText>
+        </div>
+    }
+    else
+    {
+        <MudGrid Spacing="4">
+            <MudItem xs="12" md="7">
+                <MudPaper Elevation="0" Class="pa-6 mb-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px;">
+                    <div class="d-flex justify-space-between align-center mb-4">
+                        <div>
+                            <MudText Typo="Typo.h5" Style="font-weight: 700; color: var(--text-primary);">Digital Receipt</MudText>
+                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary);">Order #@_order.Id.Substring(0, 8)</MudText>
+                        </div>
+                        <MudChip T="string" Color="GetStatusColor(_order.Status)" Variant="Variant.Filled" Size="Size.Small">@_order.Status</MudChip>
+                    </div>
+
+                    <MudDivider Class="mb-4" />
+
+                    @if (!string.IsNullOrEmpty(_order.DesignReference))
+                    {
+                        <div class="d-flex justify-center mb-4" style="background-color: #f5f5f7; border-radius: 8px; padding: 16px;">
+                            <img src="@_order.DesignReference" alt="Shirt Design" style="max-width: 100%; max-height: 400px; object-fit: contain;" />
+                        </div>
+                    }
+                    
+                    <MudGrid>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Date</MudText>
+                            <MudText Typo="Typo.body1" Style="font-weight: 500;">@_order.CreatedAt.ToString("MMM dd, yyyy")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Fabric</MudText>
+                            <MudText Typo="Typo.body1" Style="font-weight: 500;">@(_order.FabricType ?? "N/A")</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Order Type</MudText>
+                            <MudText Typo="Typo.body1" Style="font-weight: 500; text-transform: capitalize;">@_order.OrderType</MudText>
+                        </MudItem>
+                        <MudItem xs="6">
+                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Price</MudText>
+                            <MudText Typo="Typo.h6" Style="font-weight: 700; color: var(--accent-color);">₱@_order.TotalPrice.ToString("N2")</MudText>
+                        </MudItem>
+                    </MudGrid>
+                </MudPaper>
+            </MudItem>
+            
+            <MudItem xs="12" md="5">
+                <MudPaper Elevation="0" Class="pa-6 d-flex flex-column" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; height: 100%; min-height: 500px;">
+                    <div class="mb-4">
+                        <MudText Typo="Typo.h6" Style="font-weight: 700; color: var(--text-primary);">Order Support</MudText>
+                        <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Message us regarding any changes to your order.</MudText>
+                    </div>
+                    
+                    <MudDivider Class="mb-4" />
+
+                    <div class="flex-grow-1 overflow-y-auto mb-4" style="background-color: var(--bg-base); border-radius: 8px; padding: 16px;">
+                        @if (_messages == null)
+                        {
+                            <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
+                        }
+                        else if (!_messages.Any())
+                        {
+                            <MudText Typo="Typo.body2" Style="color: var(--text-secondary); text-align: center;">No messages yet. Send a message to start chatting with support.</MudText>
+                        }
+                        else
+                        {
+                            foreach (var msg in _messages)
+                            {
+                                bool isMyMessage = msg.SenderId == _currentUserId;
+                                string msgStyle = (isMyMessage ? "background-color: var(--primary-color); color: white; border-radius: 8px 8px 0 8px;" : "background-color: white; border-radius: 8px 8px 8px 0;") + " max-width: 85%;";
+                                string timeStyle = (isMyMessage ? "color: #e0e0e0;" : "color: #999;") + " display: block; text-align: right; margin-top: 4px;";
+                                
+                                <div class="d-flex mb-4" style="justify-content: @(isMyMessage ? "flex-end" : "flex-start")">
+                                    <MudPaper Elevation="0" Class="pa-3" Style="@msgStyle">
+                                        <MudText Typo="Typo.body2">@msg.Content</MudText>
+                                        <MudText Typo="Typo.caption" Style="@timeStyle">
+                                            @(isMyMessage ? "You" : "Support") • @msg.CreatedAt.ToLocalTime().ToString("hh:mm tt")
+                                        </MudText>
+                                    </MudPaper>
+                                </div>
+                            }
+                        }
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <MudTextField @bind-Value="_newMessage" Placeholder="Type a message..." Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1" Immediate="true" OnKeyUp="HandleKeyPress" />
+                        <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium" OnClick="SendMessage" Disabled="string.IsNullOrWhiteSpace(_newMessage)" />
+                    </div>
+                </MudPaper>
+            </MudItem>
+        </MudGrid>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public string Id { get; set; } = string.Empty;
+
+    private CapstoneProject.Models.AppOrderModel? _order;
+    private List<CapstoneProject.Models.ChatMessageModel>? _messages;
+    private string? _conversationId;
+    private string? _currentUserId;
+    private bool _isLoading = true;
+    private string _newMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+        
+        if (!string.IsNullOrEmpty(Id))
+        {
+            _order = await SupabaseSvc.GetOrderByIdAsync(Id);
+            
+            if (_order != null && !string.IsNullOrEmpty(_order.CustomerId))
+            {
+                // Get the conversation for this customer
+                _conversationId = await SupabaseSvc.GetOrCreateConversationAsync(_order.CustomerId);
+                
+                if (!string.IsNullOrEmpty(_conversationId))
+                {
+                    _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
+                }
+            }
+        }
+        
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+        if (user.Identity != null && user.Identity.IsAuthenticated)
+        {
+            _currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+        }
+
+        _isLoading = false;
+    }
+
+    private Color GetStatusColor(string? status)
+    {
+        return status switch
+        {
+            "Pending" => Color.Warning,
+            "In Progress" => Color.Info,
+            "Shipped" => Color.Primary,
+            "Completed" => Color.Success,
+            "Cancelled" => Color.Error,
+            _ => Color.Default
+        };
+    }
+
+    private async Task HandleKeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SendMessage();
+        }
+    }
+
+    private async Task SendMessage()
+    {
+        if (string.IsNullOrWhiteSpace(_newMessage) || string.IsNullOrEmpty(_conversationId) || string.IsNullOrEmpty(_currentUserId)) return;
+        
+        var msgText = _newMessage;
+        _newMessage = ""; // Clear input immediately
+        
+        bool success = await SupabaseSvc.SendMessageAsync(_conversationId, msgText);
+        if (success)
+        {
+            // Refresh messages
+            _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
+            StateHasChanged();
+        }
+        else
+        {
+            _newMessage = msgText; // Restore if failed
+            // Show error in a real app
+        }
+    }
+}

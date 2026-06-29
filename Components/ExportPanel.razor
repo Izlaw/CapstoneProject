@@ -1,12 +1,20 @@
 <div class="export-section">
     <p class="tool-section-title">📤 &nbsp;Export &amp; Save</p>
 
-    <MudSelect T="string" Label="Shirt Size" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mb-4">
+    <MudSelect T="string" Label="Shirt Size" @bind-Value="Size" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mb-4">
         <MudSelectItem Value="@("S")">Small (S)</MudSelectItem>
         <MudSelectItem Value="@("M")">Medium (M)</MudSelectItem>
         <MudSelectItem Value="@("L")">Large (L)</MudSelectItem>
         <MudSelectItem Value="@("XL")">Extra Large (XL)</MudSelectItem>
     </MudSelect>
+
+    <MudSelect T="string" Label="Fabric Type" @bind-Value="Fabric" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mb-4">
+        <MudSelectItem Value="@("Cotton")">100% Cotton</MudSelectItem>
+        <MudSelectItem Value="@("Polyester")">Polyester Blend</MudSelectItem>
+        <MudSelectItem Value="@("DriFit")">Dri-Fit</MudSelectItem>
+    </MudSelect>
+
+    <MudNumericField @bind-Value="Quantity" Label="Quantity" Variant="Variant.Outlined" Min="1" Max="999" Class="mb-4" />
 
     <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
                id="export-png-btn"
@@ -15,19 +23,19 @@
         📸 &nbsp;Export as PNG
     </MudButton>
 
-    <MudButton Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true"
+    <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true"
                id="save-design-btn"
                Disabled="@IsSaving"
                Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600;"
-               OnClick="() => OnSave.InvokeAsync()">
+               OnClick="HandlePlaceOrder">
         @if (IsSaving)
         {
-            <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
-            <span>Saving...</span>
+            <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
+            <span>Processing...</span>
         }
         else
         {
-            <span>☁️ &nbsp;Save to Gallery</span>
+            <span>🛒 &nbsp;Place Order</span>
         }
     </MudButton>
 
@@ -38,6 +46,15 @@
 
 @code {
     [Parameter] public EventCallback OnExport { get; set; }
-    [Parameter] public EventCallback OnSave { get; set; }
+    [Parameter] public EventCallback<(string size, string fabric, int quantity)> OnCheckout { get; set; }
     [Parameter] public bool IsSaving { get; set; }
+
+    public string Size { get; set; } = "M";
+    public string Fabric { get; set; } = "Cotton";
+    public int Quantity { get; set; } = 1;
+
+    private async Task HandlePlaceOrder()
+    {
+        await OnCheckout.InvokeAsync((Size, Fabric, Quantity));
+    }
 }

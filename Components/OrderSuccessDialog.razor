@@ -1,0 +1,63 @@
+@using MudBlazor
+@using QRCoder
+
+<MudDialog Style="border-radius: 12px; max-width: 450px;">
+    <DialogContent>
+        <div class="d-flex flex-column align-center text-center pa-4">
+            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size: 64px; margin-bottom: 16px;" />
+            
+            <MudText Typo="Typo.h5" Style="font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Order Placed Successfully!</MudText>
+            
+            <MudText Typo="Typo.body1" Style="color: var(--text-secondary); margin-bottom: 24px;">
+                Your custom design has been saved. Scan the QR code below to view your digital receipt.
+            </MudText>
+
+            @if (!string.IsNullOrEmpty(_qrCodeBase64))
+            {
+                <div style="background-color: white; padding: 16px; border-radius: 12px; border: 2px solid var(--border-color); margin-bottom: 24px;">
+                    <img src="@($"data:image/png;base64,{_qrCodeBase64}")" alt="Order QR Code" style="width: 200px; height: 200px;" />
+                </div>
+            }
+
+            <MudText Typo="Typo.caption" Style="color: var(--text-secondary);">
+                Order ID: @OrderId
+            </MudText>
+        </div>
+    </DialogContent>
+    <DialogActions>
+        <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Close" Style="border-radius: 100px; padding: 0.5rem 2rem; width: 100%;">
+            View My Orders
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IMudDialogInstance MudDialog { get; set; } = default!;
+
+    [Parameter] public string OrderId { get; set; } = string.Empty;
+    [Parameter] public string PreviewUrl { get; set; } = string.Empty;
+
+    private string _qrCodeBase64 = "";
+
+    protected override void OnInitialized()
+    {
+        GenerateQRCode();
+    }
+
+    private void GenerateQRCode()
+    {
+        if (string.IsNullOrEmpty(PreviewUrl)) return;
+
+        using var qrGenerator = new QRCodeGenerator();
+        using var qrCodeData = qrGenerator.CreateQrCode(PreviewUrl, QRCodeGenerator.ECCLevel.Q);
+        using var qrCode = new PngByteQRCode(qrCodeData);
+        byte[] qrCodeImage = qrCode.GetGraphic(20);
+        
+        _qrCodeBase64 = Convert.ToBase64String(qrCodeImage);
+    }
+
+    private void Close()
+    {
+        MudDialog.Close(DialogResult.Ok(true));
+    }
+}

@@ -1,4 +1,6 @@
 @page "/login"
+@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject NavigationManager NavManager
 
 <PageTitle>Login — ThreadStudio</PageTitle>
 
@@ -8,10 +10,25 @@
             <h2 class="nav-brand">THREAD<span class="brand-accent">STUDIO</span></h2>
         </div>
         
-        <MudTextField @bind-Value="Email" Label="Email" Variant="Variant.Outlined" Class="mb-4" />
-        <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-6" />
+        @if (!string.IsNullOrEmpty(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
+        }
+
+        <MudTextField @bind-Value="Email" Label="Email" Variant="Variant.Outlined" Class="mb-4" Disabled="@_isLoading" />
+        <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-6" Disabled="@_isLoading" />
         
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large" Class="mb-4" Style="border-radius: 100px;">Log in</MudButton>
+        <MudButton OnClick="HandleLogin" Disabled="@_isLoading" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large" Class="mb-4" Style="border-radius: 100px;">
+            @if (_isLoading)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                <MudText Class="ms-2">Logging in</MudText>
+            }
+            else
+            {
+                <MudText>Log in</MudText>
+            }
+        </MudButton>
         
         <div class="d-flex justify-center mt-4">
             <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">
@@ -24,4 +41,44 @@
 @code {
     public string Email { get; set; } = "";
     public string Password { get; set; } = "";
+    
+    private bool _isLoading = false;
+    private string _errorMessage = "";
+
+    private async Task HandleLogin()
+    {
+        _isLoading = true;
+        _errorMessage = "";
+
+        try
+        {
+            var session = await SupabaseSvc.LoginAsync(Email, Password);
+            if (session != null && session.User != null)
+            {
+                // Fetch profile to check role for RBAC
+                var profile = await SupabaseSvc.GetUserProfileAsync(session.User.Id);
+                
+                if (profile != null && (profile.Role == "employee" || profile.Role == "admin"))
+                {
+                    NavManager.NavigateTo("/employee/dashboard", forceLoad: true);
+                }
+                else
+                {
+                    NavManager.NavigateTo("/dashboard", forceLoad: true);
+                }
+            }
+            else
+            {
+                _errorMessage = "Invalid login credentials.";
+            }
+        }
+        catch (Exception ex)
+        {
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
 }
