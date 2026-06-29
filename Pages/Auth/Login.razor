@@ -60,11 +60,11 @@
                 
                 if (profile != null && (profile.Role == "employee" || profile.Role == "admin"))
                 {
-                    NavManager.NavigateTo("/employee/dashboard", forceLoad: true);
+                    NavManager.NavigateTo("/employee/dashboard");
                 }
                 else
                 {
-                    NavManager.NavigateTo("/dashboard", forceLoad: true);
+                    NavManager.NavigateTo("/dashboard");
                 }
             }
             else

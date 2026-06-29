@@ -4,59 +4,120 @@
 
 <PageTitle>Customer Dashboard — ThreadStudio</PageTitle>
 
-<div class="pa-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
-    <MudText Typo="Typo.h4" Class="mb-4" Style="font-weight: 600; color: var(--text-primary);">My Orders</MudText>
-    
-    <MudPaper Elevation="0" Class="pa-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
-        <MudTable Items="@Orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;">
-            <HeaderContent>
-                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Order ID</MudText></MudTh>
-                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Type</MudText></MudTh>
-                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Date</MudText></MudTh>
-                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Status</MudText></MudTh>
-                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Total</MudText></MudTh>
-                <MudTh></MudTh>
-            </HeaderContent>
-            <RowTemplate>
-                <MudTd DataLabel="Order ID">#@context.Id.Substring(0, 8)</MudTd>
-                <MudTd DataLabel="Type">
-                    @if (context.OrderType == "custom")
-                    {
-                        <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Text">Custom Design</MudChip>
-                    }
-                    else if (context.OrderType == "collection")
-                    {
-                        <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Text">Collection</MudChip>
-                    }
-                    else
-                    {
-                        <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text">Uploaded</MudChip>
-                    }
-                </MudTd>
-                <MudTd DataLabel="Date">@context.CreatedAt.ToString("MMM dd, yyyy")</MudTd>
-                <MudTd DataLabel="Status">
-                    @if (context.Status == "Pending")
-                    {
-                        <MudChip T="string" Color="Color.Warning" Size="Size.Small">Pending</MudChip>
-                    }
-                    else if (context.Status == "Completed")
-                    {
-                        <MudChip T="string" Color="Color.Success" Size="Size.Small">Completed</MudChip>
-                    }
-                    else
-                    {
-                        <MudChip T="string" Color="Color.Info" Size="Size.Small">@context.Status</MudChip>
-                    }
-                </MudTd>
-                <MudTd DataLabel="Total">₱@context.TotalPrice.ToString("N2")</MudTd>
-                <MudTd DataLabel="Action">
-                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small">View QR</MudButton>
-                </MudTd>
-            </RowTemplate>
-            <NoRecordsContent>
-                <MudText>No orders found.</MudText>
-            </NoRecordsContent>
-        </MudTable>
+<div class="pa-6 pa-md-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
+    <!-- Page Header -->
+    <div class="d-flex justify-space-between align-center mb-6" style="flex-wrap: wrap; gap: 1rem;">
+        <div>
+            <MudText Typo="Typo.h4" Style="font-weight: 900; letter-spacing: -0.02em; color: var(--text-primary);">My Orders</MudText>
+            <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Track your custom garments from production to delivery.</MudText>
+        </div>
+        <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
+                   Style="border-radius: 100px; font-weight: 700;">
+            New Design
+        </MudButton>
+    </div>
+
+    <!-- Stat Cards -->
+    <MudGrid Spacing="3" Class="mb-6">
+        <MudItem xs="12" sm="4">
+            <div class="dash-stat-card">
+                <div class="dash-stat-icon">🛒</div>
+                <div class="dash-stat-value">@Orders.Count</div>
+                <div class="dash-stat-label">Total Orders</div>
+            </div>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <div class="dash-stat-card">
+                <div class="dash-stat-icon">⏳</div>
+                <div class="dash-stat-value">@Orders.Count(o => o.Status == "Pending" || o.Status == "In Progress")</div>
+                <div class="dash-stat-label">Active Orders</div>
+            </div>
+        </MudItem>
+        <MudItem xs="12" sm="4">
+            <div class="dash-stat-card">
+                <div class="dash-stat-icon">💰</div>
+                <div class="dash-stat-value">₱@Orders.Sum(o => o.TotalPrice).ToString("N0")</div>
+                <div class="dash-stat-label">Total Spent</div>
+            </div>
+        </MudItem>
+    </MudGrid>
+
+    <!-- Orders Table -->
+    <MudPaper Elevation="0" Class="pa-2" Style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;">
+        @if (_isLoading)
+        {
+            <div class="d-flex justify-center align-center pa-12">
+                <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+            </div>
+        }
+        else if (!Orders.Any())
+        {
+            <div class="d-flex flex-column justify-center align-center text-center pa-12" style="gap: 1rem;">
+                <div style="font-size: 4rem; opacity: 0.5;">🧵</div>
+                <MudText Typo="Typo.h6" Style="font-weight: 700; color: var(--text-primary);">No orders yet</MudText>
+                <MudText Typo="Typo.body2" Style="color: var(--text-secondary); max-width: 320px;">
+                    You haven't placed any orders yet. Head to the designer to create your first custom garment!
+                </MudText>
+                <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary" Style="border-radius: 100px; margin-top: 0.5rem; font-weight: 700;">
+                    Open 3D Designer
+                </MudButton>
+            </div>
+        }
+        else
+        {
+            <MudTable Items="@Orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;">
+                <HeaderContent>
+                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Order ID</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Type</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Date</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Status</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Total</MudText></MudTh>
+                    <MudTh></MudTh>
+                </HeaderContent>
+                <RowTemplate>
+                    <MudTd DataLabel="Order ID">
+                        <MudText Typo="Typo.body2" Style="font-family: monospace; color: var(--accent);">#@context.Id.Substring(0, 8)</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Type">
+                        @if (context.OrderType == "custom")
+                        {
+                            <MudChip T="string" Color="Color.Primary" Size="Size.Small" Variant="Variant.Text" Style="font-weight:600;">Custom Design</MudChip>
+                        }
+                        else if (context.OrderType == "collection")
+                        {
+                            <MudChip T="string" Color="Color.Secondary" Size="Size.Small" Variant="Variant.Text" Style="font-weight:600;">Collection</MudChip>
+                        }
+                        else
+                        {
+                            <MudChip T="string" Color="Color.Info" Size="Size.Small" Variant="Variant.Text" Style="font-weight:600;">Uploaded</MudChip>
+                        }
+                    </MudTd>
+                    <MudTd DataLabel="Date"><MudText Typo="Typo.body2">@context.CreatedAt.ToString("MMM dd, yyyy")</MudText></MudTd>
+                    <MudTd DataLabel="Status">
+                        @{
+                            var (cls, label) = context.Status switch
+                            {
+                                "Pending"     => ("status-pending", "Pending"),
+                                "In Progress" => ("status-progress", "In Progress"),
+                                "Completed"   => ("status-completed", "Completed"),
+                                "Cancelled"   => ("status-cancelled", "Cancelled"),
+                                _             => ("status-pending", context.Status ?? "-")
+                            };
+                        }
+                        <span class="status-badge @cls">@label</span>
+                    </MudTd>
+                    <MudTd DataLabel="Total">
+                        <MudText Typo="Typo.body1" Style="font-weight: 700; color: var(--text-primary);">₱@context.TotalPrice.ToString("N2")</MudText>
+                    </MudTd>
+                    <MudTd DataLabel="Action">
+                        <MudButton Href="@($"/order-preview/{context.Id}")" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"
+                                   Style="border-radius:100px; font-size:0.75rem; font-weight:600;">
+                            View Receipt
+                        </MudButton>
+                    </MudTd>
+                </RowTemplate>
+            </MudTable>
+        }
     </MudPaper>
 </div>
 

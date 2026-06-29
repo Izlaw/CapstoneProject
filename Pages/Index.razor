@@ -1,29 +1,51 @@
 @page "/"
 
-<PageTitle>7 Guys House of Fashion</PageTitle>
+<PageTitle>7 Guys House of Fashion — Custom Shirt Designer</PageTitle>
 
 <!-- Hero Section -->
-<div class="hero-section">
+<div class="hero-section" style="position: relative;">
     <div class="hero-content">
+        <div class="hero-eyebrow">
+            <div class="hero-eyebrow-dot"></div>
+            Now Accepting Custom Orders
+        </div>
         <h1 class="hero-title" style="text-align: left;">
-            Custom Fashion,<br />
-            <span class="gradient-text">Tailored for You</span>
+            Your Vision,<br />
+            <span class="gradient-text">Stitched to Life.</span>
         </h1>
         <p class="hero-subtitle" style="text-align: left;">
-            Experience the future of fashion. Design your own bespoke garments using our interactive 3D studio, 
-            or browse our exclusive collection of ready-to-wear pieces.
+            Design bespoke garments in our interactive 3D studio, get a QR-linked digital receipt, 
+            and track your order from start to delivery — all in one place.
         </p>
         <div class="hero-cta" style="justify-content: flex-start;">
             <a href="/designer" class="cta-primary" id="hero-start-btn">
-                Customize Now
+                ✦ &nbsp;Start Designing
             </a>
             <a href="/gallery" class="cta-secondary" id="hero-learn-btn">
                 View Collection
             </a>
         </div>
+
+        <div class="hero-stats">
+            <div>
+                <div class="hero-stat-number">3D</div>
+                <div class="hero-stat-label">Live Preview</div>
+            </div>
+            <div style="width: 1px; background: var(--border);"></div>
+            <div>
+                <div class="hero-stat-number">QR</div>
+                <div class="hero-stat-label">Digital Receipt</div>
+            </div>
+            <div style="width: 1px; background: var(--border);"></div>
+            <div>
+                <div class="hero-stat-number">100%</div>
+                <div class="hero-stat-label">Custom</div>
+            </div>
+        </div>
     </div>
-    
+
     <div class="hero-image-wrapper">
+        <div class="hero-image-glow"></div>
         <img src="/images/hero_shirt.png" alt="Premium Tailored Shirt" class="hero-image" />
     </div>
 </div>
@@ -31,35 +53,66 @@
 <!-- Features Section -->
 <div id="features" class="features-section">
     <div class="section-header">
-        <p class="section-label">Our Services</p>
+        <span class="section-label">What We Offer</span>
         <h2 class="section-title">Design Without Limits</h2>
+        <p class="section-sub">From concept to delivery — every step made effortless.</p>
     </div>
     <div class="features-grid">
         <div class="feature-card" id="feature-color">
             <div class="feature-icon">🎨</div>
-            <div class="feature-title">Real-Time Customization</div>
-            <p class="feature-desc">Choose from curated palettes or any custom hex color. The 3D shirt updates instantly.</p>
+            <div class="feature-title">Real-Time Color</div>
+            <p class="feature-desc">Choose from curated palettes or any custom hex. The 3D shirt updates the instant you click.</p>
         </div>
         <div class="feature-card" id="feature-text">
             <div class="feature-icon">✏️</div>
             <div class="feature-title">Text &amp; Logos</div>
-            <p class="feature-desc">Add custom text or upload your own artwork. Scale and position to perfection.</p>
+            <p class="feature-desc">Add custom text with your choice of font or upload your own artwork to scale and position freely.</p>
         </div>
         <div class="feature-card" id="feature-rotate">
             <div class="feature-icon">🔄</div>
             <div class="feature-title">360° Preview</div>
-            <p class="feature-desc">Rotate, zoom, and inspect every angle of your garment before placing an order.</p>
+            <p class="feature-desc">Rotate, zoom, and inspect every angle of your garment before committing to an order.</p>
         </div>
         <div class="feature-card" id="feature-save">
-            <div class="feature-icon">🛍️</div>
-            <div class="feature-title">Seamless Ordering</div>
-            <p class="feature-desc">Submit your bespoke design directly to our tailoring team for production.</p>
+            <div class="feature-icon">📱</div>
+            <div class="feature-title">QR Digital Receipt</div>
+            <p class="feature-desc">Every order generates a scannable QR code linking to your digital receipt and order status.</p>
         </div>
     </div>
+</div>
 
-    <div style="text-align: center; margin-top: 3rem;">
-        <a href="/designer" class="cta-primary" id="features-cta-btn" style="display:inline-flex;">
-            Start Your Custom Order
-        </a>
+<!-- How It Works -->
+<div class="process-section">
+    <div class="process-inner">
+        <div class="section-header">
+            <span class="section-label">The Process</span>
+            <h2 class="section-title">Order in 3 Simple Steps</h2>
+        </div>
+        <div class="process-steps">
+            <div class="process-step">
+                <div class="step-number">1</div>
+                <div class="step-title">Design It</div>
+                <p class="step-desc">Open the 3D designer, pick your color, add text or logos, and see it update live.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-number">2</div>
+                <div class="step-title">Place Your Order</div>
+                <p class="step-desc">Choose your size, fabric, and quantity. Hit "Place Order" and we handle the rest.</p>
+            </div>
+            <div class="process-step">
+                <div class="step-number">3</div>
+                <div class="step-title">Track via QR</div>
+                <p class="step-desc">Get a QR code linking to your digital receipt. Scan anytime to check your order status.</p>
+            </div>
+        </div>
     </div>
+</div>
+
+<!-- CTA Banner -->
+<div class="cta-banner" style="max-width: 1280px; margin: 0 auto 4rem;">
+    <h2>Ready to Create Something Unique?</h2>
+    <p>Join hundreds of customers who have brought their custom designs to life.</p>
+    <a href="/designer" class="cta-primary" id="cta-banner-btn" style="display:inline-flex;">
+        ✦ &nbsp;Open the 3D Designer
+    </a>
 </div>

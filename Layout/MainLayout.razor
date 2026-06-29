@@ -6,29 +6,32 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="0" Style="backdrop-filter: blur(20px); background: rgba(24,26,47,0.85); border-bottom: 1px solid rgba(180,24,45,0.15);">
+    <MudAppBar Elevation="0" Style="backdrop-filter: blur(20px); background: rgba(16,18,31,0.9); border-bottom: 1px solid rgba(255,255,255,0.06);">
         <a href="/" class="nav-brand" style="text-decoration: none; color: inherit;">
             7 Guys <span class="brand-accent">House of Fashion</span>
         </a>
         <MudSpacer />
-        <MudButton Href="/" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: #9998b3;">
+        <MudButton Href="/" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); font-size:0.9rem;">
             Home
         </MudButton>
-        <MudButton Href="/gallery" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: #9998b3; margin-left: 8px;">
+        <MudButton Href="/gallery" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); margin-left: 4px; font-size:0.9rem;">
             Gallery
         </MudButton>
-        
+
         <AuthorizeView>
             <Authorized>
-                <MudText Typo="Typo.body2" Style="color:#FDA481; margin-right: 16px;">
-                    @context.User.Identity?.Name
-                </MudText>
-                <MudButton OnClick="HandleLogout" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Style="border-radius:100px;">
+                <MudButton Href="/dashboard" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); margin-left: 4px; font-size:0.9rem;">
+                    My Orders
+                </MudButton>
+                <MudChip T="string" Size="Size.Small" Style="background: rgba(253,164,129,0.12); color: var(--accent); border: 1px solid rgba(253,164,129,0.2); border-radius:100px; margin: 0 12px; font-weight:600; font-size:0.78rem;">
+                    @context.User.Identity?.Name?.Split(' ')[0]
+                </MudChip>
+                <MudButton OnClick="HandleLogout" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Style="border-radius:100px; font-weight:600;">
                     Logout
                 </MudButton>
             </Authorized>
             <NotAuthorized>
-                <MudButton Href="/login" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Style="border-radius:100px; margin-right: 8px;">
+                <MudButton Href="/login" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); margin-left: 4px; font-size:0.9rem;">
                     Login
                 </MudButton>
             </NotAuthorized>
@@ -36,8 +39,8 @@
 
         <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary"
                    Size="Size.Small" Class="ml-2"
-                   Style="border-radius:100px; font-family:'Outfit',sans-serif; font-weight:600; letter-spacing:0.03em;">
-            Start Designing
+                   Style="border-radius:100px; font-family:'Outfit',sans-serif; font-weight:700; letter-spacing:0.03em; padding: 0.4rem 1.25rem;">
+            ✦ &nbsp;Design Now
         </MudButton>
     </MudAppBar>
 

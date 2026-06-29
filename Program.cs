@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Components.Web;
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
 using MudBlazor.Services;
+using Blazored.LocalStorage;
 using CapstoneProject;
 using CapstoneProject.Services;
 
@@ -12,6 +13,9 @@ builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.
 
 // MudBlazor
 builder.Services.AddMudServices();
+
+// Blazored LocalStorage for session persistence
+builder.Services.AddBlazoredLocalStorage();
 
 // Auth
 builder.Services.AddAuthorizationCore();
@@ -27,8 +31,16 @@ var supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIs
 var supabaseOptions = new Supabase.SupabaseOptions
 {
     AutoRefreshToken = true,
-    AutoConnectRealtime = true
+    AutoConnectRealtime = true,
+    SessionHandler = new CapstoneProject.Services.BlazorSessionHandler(builder.Services.BuildServiceProvider().GetRequiredService<Blazored.LocalStorage.ISyncLocalStorageService>())
 };
 builder.Services.AddScoped<Supabase.Client>(_ => new Supabase.Client(supabaseUrl, supabaseKey, supabaseOptions));
 
-await builder.Build().RunAsync();
+var host = builder.Build();
+
+// Initialize Supabase BEFORE running the app so it restores the session from local storage.
+// Without this, CurrentSession is always null on page load and auth always fails.
+var supabaseClient = host.Services.GetRequiredService<Supabase.Client>();
+await supabaseClient.InitializeAsync();
+
+await host.RunAsync();
