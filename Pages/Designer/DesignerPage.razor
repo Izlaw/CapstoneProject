@@ -12,13 +12,13 @@
 
 <div class="designer-layout">
     <div class="designer-canvas-area">
-        <ShirtCanvas @ref="_shirtCanvas" 
+        <ShirtCanvasComponent @ref="_shirtCanvas" 
                      OnModuleReady="OnModuleReady"
                      OnObjectSelected="HandleObjectSelected"
                      OnObjectCleared="HandleObjectCleared" />
     </div>
     <div class="designer-tools-area">
-        <DesignToolbar @ref="_toolbar"
+        <DesignToolbarComponent @ref="_toolbar"
             OnColorChanged="HandleColorChanged"
             OnTextAdded="HandleTextAdded"
             OnTextUpdated="HandleTextUpdated"
@@ -26,7 +26,7 @@
             OnClearDesign="HandleClearDesign"
             OnDeleteSelected="HandleDeleteSelected" />
 
-        <ExportPanel
+        <ExportPanelComponent
             OnExport="HandleExport"
             OnCheckout="HandleCheckout"
             IsSaving="_isSaving" />
@@ -34,8 +34,8 @@
 </div>
 
 @code {
-    private ShirtCanvas _shirtCanvas = default!;
-    private DesignToolbar _toolbar = default!;
+    private ShirtCanvasComponent _shirtCanvas = default!;
+    private DesignToolbarComponent _toolbar = default!;
     private bool _isSaving = false;
 
     private void OnModuleReady()
@@ -120,14 +120,14 @@
             {
                 Snackbar.Add("Order successfully placed!", Severity.Success);
                 
-                var parameters = new DialogParameters<CapstoneProject.Components.OrderSuccessDialog>
+                var parameters = new DialogParameters<CapstoneProject.Dialogs.OrderSuccessDialog>
                 {
                     { x => x.OrderId, orderId },
                     { x => x.PreviewUrl, NavManager.ToAbsoluteUri($"/order-preview/{orderId}").ToString() }
                 };
                 
                 var options = new DialogOptions { CloseOnEscapeKey = false, BackdropClick = false, MaxWidth = MaxWidth.Small };
-                var dialog = await DialogService.ShowAsync<CapstoneProject.Components.OrderSuccessDialog>("Success", parameters, options);
+                var dialog = await DialogService.ShowAsync<CapstoneProject.Dialogs.OrderSuccessDialog>("Success", parameters, options);
                 var result = await dialog.Result;
                 
                 // After they close it, redirect to dashboard or clear design

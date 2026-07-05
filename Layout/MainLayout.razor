@@ -6,45 +6,44 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="0" Style="backdrop-filter: blur(20px); background: rgba(16,18,31,0.9); border-bottom: 1px solid rgba(255,255,255,0.06);">
-        <a href="/" class="nav-brand" style="text-decoration: none; color: inherit;">
+    <MudAppBar Elevation="0" Class="glass-appbar">
+        <a href="/" class="nav-brand">
             7 Guys <span class="brand-accent">House of Fashion</span>
         </a>
         <MudSpacer />
-        <MudButton Href="/" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); font-size:0.9rem;">
+        <MudButton Href="/" Variant="Variant.Text" Class="nav-btn">
             Home
         </MudButton>
-        <MudButton Href="/gallery" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); margin-left: 4px; font-size:0.9rem;">
+        <MudButton Href="/gallery" Variant="Variant.Text" Class="nav-btn ml-1">
             Gallery
         </MudButton>
 
         <AuthorizeView>
             <Authorized>
-                <MudButton Href="/dashboard" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); margin-left: 4px; font-size:0.9rem;">
+                <MudButton Href="/dashboard" Variant="Variant.Text" Class="nav-btn ml-1">
                     My Orders
                 </MudButton>
-                <MudChip T="string" Size="Size.Small" Style="background: rgba(253,164,129,0.12); color: var(--accent); border: 1px solid rgba(253,164,129,0.2); border-radius:100px; margin: 0 12px; font-weight:600; font-size:0.78rem;">
+                <MudChip T="string" Size="Size.Small" Class="user-chip">
                     @context.User.Identity?.Name?.Split(' ')[0]
                 </MudChip>
-                <MudButton OnClick="HandleLogout" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Style="border-radius:100px; font-weight:600;">
+                <MudButton OnClick="HandleLogout" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Class="action-btn-outlined">
                     Logout
                 </MudButton>
             </Authorized>
             <NotAuthorized>
-                <MudButton Href="/login" Variant="Variant.Text" Style="font-family:'Outfit',sans-serif; font-weight:500; color: var(--text-secondary); margin-left: 4px; font-size:0.9rem;">
+                <MudButton Href="/login" Variant="Variant.Text" Class="nav-btn ml-1">
                     Login
                 </MudButton>
             </NotAuthorized>
         </AuthorizeView>
 
         <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary"
-                   Size="Size.Small" Class="ml-2"
-                   Style="border-radius:100px; font-family:'Outfit',sans-serif; font-weight:700; letter-spacing:0.03em; padding: 0.4rem 1.25rem;">
+                   Size="Size.Small" Class="primary-action-btn ml-2">
             ✦ &nbsp;Design Now
         </MudButton>
     </MudAppBar>
 
-    <MudMainContent Style="padding: 0; margin-top: 64px;">
+    <MudMainContent Class="main-content">
         @Body
     </MudMainContent>
 </MudLayout>
@@ -54,19 +53,19 @@
     {
         PaletteDark = new PaletteDark
         {
-            Primary           = "#B4182D",
-            PrimaryDarken     = "#54162B",
-            PrimaryLighten    = "#FDA481",
-            Secondary         = "#FDA481",
-            Background        = "#181A2F",
+            Primary           = "#B51A2B",
+            PrimaryDarken     = "#541A2E",
+            PrimaryLighten    = "#FFA586",
+            Secondary         = "#FFA586",
+            Background        = "#161E2F",
             BackgroundGray    = "#242E49",
-            Surface           = "#37415C",
+            Surface           = "#384358",
             DrawerBackground  = "#242E49",
-            AppbarBackground  = "rgba(24,26,47,0.85)",
+            AppbarBackground  = "rgba(84,26,46,0.85)", 
             TextPrimary       = "#f1f0ff",
             TextSecondary     = "#cbd5e1",
             ActionDefault     = "#cbd5e1",
-            Divider           = "rgba(180,24,45,0.2)",
+            Divider           = "rgba(181,26,43,0.2)",
             OverlayLight      = "rgba(0,0,0,0.6)",
         },
         Typography = new Typography

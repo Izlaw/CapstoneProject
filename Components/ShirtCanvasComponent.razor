@@ -14,26 +14,30 @@
     }
     else
     {
-        <div style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:10;">
-            <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled" OverrideStyles="false">
-                <MudButton OnClick="@(() => SetCameraViewAsync("front"))">Front</MudButton>
-                <MudButton OnClick="@(() => SetCameraViewAsync("back"))">Back</MudButton>
-                <MudButton OnClick="@(() => SetCameraViewAsync("left"))">Side</MudButton>
-            </MudButtonGroup>
-        </div>
+        @if (ShowControls)
+        {
+            <div style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:10;">
+                <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled" OverrideStyles="false">
+                    <MudButton OnClick="@(() => SetCameraViewAsync("front"))">Front</MudButton>
+                    <MudButton OnClick="@(() => SetCameraViewAsync("back"))">Back</MudButton>
+                    <MudButton OnClick="@(() => SetCameraViewAsync("left"))">Side</MudButton>
+                </MudButtonGroup>
+            </div>
+        }
     }
 </div>
 
 
 
 @code {
+    [Parameter] public bool ShowControls { get; set; } = true;
     [Parameter] public EventCallback OnModuleReady { get; set; }
     [Parameter] public EventCallback<Dictionary<string, object>> OnObjectSelected { get; set; }
     [Parameter] public EventCallback OnObjectCleared { get; set; }
 
     public IJSObjectReference? Module { get; private set; }
     private bool _isReady = false;
-    private DotNetObjectReference<ShirtCanvas>? _objRef;
+    private DotNetObjectReference<ShirtCanvasComponent>? _objRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
@@ -96,6 +100,12 @@
     {
         if (Module is null) return;
         await Module.InvokeVoidAsync("setCameraView", view);
+    }
+
+    public async Task SetAutoSpinAsync(bool enable)
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("setAutoSpin", enable);
     }
 
     public async ValueTask DisposeAsync()

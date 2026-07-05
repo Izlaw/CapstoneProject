@@ -1,118 +1,198 @@
 @page "/"
+@implements IAsyncDisposable
+@inject NavigationManager NavManager
+@inject AuthenticationStateProvider AuthStateProvider
 
-<PageTitle>7 Guys House of Fashion — Custom Shirt Designer</PageTitle>
+<PageTitle>Home — 7 Guys House of Fashion</PageTitle>
 
-<!-- Hero Section -->
-<div class="hero-section" style="position: relative;">
-    <div class="hero-content">
-        <div class="hero-eyebrow">
-            <div class="hero-eyebrow-dot"></div>
-            Now Accepting Custom Orders
-        </div>
-        <h1 class="hero-title" style="text-align: left;">
-            Your Vision,<br />
-            <span class="gradient-text">Stitched to Life.</span>
-        </h1>
-        <p class="hero-subtitle" style="text-align: left;">
-            Design bespoke garments in our interactive 3D studio, get a QR-linked digital receipt, 
-            and track your order from start to delivery — all in one place.
-        </p>
-        <div class="hero-cta" style="justify-content: flex-start;">
-            <a href="/designer" class="cta-primary" id="hero-start-btn">
-                ✦ &nbsp;Start Designing
-            </a>
-            <a href="/gallery" class="cta-secondary" id="hero-learn-btn">
-                View Collection
-            </a>
-        </div>
-
-        <div class="hero-stats">
-            <div>
-                <div class="hero-stat-number">3D</div>
-                <div class="hero-stat-label">Live Preview</div>
+<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="home-container">
+    <MudGrid Class="hero-grid" Spacing="6" Justify="Justify.Center" AlignItems="AlignItems.Center">
+        
+        <!-- Left Column: Copy & CTA -->
+        <MudItem xs="12" md="6" Class="hero-content">
+            <MudText Typo="Typo.h1" Class="hero-headline" Style="font-family: 'Outfit', sans-serif; font-weight: 300; line-height: 1.1; letter-spacing: -0.02em;">
+                Bespoke 3D<br/>Tailoring.
+            </MudText>
+            <MudText Typo="Typo.h6" Class="hero-subtext mt-4" Style="font-family: 'Outfit', sans-serif; font-weight: 300; color: var(--mud-palette-text-secondary); max-width: 450px;">
+                Design your identity with precise control and real-time visualization.
+            </MudText>
+            
+            <div class="hero-actions mt-8 d-flex flex-wrap gap-4">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="HandleAddOrder" Class="btn-primary-minimal">
+                    Start Customizing
+                </MudButton>
+                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" OnClick="HandleViewOrder" Class="btn-secondary-minimal">
+                    Track Order
+                </MudButton>
             </div>
-            <div style="width: 1px; background: var(--border);"></div>
-            <div>
-                <div class="hero-stat-number">QR</div>
-                <div class="hero-stat-label">Digital Receipt</div>
-            </div>
-            <div style="width: 1px; background: var(--border);"></div>
-            <div>
-                <div class="hero-stat-number">100%</div>
-                <div class="hero-stat-label">Custom</div>
-            </div>
-        </div>
-    </div>
+        </MudItem>
 
-    <div class="hero-image-wrapper">
-        <div class="hero-image-glow"></div>
-        <img src="/images/hero_shirt.png" alt="Premium Tailored Shirt" class="hero-image" />
-    </div>
-</div>
-
-<!-- Features Section -->
-<div id="features" class="features-section">
-    <div class="section-header">
-        <span class="section-label">What We Offer</span>
-        <h2 class="section-title">Design Without Limits</h2>
-        <p class="section-sub">From concept to delivery — every step made effortless.</p>
-    </div>
-    <div class="features-grid">
-        <div class="feature-card" id="feature-color">
-            <div class="feature-icon">🎨</div>
-            <div class="feature-title">Real-Time Color</div>
-            <p class="feature-desc">Choose from curated palettes or any custom hex. The 3D shirt updates the instant you click.</p>
-        </div>
-        <div class="feature-card" id="feature-text">
-            <div class="feature-icon">✏️</div>
-            <div class="feature-title">Text &amp; Logos</div>
-            <p class="feature-desc">Add custom text with your choice of font or upload your own artwork to scale and position freely.</p>
-        </div>
-        <div class="feature-card" id="feature-rotate">
-            <div class="feature-icon">🔄</div>
-            <div class="feature-title">360° Preview</div>
-            <p class="feature-desc">Rotate, zoom, and inspect every angle of your garment before committing to an order.</p>
-        </div>
-        <div class="feature-card" id="feature-save">
-            <div class="feature-icon">📱</div>
-            <div class="feature-title">QR Digital Receipt</div>
-            <p class="feature-desc">Every order generates a scannable QR code linking to your digital receipt and order status.</p>
-        </div>
-    </div>
-</div>
-
-<!-- How It Works -->
-<div class="process-section">
-    <div class="process-inner">
-        <div class="section-header">
-            <span class="section-label">The Process</span>
-            <h2 class="section-title">Order in 3 Simple Steps</h2>
-        </div>
-        <div class="process-steps">
-            <div class="process-step">
-                <div class="step-number">1</div>
-                <div class="step-title">Design It</div>
-                <p class="step-desc">Open the 3D designer, pick your color, add text or logos, and see it update live.</p>
+        <!-- Right Column: Visual -->
+        <MudItem xs="12" md="6" Class="hero-visual d-flex justify-center align-center">
+            <div class="hero-3d-wrapper">
+                <ShirtCanvasComponent @ref="_shirtCanvas" OnModuleReady="OnShirtReady" ShowControls="false" />
             </div>
-            <div class="process-step">
-                <div class="step-number">2</div>
-                <div class="step-title">Place Your Order</div>
-                <p class="step-desc">Choose your size, fabric, and quantity. Hit "Place Order" and we handle the rest.</p>
-            </div>
-            <div class="process-step">
-                <div class="step-number">3</div>
-                <div class="step-title">Track via QR</div>
-                <p class="step-desc">Get a QR code linking to your digital receipt. Scan anytime to check your order status.</p>
-            </div>
-        </div>
-    </div>
-</div>
+            <!-- Hidden fabric canvas required by ShirtCanvasComponent initialization -->
+            <canvas id="fabric-canvas" style="display:none;"></canvas>
+        </MudItem>
 
-<!-- CTA Banner -->
-<div class="cta-banner" style="max-width: 1280px; margin: 0 auto 4rem;">
-    <h2>Ready to Create Something Unique?</h2>
-    <p>Join hundreds of customers who have brought their custom designs to life.</p>
-    <a href="/designer" class="cta-primary" id="cta-banner-btn" style="display:inline-flex;">
-        ✦ &nbsp;Open the 3D Designer
-    </a>
-</div>
+    </MudGrid>
+</MudContainer>
+
+<style>
+    .home-container {
+        min-height: calc(100vh - 64px);
+        display: flex;
+        background-color: var(--mud-palette-background);
+        padding: 4rem 2rem;
+    }
+
+    .hero-grid {
+        width: 100%;
+    }
+
+    @@media (max-width: 900px) {
+        .hero-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .hero-actions {
+            justify-content: center;
+        }
+        
+        .hero-subtext {
+            margin: 0 auto;
+        }
+    }
+
+    .btn-primary-minimal {
+        padding: 0.75rem 2rem;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        border-radius: 4px;
+    }
+
+    .btn-secondary-minimal {
+        padding: 0.75rem 2rem;
+        font-family: 'Outfit', sans-serif;
+        font-weight: 500;
+        text-transform: none;
+        letter-spacing: 0;
+        border-color: rgba(255, 255, 255, 0.2);
+        border-radius: 4px;
+    }
+
+    .btn-secondary-minimal:hover {
+        border-color: rgba(255, 255, 255, 0.6);
+    }
+
+    .hero-3d-wrapper {
+        width: 100%;
+        max-width: 600px;
+        aspect-ratio: 1 / 1;
+        position: relative;
+    }
+
+    /* Override the default container styles for a clean minimalist float */
+    ::deep .three-canvas-container {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+        border-radius: 0 !important;
+    }
+</style>
+
+@code {
+    private ShirtCanvasComponent? _shirtCanvas;
+    private CancellationTokenSource _cts = new();
+    
+    private readonly string[] _colors = { "#B51A2B", "#541A2E", "#FFA586", "#161E2F", "#242E49", "#384358", "#FFFFFF", "#000000" };
+    private readonly string[] _fonts = { "Outfit", "Arial", "Impact", "Courier New", "Georgia" };
+    private readonly string[] _texts = { "BESPOKE", "7 GUYS", "STYLE", "3D", "CUSTOM", "FASHION", "MINIMAL" };
+
+    private async Task OnShirtReady()
+    {
+        if (_shirtCanvas == null) return;
+        
+        // Enable Auto Spin to captivate attention
+        await _shirtCanvas.SetAutoSpinAsync(true);
+        
+        // Start the background loop
+        _ = RunRandomizerLoopAsync();
+    }
+
+    private async Task RunRandomizerLoopAsync()
+    {
+        var random = new Random();
+        while (!_cts.Token.IsCancellationRequested)
+        {
+            if (_shirtCanvas == null) break;
+            
+            // Clear previous design
+            await _shirtCanvas.ClearDesignAsync();
+
+            // Pick a random background color
+            var bgColor = _colors[random.Next(_colors.Length)];
+            await _shirtCanvas.SetColorAsync(bgColor);
+            
+            // Add random text
+            var text = _texts[random.Next(_texts.Length)];
+            var font = _fonts[random.Next(_fonts.Length)];
+            
+            // Ensure contrast
+            var textColor = (bgColor == "#FFFFFF" || bgColor == "#FFA586") ? "#161E2F" : "#FFFFFF"; 
+            
+            var fontSize = random.Next(40, 75);
+            
+            await _shirtCanvas.AddTextAsync(text, fontSize, textColor, font);
+            
+            try
+            {
+                // Wait 1.5 seconds before generating the next design
+                await Task.Delay(1500, _cts.Token);
+            }
+            catch (TaskCanceledException)
+            {
+                break;
+            }
+        }
+    }
+
+    private async Task HandleAddOrder()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            NavManager.NavigateTo("/add-order");
+        }
+        else
+        {
+            NavManager.NavigateTo("/login");
+        }
+    }
+
+    private async Task HandleViewOrder()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated == true)
+        {
+            NavManager.NavigateTo("/dashboard");
+        }
+        else
+        {
+            NavManager.NavigateTo("/login");
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        _cts.Cancel();
+        _cts.Dispose();
+        await Task.CompletedTask;
+    }
+}

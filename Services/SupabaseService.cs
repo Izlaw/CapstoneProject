@@ -182,6 +182,7 @@ public class SupabaseService
     public async Task<Session?> LoginAsync(string email, string password)
     {
         var session = await _supabase.Auth.SignIn(email, password);
+        await EnsureProfileExistsAsync(session?.User);
         return session;
     }
 
@@ -195,7 +196,30 @@ public class SupabaseService
             }
         };
         var session = await _supabase.Auth.SignUp(email, password, options);
+        await EnsureProfileExistsAsync(session?.User);
         return session;
+    }
+
+    private async Task EnsureProfileExistsAsync(Supabase.Gotrue.User? user)
+    {
+        if (user == null) return;
+        
+        var profile = await GetUserProfileAsync(user.Id);
+        if (profile == null)
+        {
+            var newProfile = new UserProfileModel
+            {
+                Id = user.Id,
+                FullName = user.UserMetadata.TryGetValue("full_name", out var fn) && fn != null ? fn.ToString() : user.Email,
+                Role = "customer",
+                CreatedAt = DateTime.UtcNow
+            };
+            try
+            {
+                await _supabase.From<UserProfileModel>().Insert(newProfile);
+            }
+            catch { /* Ignore if it already exists or fails */ }
+        }
     }
 
     public async Task<UserProfileModel?> GetUserProfileAsync(string userId)

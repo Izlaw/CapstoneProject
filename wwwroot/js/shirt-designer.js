@@ -282,3 +282,10 @@ export function setCameraView(view) {
     controls.target.set(0, 0, 0);
     controls.update();
 }
+
+export function setAutoSpin(enable) {
+    if (controls) {
+        controls.autoRotate = enable;
+        controls.autoRotateSpeed = 2.0;
+    }
+}

@@ -1,77 +1,48 @@
-.page {
-    position: relative;
-    display: flex;
-    flex-direction: column;
+/* Appbar styling */
+::deep .glass-appbar {
+    backdrop-filter: blur(20px);
+    background: var(--mud-palette-appbar-background) !important;
+    border-bottom: 1px solid color-mix(in srgb, var(--mud-palette-text-primary) 6%, transparent);
 }
 
-main {
-    flex: 1;
+.nav-brand {
+    text-decoration: none;
+    color: inherit;
 }
 
-.sidebar {
-    background-image: linear-gradient(180deg, rgb(5, 39, 103) 0%, #3a0647 70%);
+/* Nav Buttons */
+::deep .nav-btn {
+    font-weight: 500;
+    font-size: 0.9rem;
+    color: var(--mud-palette-text-secondary) !important;
 }
 
-.top-row {
-    background-color: #f7f7f7;
-    border-bottom: 1px solid #d6d5d5;
-    justify-content: flex-end;
-    height: 3.5rem;
-    display: flex;
-    align-items: center;
+/* User Chip */
+::deep .user-chip {
+    background: color-mix(in srgb, var(--mud-palette-secondary) 12%, transparent) !important;
+    color: var(--mud-palette-secondary) !important;
+    border: 1px solid color-mix(in srgb, var(--mud-palette-secondary) 20%, transparent) !important;
+    border-radius: 100px !important;
+    margin: 0 12px;
+    font-weight: 600;
+    font-size: 0.78rem;
 }
 
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        white-space: nowrap;
-        margin-left: 1.5rem;
-        text-decoration: none;
-    }
-
-    .top-row ::deep a:hover, .top-row ::deep .btn-link:hover {
-        text-decoration: underline;
-    }
-
-    .top-row ::deep a:first-child {
-        overflow: hidden;
-        text-overflow: ellipsis;
-    }
-
-@media (max-width: 640.98px) {
-    .top-row {
-        justify-content: space-between;
-    }
-
-    .top-row ::deep a, .top-row ::deep .btn-link {
-        margin-left: 0;
-    }
+/* Rounded Action Buttons */
+::deep .action-btn-outlined {
+    border-radius: 100px;
+    font-weight: 600;
 }
 
-@media (min-width: 641px) {
-    .page {
-        flex-direction: row;
-    }
+::deep .primary-action-btn {
+    border-radius: 100px;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    padding: 0.4rem 1.25rem !important;
+}
 
-    .sidebar {
-        width: 250px;
-        height: 100vh;
-        position: sticky;
-        top: 0;
-    }
-
-    .top-row {
-        position: sticky;
-        top: 0;
-        z-index: 1;
-    }
-
-    .top-row.auth ::deep a:first-child {
-        flex: 1;
-        text-align: right;
-        width: 0;
-    }
-
-    .top-row, article {
-        padding-left: 2rem !important;
-        padding-right: 1.5rem !important;
-    }
+/* Main Content */
+::deep .main-content {
+    padding: 0;
+    margin-top: 64px;
 }
