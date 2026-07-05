@@ -5,107 +5,39 @@
 
 <PageTitle>Home — 7 Guys House of Fashion</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.ExtraLarge" Class="home-container">
-    <MudGrid Class="hero-grid" Spacing="6" Justify="Justify.Center" AlignItems="AlignItems.Center">
+<MudContainer MaxWidth="MaxWidth.False" Class="home-container">
+    <MudGrid Spacing="0" Class="hero-grid">
         
-        <!-- Left Column: Copy & CTA -->
-        <MudItem xs="12" md="6" Class="hero-content">
-            <MudText Typo="Typo.h1" Class="hero-headline" Style="font-family: 'Outfit', sans-serif; font-weight: 300; line-height: 1.1; letter-spacing: -0.02em;">
-                Bespoke 3D<br/>Tailoring.
+        <!-- Left Column -->
+        <MudItem xs="12" md="5" lg="4" Class="d-flex flex-column justify-center px-8 px-md-16">
+            <MudText Typo="Typo.h1" Class="hero-title">
+                <span style="font-weight: 600;">YOU</span> design.<br/>
+                <span style="font-weight: 600;">WE</span> create.
             </MudText>
-            <MudText Typo="Typo.h6" Class="hero-subtext mt-4" Style="font-family: 'Outfit', sans-serif; font-weight: 300; color: var(--mud-palette-text-secondary); max-width: 450px;">
-                Design your identity with precise control and real-time visualization.
+            <MudText Typo="Typo.h6" Class="hero-subtitle mt-4">
+                What you design, we bring to reality.
             </MudText>
             
-            <div class="hero-actions mt-8 d-flex flex-wrap gap-4">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="HandleAddOrder" Class="btn-primary-minimal">
+            <div class="d-flex flex-wrap gap-4 mt-8">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="HandleAddOrder" Class="hero-btn">
                     Start Customizing
                 </MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" OnClick="HandleViewOrder" Class="btn-secondary-minimal">
+                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" OnClick="HandleViewOrder" Class="hero-btn hero-btn-outline">
                     Track Order
                 </MudButton>
             </div>
         </MudItem>
 
-        <!-- Right Column: Visual -->
-        <MudItem xs="12" md="6" Class="hero-visual d-flex justify-center align-center">
+        <!-- Right Column -->
+        <MudItem xs="12" md="7" lg="8" Class="hero-visual pa-0">
             <div class="hero-3d-wrapper">
                 <ShirtCanvasComponent @ref="_shirtCanvas" OnModuleReady="OnShirtReady" ShowControls="false" />
             </div>
-            <!-- Hidden fabric canvas required by ShirtCanvasComponent initialization -->
             <canvas id="fabric-canvas" style="display:none;"></canvas>
         </MudItem>
 
     </MudGrid>
 </MudContainer>
-
-<style>
-    .home-container {
-        min-height: calc(100vh - 64px);
-        display: flex;
-        background-color: var(--mud-palette-background);
-        padding: 4rem 2rem;
-    }
-
-    .hero-grid {
-        width: 100%;
-    }
-
-    @@media (max-width: 900px) {
-        .hero-content {
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        
-        .hero-actions {
-            justify-content: center;
-        }
-        
-        .hero-subtext {
-            margin: 0 auto;
-        }
-    }
-
-    .btn-primary-minimal {
-        padding: 0.75rem 2rem;
-        font-family: 'Outfit', sans-serif;
-        font-weight: 500;
-        text-transform: none;
-        letter-spacing: 0;
-        border-radius: 4px;
-    }
-
-    .btn-secondary-minimal {
-        padding: 0.75rem 2rem;
-        font-family: 'Outfit', sans-serif;
-        font-weight: 500;
-        text-transform: none;
-        letter-spacing: 0;
-        border-color: rgba(255, 255, 255, 0.2);
-        border-radius: 4px;
-    }
-
-    .btn-secondary-minimal:hover {
-        border-color: rgba(255, 255, 255, 0.6);
-    }
-
-    .hero-3d-wrapper {
-        width: 100%;
-        max-width: 600px;
-        aspect-ratio: 1 / 1;
-        position: relative;
-    }
-
-    /* Override the default container styles for a clean minimalist float */
-    ::deep .three-canvas-container {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-        border-radius: 0 !important;
-    }
-</style>
 
 @code {
     private ShirtCanvasComponent? _shirtCanvas;
@@ -196,3 +128,86 @@
         await Task.CompletedTask;
     }
 }
+
+<style>
+    /* 1. Layout Enforcers */
+    .home-container {
+        height: calc(100vh - 64px);
+        overflow-y: hidden;
+        background-color: var(--mud-palette-background);
+        display: flex;
+        padding: 0;
+    }
+    
+    .hero-grid {
+        flex-grow: 1;
+        margin: 0;
+    }
+
+    .hero-visual {
+        height: calc(100vh - 64px);
+        position: relative;
+    }
+
+    .hero-3d-wrapper {
+        width: 100%;
+        height: 100%;
+        z-index: 1;
+    }
+
+    /* 2. Typography & Buttons */
+    .hero-title, .hero-subtitle, .hero-btn {
+        font-family: 'Outfit', sans-serif;
+    }
+
+    .hero-title {
+        font-weight: 200;
+        line-height: 1.1;
+        letter-spacing: -0.04em;
+        font-size: clamp(3.5rem, 5vw, 5.5rem);
+        color: var(--mud-palette-text-primary);
+    }
+
+    .hero-subtitle {
+        font-weight: 300;
+        color: var(--mud-palette-text-secondary);
+        max-width: 450px;
+    }
+
+    .hero-btn {
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 0.75rem 2.5rem !important;
+        border-radius: 50px;
+        background: linear-gradient(135deg, #e62424 0%, #b30000 100%);
+        box-shadow: 0 4px 15px rgba(230, 36, 36, 0.3);
+        color: white;
+        transition: all 0.3s ease;
+        border: none;
+    }
+
+    .hero-btn:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(230, 36, 36, 0.5);
+    }
+
+    .hero-btn-outline {
+        background: transparent;
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: none;
+    }
+
+    .hero-btn-outline:hover {
+        border-color: rgba(255, 255, 255, 0.6);
+        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+
+    /* 3. Third-Party Canvas Overrides */
+    ::deep .three-canvas-container {
+        background: transparent !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+</style>
