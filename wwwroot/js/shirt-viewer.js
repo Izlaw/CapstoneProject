@@ -126,154 +126,11 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
         renderer.setSize(container.clientWidth, container.clientHeight);
     });
 
-    // ── Raycasting for Placement & Dragging ────────────────
-    const raycaster = new THREE.Raycaster();
-    const mouse = new THREE.Vector2();
-
-    let isDraggingDecal = false;
-    let isCameraDragging = false;
-    const pointerDownPos = new THREE.Vector2();
-
-    renderer.domElement.addEventListener('pointerdown', (event) => {
-        pointerDownPos.set(event.clientX, event.clientY);
-        isCameraDragging = false;
-
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-        raycaster.setFromCamera(mouse, camera);
-
-        const decalMeshes = decals.map(d => d.mesh);
-        const decalIntersects = raycaster.intersectObjects(decalMeshes, false);
-        
-        if (decalIntersects.length > 0) {
-            // Clicked a decal directly, start dragging it
-            isDraggingDecal = true;
-            controls.enabled = false;
-            const hitMesh = decalIntersects[0].object;
-            activeDecal = decals.find(d => d.mesh === hitMesh);
-            
-            // Hide real decal, show preview
-            activeDecal.mesh.visible = false;
-            dragPreviewMesh.material.map = activeDecal.texture;
-            dragPreviewMesh.scale.set(activeDecal.size / 0.6, activeDecal.size / 0.6, 1);
-            dragPreviewMesh.visible = true;
-            
-            triggerSelection();
-        }
-    });
-
-    renderer.domElement.addEventListener('pointermove', (event) => {
-        // Detect if the user is dragging the camera
-        if (!isDraggingDecal && pointerDownPos.distanceTo(new THREE.Vector2(event.clientX, event.clientY)) > 5) {
-            isCameraDragging = true;
-        }
-
-        if (isDraggingDecal && activeDecal && shirtGroup) {
-            const rect = renderer.domElement.getBoundingClientRect();
-            mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-            mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-            raycaster.setFromCamera(mouse, camera);
-
-            const shirtMeshes = [];
-            shirtGroup.traverse(c => { if (c.isMesh && !decals.find(d => d.mesh === c)) shirtMeshes.push(c); });
-            
-            const intersects = raycaster.intersectObjects(shirtMeshes, false);
-            if (intersects.length > 0) {
-                const hit = intersects[0];
-                
-                // Update preview mesh (instant)
-                dragPreviewMesh.position.copy(hit.point);
-                const n = hit.face.normal.clone();
-                n.transformDirection(hit.object.matrixWorld);
-                n.add(hit.point);
-                dragPreviewMesh.lookAt(n);
-                // Offset slightly along normal to prevent z-fighting
-                const offset = hit.face.normal.clone().normalize().multiplyScalar(0.01);
-                dragPreviewMesh.position.add(offset);
-            }
-        }
-    });
-
-    renderer.domElement.addEventListener('pointerup', (event) => {
-        if (isDraggingDecal) {
-            isDraggingDecal = false;
-            controls.enabled = true;
-            dragPreviewMesh.visible = false;
-            
-            if (activeDecal) {
-                // Bake the final position
-                const rect = renderer.domElement.getBoundingClientRect();
-                mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-                mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-                raycaster.setFromCamera(mouse, camera);
-                
-                const shirtMeshes = [];
-                shirtGroup.traverse(c => { if (c.isMesh && !decals.find(d => d.mesh === c)) shirtMeshes.push(c); });
-                const intersects = raycaster.intersectObjects(shirtMeshes, false);
-                
-                if (intersects.length > 0) {
-                    const hit = intersects[0];
-                    updateDecalPosition(activeDecal, hit.point, hit.face.normal, hit.object);
-                }
-                activeDecal.mesh.visible = true;
-            }
-            return;
-        }
-
-        if (isCameraDragging) {
-            // They were rotating the camera, don't move or deselect the decal
-            return;
-        }
-
-        // It was a clean, single click (not a drag)
-        const rect = renderer.domElement.getBoundingClientRect();
-        mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-        mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-        raycaster.setFromCamera(mouse, camera);
-
-        // Check if they clicked an existing decal
-        const decalMeshes = decals.map(d => d.mesh);
-        if (raycaster.intersectObjects(decalMeshes, false).length > 0) return; // Handled in pointerdown
-
-        if (activeDecal && shirtGroup) {
-            const shirtMeshes = [];
-            shirtGroup.traverse(c => { if (c.isMesh && !decals.find(d => d.mesh === c)) shirtMeshes.push(c); });
-            
-            const intersects = raycaster.intersectObjects(shirtMeshes, false);
-            if (intersects.length > 0) {
-                // Teleport active decal to click location
-                const hit = intersects[0];
-                updateDecalPosition(activeDecal, hit.point, hit.face.normal, hit.object);
-            } else {
-                // Clicked empty space, deselect
-                activeDecal = null;
-                triggerSelection();
-            }
-        }
-    });
-
     // ── Render Loop ────────────────────────────────────────
     renderer.setAnimationLoop(() => {
         if (controls) controls.update();
         renderer.render(scene, camera);
     });
-}
-
-function triggerSelection() {
-    if (!blazorRef) return;
-    if (activeDecal && activeDecal.type === 'text') {
-        blazorRef.invokeMethodAsync('HandleObjectSelected', {
-            type: 'text',
-            text: activeDecal.textData.text,
-            fontSize: activeDecal.textData.fontSize,
-            fill: activeDecal.textData.fillColor,
-            fontFamily: activeDecal.textData.fontFamily
-        });
-    } else {
-        blazorRef.invokeMethodAsync('HandleObjectCleared');
-    }
 }
 
 // ── Decal Helper Functions ─────────────────────────────────
@@ -366,7 +223,7 @@ export function setBackgroundColor(hex) {
     }
 }
 
-export function addText(text, fontSize, fillColor, fontFamily) {
+export function addText(text, fontSize, fillColor, fontFamily, originX = 0, originY = 0.2, originZ = 2, dirX = 0, dirY = 0, dirZ = -1) {
     const texture = createTextCanvasTexture(text, parseInt(fontSize)*2 || 100, fillColor, fontFamily);
     
     let shirtMesh = null;
@@ -375,13 +232,17 @@ export function addText(text, fontSize, fillColor, fontFamily) {
     }
     
     if (shirtMesh) {
-        // Raycast from front to hit the exact chest surface
+        // Raycast from the specific origin in the specific direction
         const rc = new THREE.Raycaster();
-        rc.set(new THREE.Vector3(0, 0.2, 2), new THREE.Vector3(0, 0, -1));
+        const origin = new THREE.Vector3(originX, originY, originZ);
+        const dir = new THREE.Vector3(dirX, dirY, dirZ).normalize();
+        rc.set(origin, dir);
         const intersects = rc.intersectObject(shirtMesh, false);
         
-        const point = intersects.length > 0 ? intersects[0].point : new THREE.Vector3(0, 0.2, 0.2);
-        const normal = intersects.length > 0 ? intersects[0].face.normal : new THREE.Vector3(0, 0, 1);
+        if (intersects.length === 0) return; // Missed the shirt completely!
+        
+        const point = intersects[0].point;
+        const normal = intersects[0].face.normal;
         
         const mesh = createDecalMesh(texture, point, normal, shirtMesh, 0.6);
         const decalObj = {
@@ -392,28 +253,10 @@ export function addText(text, fontSize, fillColor, fontFamily) {
             textData: { text, fontSize, fillColor, fontFamily }
         };
         decals.push(decalObj);
-        activeDecal = decalObj;
-        triggerSelection();
     }
 }
 
-export function updateSelectedText(properties) {
-    if (activeDecal && activeDecal.type === 'text') {
-        const text = properties.text !== undefined ? properties.text : activeDecal.textData.text;
-        const fontSize = properties.fontSize !== undefined ? properties.fontSize : activeDecal.textData.fontSize;
-        const fillColor = properties.fill !== undefined ? properties.fill : activeDecal.textData.fillColor;
-        const fontFamily = properties.fontFamily !== undefined ? properties.fontFamily : activeDecal.textData.fontFamily;
-        
-        activeDecal.textData = { text, fontSize, fillColor, fontFamily };
-        const newTexture = createTextCanvasTexture(text, parseInt(fontSize)*2 || 100, fillColor, fontFamily);
-        activeDecal.texture.dispose();
-        activeDecal.texture = newTexture;
-        activeDecal.mesh.material.map = newTexture;
-        activeDecal.mesh.material.needsUpdate = true;
-    }
-}
-
-export function addImageFromDataUrl(dataUrl) {
+export function addImage(dataUrl, size = 0.6, originX = 0, originY = 0.2, originZ = 2, dirX = 0, dirY = 0, dirZ = -1) {
     const img = new Image();
     img.src = dataUrl;
     img.onload = () => {
@@ -428,55 +271,100 @@ export function addImageFromDataUrl(dataUrl) {
         
         if (shirtMesh) {
             const rc = new THREE.Raycaster();
-            rc.set(new THREE.Vector3(0, 0.2, 2), new THREE.Vector3(0, 0, -1));
+            const origin = new THREE.Vector3(originX, originY, originZ);
+            const dir = new THREE.Vector3(dirX, dirY, dirZ).normalize();
+            rc.set(origin, dir);
             const intersects = rc.intersectObject(shirtMesh, false);
             
-            const point = intersects.length > 0 ? intersects[0].point : new THREE.Vector3(0, 0.2, 0.2);
-            const normal = intersects.length > 0 ? intersects[0].face.normal : new THREE.Vector3(0, 0, 1);
+            if (intersects.length === 0) return;
             
-            const mesh = createDecalMesh(texture, point, normal, shirtMesh, 0.6);
+            const point = intersects[0].point;
+            const normal = intersects[0].face.normal;
+            
+            const mesh = createDecalMesh(texture, point, normal, shirtMesh, size);
             const decalObj = {
                 type: 'image',
                 mesh: mesh,
                 texture: texture,
-                size: 0.6
+                size: size
             };
             decals.push(decalObj);
-            activeDecal = decalObj;
-            triggerSelection();
         }
     };
 }
 
-export function deleteSelectedObject() {
-    if (activeDecal) {
-        scene.remove(activeDecal.mesh);
-        activeDecal.mesh.geometry.dispose();
-        activeDecal.mesh.material?.dispose();
-        activeDecal.texture?.dispose();
-        
-        const index = decals.indexOf(activeDecal);
-        if (index > -1) decals.splice(index, 1);
-        
-        activeDecal = null;
-        triggerSelection();
+export async function applyDesignBatch(config) {
+    // 1. Preload any images asynchronously FIRST
+    const loadedItems = await Promise.all((config.items || []).map(async item => {
+        if (item.type === 'image') {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = item.dataUrl;
+                img.onload = () => resolve({ ...item, loadedImg: img });
+                img.onerror = () => resolve(null);
+            });
+        }
+        return item;
+    }));
+
+    // 2. Everything is ready, now clear the old design! (No flickering)
+    clearDesign();
+
+    // 3. Set shirt color
+    if (config.color) {
+        setColor(config.color);
+    }
+
+    // 4. Apply items instantly
+    let shirtMesh = null;
+    if (shirtGroup) {
+        shirtGroup.traverse(c => { if (c.isMesh && !shirtMesh) shirtMesh = c; });
+    }
+
+    if (shirtMesh) {
+        loadedItems.filter(x => x !== null).forEach(item => {
+            const rc = new THREE.Raycaster();
+            const origin = new THREE.Vector3(item.originX, item.originY, item.originZ);
+            const dir = new THREE.Vector3(item.dirX, item.dirY, item.dirZ).normalize();
+            rc.set(origin, dir);
+            const intersects = rc.intersectObject(shirtMesh, false);
+            
+            if (intersects.length === 0) return;
+            
+            const point = intersects[0].point;
+            const normal = intersects[0].face.normal;
+            
+            let texture = null;
+            if (item.type === 'text') {
+                texture = createTextCanvasTexture(item.text, parseInt(item.fontSize)*2 || 100, item.color, item.font);
+            } else if (item.type === 'image') {
+                texture = new THREE.Texture(item.loadedImg);
+                texture.needsUpdate = true;
+                texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            }
+
+            if (texture) {
+                const mesh = createDecalMesh(texture, point, normal, shirtMesh, item.size || 0.6);
+                decals.push({
+                    type: item.type,
+                    mesh: mesh,
+                    texture: texture,
+                    size: item.size || 0.6
+                });
+            }
+        });
     }
 }
 
-export function deselectActiveObject() {
-    activeDecal = null;
-    triggerSelection();
-}
 
-export function clearCanvas() {
+
+export function clearDesign() {
     decals.forEach(d => {
         scene.remove(d.mesh);
         d.mesh.geometry.dispose();
         d.texture?.dispose();
     });
     decals.length = 0;
-    activeDecal = null;
-    triggerSelection();
 }
 
 export function setCameraView(view) {

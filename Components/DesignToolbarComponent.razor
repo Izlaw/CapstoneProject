@@ -2,27 +2,63 @@
 <!--  COLOR SECTION                                           -->
 <!-- ════════════════════════════════════════════════════════ -->
 <div class="tool-section">
-    <p class="tool-section-title">🎨 &nbsp;Shirt Color</p>
-    <div class="color-swatches">
-        @foreach (var swatch in _swatches)
-        {
-            <div class="color-swatch @(_selectedColor == swatch ? "active" : "")"
-                 style="background-color: @swatch;"
-                 title="@swatch"
-                 id="swatch-@swatch.Replace("#","")"
-                 @onclick="() => SelectColor(swatch)">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
+        <p class="tool-section-title" style="margin: 0;">🎨 &nbsp;Colors</p>
+        <div style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px;">
+            <div style="padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.2s ease; @(_activeColorTab == "Shirt" ? "background:var(--mud-palette-primary); color:white;" : "color:#9998b3;")"
+                 @onclick='() => _activeColorTab = "Shirt"'>
+                Shirt
             </div>
-        }
+            <div style="padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.2s ease; @(_activeColorTab == "Background" ? "background:var(--mud-palette-primary); color:white;" : "color:#9998b3;")"
+                 @onclick='() => _activeColorTab = "Background"'>
+                Background
+            </div>
+        </div>
     </div>
-    <div style="display:flex; gap:0.75rem; align-items:center; margin-top:1rem;">
-        <input type="color"
-               value="@_selectedColor"
-               id="custom-color-input"
-               style="width:40px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
-               @oninput="OnCustomColorInput" />
-        <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom color</MudText>
-        <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@_selectedColor</MudText>
-    </div>
+
+    @if (_activeColorTab == "Shirt")
+    {
+        <div class="color-swatches">
+            @foreach (var swatch in _swatches)
+            {
+                <div class="color-swatch @(_selectedColor == swatch ? "active" : "")"
+                     style="background-color: @swatch;"
+                     title="@swatch"
+                     @onclick="() => SelectColor(swatch)">
+                </div>
+            }
+        </div>
+        <div style="display:flex; gap:0.75rem; align-items:center; margin-top:1rem;">
+            <input type="color"
+                   value="@_selectedColor"
+                   id="custom-color-input"
+                   style="width:40px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
+                   @onchange="OnCustomColorInput" />
+            <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom color</MudText>
+            <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@_selectedColor</MudText>
+        </div>
+    }
+    else if (_activeColorTab == "Background")
+    {
+        <div class="color-swatches">
+            @foreach (var swatch in _swatches)
+            {
+                <div class="color-swatch @(_backgroundColor == swatch ? "active" : "")"
+                     style="background-color: @swatch;"
+                     title="@swatch"
+                     @onclick="() => SelectBgColor(swatch)">
+                </div>
+            }
+        </div>
+        <div style="display:flex; gap:0.75rem; align-items:center; margin-top:1rem;">
+            <input type="color"
+                   value="@_backgroundColor"
+                   style="width:40px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
+                   @onchange="OnCustomBgColorInput" />
+            <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom bg</MudText>
+            <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@_backgroundColor</MudText>
+        </div>
+    }
 </div>
 
 <!-- ════════════════════════════════════════════════════════ -->
@@ -141,6 +177,7 @@
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
     [Parameter] public EventCallback<string> OnColorChanged { get; set; }
+    [Parameter] public EventCallback<string> OnBackgroundColorChanged { get; set; }
     [Parameter] public EventCallback<(string, int, string, string)> OnTextAdded { get; set; }
     [Parameter] public EventCallback<(string, int, string, string)> OnTextUpdated { get; set; }
     [Parameter] public EventCallback<string> OnLogoUploaded { get; set; }
@@ -149,7 +186,9 @@
     [Parameter] public EventCallback OnDeselect { get; set; }
 
     // Color state
+    private string _activeColorTab = "Shirt";
     private string _selectedColor = "#ffffff";
+    private string _backgroundColor = "#f5f5f5";
     private readonly string[] _swatches =
     [
         "#ffffff", "#f8fafc", "#1e293b", "#0f172a",
@@ -201,6 +240,18 @@
     {
         _selectedColor = e.Value?.ToString() ?? "#ffffff";
         await OnColorChanged.InvokeAsync(_selectedColor);
+    }
+
+    private async Task SelectBgColor(string hex)
+    {
+        _backgroundColor = hex;
+        await OnBackgroundColorChanged.InvokeAsync(hex);
+    }
+
+    private async Task OnCustomBgColorInput(ChangeEventArgs e)
+    {
+        _backgroundColor = e.Value?.ToString() ?? "#f5f5f5";
+        await OnBackgroundColorChanged.InvokeAsync(_backgroundColor);
     }
 
     private async Task OnTextColorChange(ChangeEventArgs e)

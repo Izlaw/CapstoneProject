@@ -8,7 +8,7 @@
 @inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<PageTitle>Designer — ThreadStudio</PageTitle>
+<PageTitle>Designer - ThreadStudio</PageTitle>
 
 <div class="designer-layout">
     <div class="designer-canvas-area">
@@ -20,6 +20,7 @@
     <div class="designer-tools-area">
         <DesignToolbarComponent @ref="_toolbar"
             OnColorChanged="HandleColorChanged"
+            OnBackgroundColorChanged="HandleBackgroundColorChanged"
             OnTextAdded="HandleTextAdded"
             OnTextUpdated="HandleTextUpdated"
             OnLogoUploaded="HandleLogoUploaded"
@@ -58,6 +59,11 @@
     {
         DesignSvc.SetColor(hex);
         await _shirtCanvas.SetColorAsync(hex);
+    }
+
+    private async Task HandleBackgroundColorChanged(string hex)
+    {
+        await _shirtCanvas.SetBackgroundColorAsync(hex);
     }
 
     private async Task HandleTextAdded((string text, int size, string color, string font) args)
