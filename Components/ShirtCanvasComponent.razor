@@ -93,7 +93,13 @@
     public async Task DeleteSelectedAsync()
     {
         if (Module is null) return;
-        await Module.InvokeVoidAsync("deleteSelected");
+        await Module.InvokeVoidAsync("deleteSelectedObject"); // Fix from deleteSelected
+    }
+
+    public async Task DeselectActiveObjectAsync()
+    {
+        if (Module is null) return;
+        await Module.InvokeVoidAsync("deselectActiveObject");
     }
     
     public async Task SetCameraViewAsync(string view)

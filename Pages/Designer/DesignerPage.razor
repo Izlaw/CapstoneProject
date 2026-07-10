@@ -24,7 +24,8 @@
             OnTextUpdated="HandleTextUpdated"
             OnLogoUploaded="HandleLogoUploaded"
             OnClearDesign="HandleClearDesign"
-            OnDeleteSelected="HandleDeleteSelected" />
+            OnDeleteSelected="HandleDeleteSelected"
+            OnDeselect="HandleDeselect" />
 
         <ExportPanelComponent
             OnExport="HandleExport"
@@ -87,6 +88,11 @@
     private async Task HandleDeleteSelected()
     {
         await _shirtCanvas.DeleteSelectedAsync();
+    }
+
+    private async Task HandleDeselect()
+    {
+        await _shirtCanvas.DeselectActiveObjectAsync();
     }
 
     private async Task HandleExport()

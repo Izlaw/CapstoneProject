@@ -1,5 +1,5 @@
 /* =============================================================
-   ThreadStudio — Design System v2 (Phase 5 UI Finalization)
+   ThreadStudio ï¿½ Design System v2 (Phase 5 UI Finalization)
    Color Palette: Deep Navy + Crimson + Warm Coral
    ============================================================= */
 
@@ -251,7 +251,7 @@ html, body {
    DESIGNER PAGE
    ============================================================ */
 .designer-layout {
-  display: grid; grid-template-columns: 1fr 340px; gap: 1rem;
+  display: grid; grid-template-columns: 1fr 420px; gap: 1rem;
   height: calc(100vh - 64px); padding: 1rem; overflow: hidden;
 }
 .designer-canvas-area { position: relative; height: 100%; min-height: 0; }
