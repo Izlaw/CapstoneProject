@@ -17,6 +17,6 @@ public class ExportService
         if (string.IsNullOrEmpty(dataUrl)) return;
 
         // Trigger browser download via interop
-        await _js.InvokeVoidAsync("downloadDataUrl", dataUrl, $"threadstudio-design-{DateTime.Now:yyyyMMdd-HHmmss}.png");
+        await _js.InvokeVoidAsync("downloadDataUrl", dataUrl, $"7guys-design-{DateTime.Now:yyyyMMdd-HHmmss}.png");
     }
 }
