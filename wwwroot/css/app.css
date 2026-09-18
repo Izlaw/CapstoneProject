@@ -47,11 +47,8 @@ html, body {
 .loading-logo { font-size: 2.8rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
 .loading-logo .accent { background: linear-gradient(135deg, #B4182D, #FDA481); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
 .loading-spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
-.loading-bar-track { width: 160px; height: 3px; background: rgba(255,255,255,0.08); border-radius: 100px; overflow: hidden; }
-.loading-bar-fill { height: 100%; background: linear-gradient(90deg, var(--primary), var(--accent)); border-radius: 100px; animation: loadFill 2s ease-in-out infinite; }
 .loading-text { font-size: 0.78rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
 @keyframes spin { to { transform: rotate(360deg); } }
-@keyframes loadFill { 0%{width:0%} 60%{width:90%} 100%{width:100%} }
 
 /* -- Nav Brand --------------------------------------- */
 .nav-brand { font-size: 1.25rem; font-weight: 800; text-decoration: none !important; color: var(--text-primary) !important; letter-spacing: -0.02em; }
