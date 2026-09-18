@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@using CapstoneProject.Commons
 
 <MudThemeProvider Theme="_theme" IsDarkMode="true" />
 <MudPopoverProvider />
@@ -80,10 +81,19 @@
     [Inject] private Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider { get; set; } = default!;
     [Inject] private NavigationManager NavManager { get; set; } = default!;
     [Inject] private CapstoneProject.Services.SupabaseService SupabaseSvc { get; set; } = default!;
+    [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
     private async Task HandleLogout()
     {
-        await SupabaseSvc.LogoutAsync();
-        NavManager.NavigateTo("/");
+        try
+        {
+            await SupabaseSvc.LogoutAsync();
+            NavManager.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Failed to log out. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+        }
     }
 }

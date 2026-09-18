@@ -1,6 +1,8 @@
 @page "/login"
+@using CapstoneProject.Commons
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
 @inject NavigationManager NavManager
+@inject ISnackbar Snackbar
 
 <PageTitle>Login - 7Guys House of Fashion</PageTitle>
 
@@ -9,11 +11,6 @@
         <div class="d-flex justify-center mb-6">
             <h2 class="nav-brand">THREAD<span class="brand-accent">STUDIO</span></h2>
         </div>
-        
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
-        }
 
         <MudTextField @bind-Value="Email" Label="Email" Variant="Variant.Outlined" Class="mb-4" Disabled="@_isLoading" />
         <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-6" Disabled="@_isLoading" />
@@ -43,12 +40,11 @@
     public string Password { get; set; } = "";
     
     private bool _isLoading = false;
-    private string _errorMessage = "";
 
     private async Task HandleLogin()
     {
+        if (_isLoading) return;
         _isLoading = true;
-        _errorMessage = "";
 
         try
         {
@@ -57,7 +53,7 @@
             {
                 // Fetch profile to check role for RBAC
                 var profile = await SupabaseSvc.GetUserProfileAsync(session.User.Id);
-                
+
                 if (profile != null && (profile.Role == "employee" || profile.Role == "admin"))
                 {
                     NavManager.NavigateTo("/employee/dashboard");
@@ -69,12 +65,12 @@
             }
             else
             {
-                _errorMessage = "Invalid login credentials.";
+                Extension.ShowAlert("Invalid email or password.", Variant.Filled, Snackbar, Severity.Error);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _errorMessage = ex.Message;
+            Extension.ShowAlert("Invalid email or password.", Variant.Filled, Snackbar, Severity.Error);
         }
         finally
         {

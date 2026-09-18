@@ -1,6 +1,8 @@
 @page "/order-preview/{Id}"
+@using CapstoneProject.Commons
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
 @layout MainLayout
 
 <PageTitle>Digital Receipt - 7Guys House of Fashion</PageTitle>
@@ -190,7 +192,7 @@
         else
         {
             _newMessage = msgText; // Restore if failed
-            // Show error in a real app
+            Extension.ShowAlert("Failed to send message. Please try again.", Variant.Filled, Snackbar, Severity.Error);
         }
     }
 }

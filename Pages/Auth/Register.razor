@@ -1,6 +1,8 @@
 @page "/register"
+@using CapstoneProject.Commons
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
 @inject NavigationManager NavManager
+@inject ISnackbar Snackbar
 
 <PageTitle>Register - 7Guys House of Fashion</PageTitle>
 
@@ -10,11 +12,6 @@
             <h2 class="nav-brand mb-2">THREAD<span class="brand-accent">STUDIO</span></h2>
             <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Create an account to start customizing!</MudText>
         </div>
-        
-        @if (!string.IsNullOrEmpty(_errorMessage))
-        {
-            <MudAlert Severity="Severity.Error" Class="mb-4">@_errorMessage</MudAlert>
-        }
 
         <MudGrid>
             <MudItem xs="12" sm="6">
@@ -67,24 +64,24 @@
     public string Address { get; set; } = "";
     
     private bool _isLoading = false;
-    private string _errorMessage = "";
 
     private async Task HandleRegister()
     {
+        if (_isLoading) return;
+
         if (Password != ConfirmPassword)
         {
-            _errorMessage = "Passwords do not match.";
+            Extension.ShowAlert("Passwords do not match.", Variant.Filled, Snackbar, Severity.Error);
             return;
         }
 
         _isLoading = true;
-        _errorMessage = "";
 
         try
         {
             var fullName = $"{FirstName} {LastName}".Trim();
             var session = await SupabaseSvc.RegisterAsync(Email, Password, fullName);
-            
+
             if (session != null && session.User != null)
             {
                 // After registration, update their profile with Address/Phone
@@ -94,12 +91,12 @@
             }
             else
             {
-                _errorMessage = "Registration failed. Please check your details.";
+                Extension.ShowAlert("Registration failed. Please check your details.", Variant.Filled, Snackbar, Severity.Error);
             }
         }
-        catch (Exception ex)
+        catch (Exception)
         {
-            _errorMessage = ex.Message;
+            Extension.ShowAlert("Registration failed. Please check your details.", Variant.Filled, Snackbar, Severity.Error);
         }
         finally
         {

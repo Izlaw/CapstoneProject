@@ -1,4 +1,5 @@
 @page "/employee/dashboard"
+@using CapstoneProject.Commons
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
 @inject ISnackbar Snackbar
 
@@ -86,11 +87,11 @@
         
         if (success)
         {
-            Snackbar.Add($"Order #{order.Id.Substring(0, 8)} status updated to {newStatus}", Severity.Success);
+            Extension.ShowAlert($"Order #{order.Id.Substring(0, 8)} status updated to {newStatus}", Variant.Filled, Snackbar, Severity.Success);
         }
         else
         {
-            Snackbar.Add("Failed to update order status.", Severity.Error);
+            Extension.ShowAlert("Failed to update order status.", Variant.Filled, Snackbar, Severity.Error);
         }
     }
 }

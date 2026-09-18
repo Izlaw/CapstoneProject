@@ -1,4 +1,5 @@
 @page "/designer"
+@using CapstoneProject.Commons
 @inject DesignService DesignSvc
 @inject ExportService ExportSvc
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
@@ -130,7 +131,7 @@
 
             if (!string.IsNullOrEmpty(orderId))
             {
-                Snackbar.Add("Order successfully placed!", Severity.Success);
+                Extension.ShowAlert("Order successfully placed!", Variant.Filled, Snackbar, Severity.Success);
                 
                 var parameters = new DialogParameters<CapstoneProject.Dialogs.OrderSuccessDialog>
                 {
@@ -147,12 +148,13 @@
             }
             else
             {
-                Snackbar.Add("Failed to place order. Check Supabase table.", Severity.Error);
+                Extension.ShowAlert("Failed to place order. Please try again.", Variant.Filled, Snackbar, Severity.Error);
             }
         }
         catch (Exception ex)
         {
-            Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Something went wrong while saving your order.", Variant.Filled, Snackbar, Severity.Error);
         }
         finally
         {
