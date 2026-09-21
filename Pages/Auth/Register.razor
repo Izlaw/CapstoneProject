@@ -6,12 +6,11 @@
 
 <PageTitle>Register - 7Guys House of Fashion</PageTitle>
 
-<div class="d-flex justify-center align-center py-12" style="min-height: 100vh; background-color: var(--bg-base);">
-    <MudPaper Class="pa-8" Elevation="4" Style="width: 100%; max-width: 600px; border-radius: 12px; background-color: var(--bg-surface);">
-        <div class="d-flex flex-column align-center mb-6">
-            <h2 class="nav-brand mb-2">THREAD<span class="brand-accent">STUDIO</span></h2>
-            <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Create an account to start customizing!</MudText>
-        </div>
+<div class="auth-page">
+    <div class="auth-back auth-back-wide"><BackButtonComponent Href="/" Text="Back to Home" /></div>
+    <MudPaper Class="auth-card auth-card-wide" Elevation="0">
+        <span class="auth-brand">7 Guys <span class="brand-accent">House of Fashion</span></span>
+        <MudText Typo="Typo.body2" Align="Align.Center" Class="mb-6" Style="color: var(--text-secondary);">Create an account to start ordering.</MudText>
 
         <MudGrid>
             <MudItem xs="12" sm="6">

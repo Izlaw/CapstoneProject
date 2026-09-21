@@ -17,7 +17,7 @@
         @if (ShowControls)
         {
             <div style="position:absolute; bottom:16px; left:50%; transform:translateX(-50%); z-index:10;">
-                <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled" OverrideStyles="false">
+                <MudButtonGroup Color="Color.Primary" Variant="Variant.Filled" OverrideStyles="false" Class="view-switcher">
                     <MudButton OnClick="@(() => SetCameraViewAsync("front"))">Front</MudButton>
                     <MudButton OnClick="@(() => SetCameraViewAsync("back"))">Back</MudButton>
                     <MudButton OnClick="@(() => SetCameraViewAsync("left"))">Side</MudButton>

@@ -5,285 +5,217 @@
 
 <PageTitle>Home - 7 Guys House of Fashion</PageTitle>
 
-<MudContainer MaxWidth="MaxWidth.False" Class="home-container">
-    <MudGrid Spacing="0" Class="hero-grid">
-        
-        <!-- Left Column -->
-        <MudItem xs="12" md="5" lg="4" Class="d-flex flex-column justify-center px-8 px-md-16">
-            <MudText Typo="Typo.h1" Class="hero-title">
-                <span style="font-weight: 600;">YOU</span> design.<br/>
-                <span style="font-weight: 600;">WE</span> create.
-            </MudText>
-            <MudText Typo="Typo.h6" Class="hero-subtitle mt-4">
-                What you design, we bring to reality.
-            </MudText>
-            
-            <div class="d-flex flex-wrap gap-4 mt-8">
-                <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" OnClick="HandleAddOrder" Class="hero-btn">
-                    Start Customizing
-                </MudButton>
-                <MudButton Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" OnClick="HandleViewOrder" Class="hero-btn hero-btn-outline">
-                    Track Order
-                </MudButton>
-            </div>
-        </MudItem>
+<section class="home-hero">
+    <div class="home-copy">
+        <span class="home-eyebrow">Custom Apparel Studio</span>
+        <h1 class="home-title">
+            <strong>YOU</strong> design.<br />
+            <strong class="home-title-accent">WE</strong> create.
+        </h1>
+        <p class="home-lead">What you design, we bring to reality.</p>
 
-        <!-- Right Column -->
-        <MudItem xs="12" md="7" lg="8" Class="hero-visual pa-0">
-            <div class="hero-3d-wrapper">
-                <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="OnShirtReady" ShowControls="false" />
-            </div>
-            <canvas id="fabric-canvas" style="display:none;"></canvas>
-        </MudItem>
+        <div class="home-actions">
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" DropShadow="false"
+                       OnClick="StartCustomizing" Class="home-btn">
+                Start Customizing
+            </MudButton>
+            <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Large"
+                       OnClick="TrackOrder" Class="home-btn home-btn-outline">
+                Track Order
+            </MudButton>
+        </div>
 
-    </MudGrid>
-</MudContainer>
+        <ol class="home-steps">
+            <li>Design</li>
+            <li>Order</li>
+            <li>Delivered</li>
+        </ol>
+    </div>
+
+    <div class="home-stage">
+        <div class="home-viewer">
+            <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="OnShirtReady" ShowControls="false" />
+        </div>
+
+        <div class="home-stage-bar">
+            <span class="home-swatch" style="background-color: @_currentColor;"></span>
+            <span class="home-stage-label">Live Preview @_currentColor</span>
+            <button type="button" class="home-stage-toggle" aria-pressed="@(_isPaused ? "true" : "false")" @onclick="TogglePlayback">
+                @(_isPaused ? "Resume" : "Pause")
+            </button>
+        </div>
+    </div>
+</section>
 
 @code {
+    #region Properties
     private ShirtViewerComponent? _shirtViewer;
-    private CancellationTokenSource _cts = new();
-    
-    private async Task OnShirtReady()
-    {
-        if (_shirtViewer == null) return;
-        
-        // Enable Auto Spin to captivate attention
-        await _shirtViewer.SetAutoSpinAsync(true);
-        
-        // Start the background loop
-        _ = RunRandomizerLoopAsync();
-    }
+    private readonly CancellationTokenSource _cts = new();
+    private readonly Random _random = new();
+    private const string PageBackgroundColor = "#10121F";
+    private string _currentColor = "#B4182D";
+    private bool _isPaused;
 
-    private async Task RunRandomizerLoopAsync()
-    {
-        var random = new Random();
-        
-        var prefixes = new[] { "THE", "URBAN", "PROJECT", "NEO", "VINTAGE", "STUDIO", "RAW", "7G", "AURA", "STREET" };
-        var suffixes = new[] { "CULTURE", "SOCIETY", "WEAR", "COLLECTION", "EST 2026", "VISION", "THREADS", "MINDSET", "CORE" };
-        var fonts = new[] { "Outfit", "Arial", "Impact", "Courier New", "Georgia", "Verdana", "Trebuchet MS", "Tahoma" };
+    private static readonly string[] Prefixes = { "THE", "URBAN", "PROJECT", "NEO", "VINTAGE", "STUDIO", "RAW", "7G", "AURA", "STREET" };
+    private static readonly string[] Suffixes = { "CULTURE", "SOCIETY", "WEAR", "COLLECTION", "EST 2026", "VISION", "THREADS", "MINDSET", "CORE" };
+    private static readonly string[] Fonts = { "Outfit", "Arial", "Impact", "Courier New", "Georgia", "Verdana", "Trebuchet MS", "Tahoma" };
+    #endregion
 
-        while (!_cts.Token.IsCancellationRequested)
-        {
-            if (_shirtViewer == null) break;
-            
-            // 1. Generate a completely random hex color
-            int r = random.Next(0, 256);
-            int g = random.Next(0, 256);
-            int b = random.Next(0, 256);
-            string randomColor = $"#{r:X2}{g:X2}{b:X2}";
-            double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-            string textColor = luminance > 0.5 ? "#111111" : "#FFFFFF";
-            
-            // 2. Generate configuration batch
-            int numTexts = random.Next(1, 4); // 1 to 3 items
-            var itemsList = new List<object>();
-
-            for (int i = 0; i < numTexts; i++)
-            {
-                double angle = random.NextDouble() * Math.PI * 2;
-                float radius = 2.0f;
-                float originX = (float)(Math.Cos(angle) * radius);
-                float originZ = (float)(Math.Sin(angle) * radius);
-                float originY = (float)(random.NextDouble() * 0.7 - 0.2);
-                
-                float dirX = -originX;
-                float dirY = 0;
-                float dirZ = -originZ;
-                
-                if (random.NextDouble() < 0.7)
-                {
-                    string text = "";
-                    int pattern = random.Next(3);
-                    if (pattern == 0) text = prefixes[random.Next(prefixes.Length)];
-                    else if (pattern == 1) text = prefixes[random.Next(prefixes.Length)] + "\n" + suffixes[random.Next(suffixes.Length)];
-                    else text = random.Next(1000, 9999).ToString();
-                    
-                    var font = fonts[random.Next(fonts.Length)];
-                    var fontSize = random.Next(35, 70);
-
-                    itemsList.Add(new {
-                        type = "text",
-                        text = text,
-                        fontSize = fontSize,
-                        color = textColor,
-                        font = font,
-                        originX = originX, originY = originY, originZ = originZ,
-                        dirX = dirX, dirY = dirY, dirZ = dirZ
-                    });
-                }
-                else
-                {
-                    string svgBase64 = GenerateRandomSvg(random, textColor);
-                    float decalSize = (float)(random.NextDouble() * 0.4 + 0.3);
-                    
-                    itemsList.Add(new {
-                        type = "image",
-                        dataUrl = svgBase64,
-                        size = decalSize,
-                        originX = originX, originY = originY, originZ = originZ,
-                        dirX = dirX, dirY = dirY, dirZ = dirZ
-                    });
-                }
-            }
-
-            var batchConfig = new
-            {
-                color = randomColor,
-                items = itemsList
-            };
-
-            await _shirtViewer.ApplyDesignBatchAsync(batchConfig);
-            
-            try
-            {
-                await Task.Delay(random.Next(1500, 3000), _cts.Token);
-            }
-            catch (TaskCanceledException)
-            {
-                break;
-            }
-        }
-    }
-
-    private string GenerateRandomSvg(Random random, string color)
-    {
-        int shapeType = random.Next(4);
-        string svg = "";
-        
-        if (shapeType == 0) // Circle
-        {
-            svg = $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><circle cx='100' cy='100' r='90' fill='{color}' /></svg>";
-        }
-        else if (shapeType == 1) // Triangle
-        {
-            svg = $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><polygon points='100,10 190,190 10,190' fill='{color}' /></svg>";
-        }
-        else if (shapeType == 2) // Cross
-        {
-            svg = $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect x='75' y='10' width='50' height='180' fill='{color}' /><rect x='10' y='75' width='180' height='50' fill='{color}' /></svg>";
-        }
-        else // Outline Square
-        {
-            svg = $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect x='20' y='20' width='160' height='160' fill='none' stroke='{color}' stroke-width='20' /></svg>";
-        }
-
-        var plainTextBytes = System.Text.Encoding.UTF8.GetBytes(svg);
-        return "data:image/svg+xml;base64," + Convert.ToBase64String(plainTextBytes);
-    }
-
-    private async Task HandleAddOrder()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true)
-        {
-            NavManager.NavigateTo("/add-order");
-        }
-        else
-        {
-            NavManager.NavigateTo("/login");
-        }
-    }
-
-    private async Task HandleViewOrder()
-    {
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        if (authState.User.Identity?.IsAuthenticated == true)
-        {
-            NavManager.NavigateTo("/dashboard");
-        }
-        else
-        {
-            NavManager.NavigateTo("/login");
-        }
-    }
-
+    #region Lifecycle
     public async ValueTask DisposeAsync()
     {
         _cts.Cancel();
         _cts.Dispose();
         await Task.CompletedTask;
     }
+    #endregion
+
+    #region Navigation
+    private async Task<bool> IsSignedInAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        return authState.User.Identity?.IsAuthenticated == true;
+    }
+
+    private async Task StartCustomizing()
+    {
+        NavManager.NavigateTo(await IsSignedInAsync() ? "/add-order" : "/login");
+    }
+
+    private async Task TrackOrder()
+    {
+        NavManager.NavigateTo(await IsSignedInAsync() ? "/dashboard" : "/login");
+    }
+    #endregion
+
+    #region Shirt Preview
+    private async Task OnShirtReady()
+    {
+        if (_shirtViewer == null) return;
+
+        await _shirtViewer.SetBackgroundColorAsync(PageBackgroundColor);
+        await _shirtViewer.SetAutoSpinAsync(true);
+        _ = RunRandomizerLoopAsync();
+    }
+
+    private async Task TogglePlayback()
+    {
+        _isPaused = !_isPaused;
+
+        if (_shirtViewer != null)
+        {
+            await _shirtViewer.SetAutoSpinAsync(!_isPaused);
+        }
+    }
+
+    private async Task RunRandomizerLoopAsync()
+    {
+        try
+        {
+            while (!_cts.Token.IsCancellationRequested && _shirtViewer != null)
+            {
+                if (!_isPaused)
+                {
+                    await ApplyRandomDesignAsync();
+                }
+
+                await Task.Delay(_random.Next(1500, 3000), _cts.Token);
+            }
+        }
+        catch (TaskCanceledException)
+        {
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private async Task ApplyRandomDesignAsync()
+    {
+        int r = _random.Next(0, 256);
+        int g = _random.Next(0, 256);
+        int b = _random.Next(0, 256);
+        double luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        string textColor = luminance > 0.5 ? "#111111" : "#FFFFFF";
+
+        var batchConfig = new
+        {
+            color = $"#{r:X2}{g:X2}{b:X2}",
+            items = BuildRandomItems(textColor)
+        };
+
+        await _shirtViewer!.ApplyDesignBatchAsync(batchConfig);
+
+        _currentColor = batchConfig.color;
+        await InvokeAsync(StateHasChanged);
+    }
+
+    private List<object> BuildRandomItems(string textColor)
+    {
+        var items = new List<object>();
+        int itemCount = _random.Next(1, 4);
+
+        for (int i = 0; i < itemCount; i++)
+        {
+            double angle = _random.NextDouble() * Math.PI * 2;
+            float radius = 2.0f;
+            float originX = (float)(Math.Cos(angle) * radius);
+            float originZ = (float)(Math.Sin(angle) * radius);
+            float originY = (float)(_random.NextDouble() * 0.7 - 0.2);
+
+            items.Add(_random.NextDouble() < 0.7
+                ? BuildTextItem(textColor, originX, originY, originZ)
+                : BuildImageItem(textColor, originX, originY, originZ));
+        }
+
+        return items;
+    }
+
+    private object BuildTextItem(string textColor, float originX, float originY, float originZ)
+    {
+        string text = _random.Next(3) switch
+        {
+            0 => Prefixes[_random.Next(Prefixes.Length)],
+            1 => Prefixes[_random.Next(Prefixes.Length)] + "\n" + Suffixes[_random.Next(Suffixes.Length)],
+            _ => _random.Next(1000, 9999).ToString()
+        };
+
+        return new
+        {
+            type = "text",
+            text,
+            fontSize = _random.Next(35, 70),
+            color = textColor,
+            font = Fonts[_random.Next(Fonts.Length)],
+            originX, originY, originZ,
+            dirX = -originX, dirY = 0f, dirZ = -originZ
+        };
+    }
+
+    private object BuildImageItem(string textColor, float originX, float originY, float originZ)
+    {
+        return new
+        {
+            type = "image",
+            dataUrl = BuildRandomShapeDataUrl(textColor),
+            size = (float)(_random.NextDouble() * 0.4 + 0.3),
+            originX, originY, originZ,
+            dirX = -originX, dirY = 0f, dirZ = -originZ
+        };
+    }
+
+    private string BuildRandomShapeDataUrl(string color)
+    {
+        string svg = _random.Next(4) switch
+        {
+            0 => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><circle cx='100' cy='100' r='90' fill='{color}' /></svg>",
+            1 => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><polygon points='100,10 190,190 10,190' fill='{color}' /></svg>",
+            2 => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect x='75' y='10' width='50' height='180' fill='{color}' /><rect x='10' y='75' width='180' height='50' fill='{color}' /></svg>",
+            _ => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect x='20' y='20' width='160' height='160' fill='none' stroke='{color}' stroke-width='20' /></svg>"
+        };
+
+        return "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(svg));
+    }
+    #endregion
 }
-
-<style>
-    /* 1. Layout Enforcers */
-    .home-container {
-        height: calc(100vh - 64px);
-        overflow-y: hidden;
-        background-color: var(--mud-palette-background);
-        display: flex;
-        padding: 0;
-    }
-    
-    .hero-grid {
-        flex-grow: 1;
-        margin: 0;
-    }
-
-    .hero-visual {
-        height: calc(100vh - 64px);
-        position: relative;
-    }
-
-    .hero-3d-wrapper {
-        width: 100%;
-        height: 100%;
-        z-index: 1;
-    }
-
-    /* 2. Typography & Buttons */
-    .hero-title, .hero-subtitle, .hero-btn {
-        font-family: 'Outfit', sans-serif;
-    }
-
-    .hero-title {
-        font-weight: 200;
-        line-height: 1.1;
-        letter-spacing: -0.04em;
-        font-size: clamp(3.5rem, 5vw, 5.5rem);
-        color: var(--mud-palette-text-primary);
-    }
-
-    .hero-subtitle {
-        font-weight: 300;
-        color: var(--mud-palette-text-secondary);
-        max-width: 450px;
-    }
-
-    .hero-btn {
-        font-weight: 600;
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        padding: 0.75rem 2.5rem !important;
-        border-radius: 50px;
-        background: linear-gradient(135deg, #e62424 0%, #b30000 100%);
-        box-shadow: 0 4px 15px rgba(230, 36, 36, 0.3);
-        color: white;
-        transition: all 0.3s ease;
-        border: none;
-    }
-
-    .hero-btn:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 6px 20px rgba(230, 36, 36, 0.5);
-    }
-
-    .hero-btn-outline {
-        background: transparent;
-        border: 1px solid rgba(255, 255, 255, 0.2);
-        box-shadow: none;
-    }
-
-    .hero-btn-outline:hover {
-        border-color: rgba(255, 255, 255, 0.6);
-        box-shadow: 0 4px 15px rgba(255, 255, 255, 0.1);
-        transform: translateY(-2px);
-    }
-
-    /* 3. Third-Party Canvas Overrides */
-    ::deep .three-canvas-container {
-        background: transparent !important;
-        border: none !important;
-        box-shadow: none !important;
-    }
-</style>

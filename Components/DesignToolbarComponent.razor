@@ -2,17 +2,15 @@
 <!--  COLOR SECTION                                           -->
 <!-- ════════════════════════════════════════════════════════ -->
 <div class="tool-section">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 1rem;">
-        <p class="tool-section-title" style="margin: 0;">🎨 &nbsp;Colors</p>
-        <div style="display:flex; background:rgba(255,255,255,0.05); border-radius:8px; padding:2px;">
-            <div style="padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.2s ease; @(_activeColorTab == "Shirt" ? "background:var(--mud-palette-primary); color:white;" : "color:#9998b3;")"
-                 @onclick='() => _activeColorTab = "Shirt"'>
-                Shirt
-            </div>
-            <div style="padding:4px 12px; border-radius:6px; cursor:pointer; font-size:12px; font-weight:600; transition:all 0.2s ease; @(_activeColorTab == "Background" ? "background:var(--mud-palette-primary); color:white;" : "color:#9998b3;")"
-                 @onclick='() => _activeColorTab = "Background"'>
-                Background
-            </div>
+    <div class="tool-section-head">
+        <p class="tool-section-title">Colors</p>
+        <div class="segmented" role="tablist">
+            <button type="button" role="tab" aria-selected="@(_activeColorTab == "Shirt")"
+                    class="segmented-option @(_activeColorTab == "Shirt" ? "active" : "")"
+                    @onclick='() => _activeColorTab = "Shirt"'>Shirt</button>
+            <button type="button" role="tab" aria-selected="@(_activeColorTab == "Background")"
+                    class="segmented-option @(_activeColorTab == "Background" ? "active" : "")"
+                    @onclick='() => _activeColorTab = "Background"'>Background</button>
         </div>
     </div>
 
@@ -34,7 +32,7 @@
                    id="custom-color-input"
                    style="width:40px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
                    @onchange="OnCustomColorInput" />
-            <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom color</MudText>
+            <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom Color</MudText>
             <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@_selectedColor</MudText>
         </div>
     }
@@ -55,7 +53,7 @@
                    value="@_backgroundColor"
                    style="width:40px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
                    @onchange="OnCustomBgColorInput" />
-            <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom bg</MudText>
+            <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom Background</MudText>
             <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@_backgroundColor</MudText>
         </div>
     }
@@ -65,9 +63,9 @@
 <!--  TEXT SECTION                                            -->
 <!-- ════════════════════════════════════════════════════════ -->
 <div class="tool-section">
-    <p class="tool-section-title">✏️ &nbsp;Text Overlay</p>
+    <p class="tool-section-title">Text</p>
     <MudTextField @bind-Value="_textInput"
-                  Label="Your text"
+                  Label="Your Text"
                   Variant="Variant.Outlined"
                   Margin="Margin.Dense"
                   id="text-overlay-input"
@@ -87,7 +85,7 @@
         <div style="flex:1;">
             <MudSelect T="string"
                        Value="@_textFont"
-                       ValueChanged="HandleFontChange"
+                       ValueChanged="ChangeFont"
                        Label="Font"
                        Variant="Variant.Outlined"
                        Margin="Margin.Dense"
@@ -107,19 +105,17 @@
     
     @if (_isUpdating)
     {
-        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true"
-                   Class="mt-3" Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600;"
-                   OnClick="DeselectText">
+        <MudButton Variant="Variant.Outlined" Color="Color.Secondary" FullWidth="true" Class="mt-3 tool-btn"
+                   StartIcon="@Icons.Material.Filled.Check" OnClick="DeselectText">
             Done Editing
         </MudButton>
     }
     else
     {
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
-                   Class="mt-3" id="add-text-btn"
-                   Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600;"
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" DropShadow="false"
+                   Class="mt-3 tool-btn" id="add-text-btn" StartIcon="@Icons.Material.Filled.Add"
                    OnClick="AddText">
-            + Add New Text
+            Add Text
         </MudButton>
     }
 </div>
@@ -135,19 +131,19 @@
 <!--  LOGO / IMAGE SECTION                                    -->
 <!-- ════════════════════════════════════════════════════════ -->
 <div class="tool-section">
-    <p class="tool-section-title">🖼️ &nbsp;Logo / Image</p>
-    <InputFile id="logo-upload-input" OnChange="OnLogoSelected" accept="image/*"
+    <p class="tool-section-title">Logo or Image</p>
+    <InputFile id="logo-upload-input" OnChange="OnLogoSelected" accept=".png,.jpg,.jpeg,.webp"
                style="display:none;" />
-    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true"
-               id="logo-upload-btn"
-               Style="border-radius:8px; font-family:'Outfit',sans-serif;"
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" Class="tool-btn"
+               id="logo-upload-btn" StartIcon="@Icons.Material.Filled.Upload"
                OnClick="TriggerFilePicker">
-        📁 &nbsp;Upload Image or Logo
+        Add a Logo or Image
     </MudButton>
+    <MudText Typo="Typo.caption" Class="tool-hint">PNG, JPG or WebP, up to 5 MB</MudText>
     @if (_hasLogo)
     {
-        <MudText Typo="Typo.caption" Style="color:#06b6d4; margin-top:0.5rem; display:block;">
-            ✓ Logo applied - drag it on the shirt to reposition
+        <MudText Typo="Typo.caption" Class="tool-hint tool-hint-success">
+            Logo added. Drag it on the shirt to move it.
         </MudText>
     }
 </div>
@@ -156,19 +152,17 @@
 <!--  ACTIONS SECTION                                         -->
 <!-- ════════════════════════════════════════════════════════ -->
 <div class="tool-section">
-    <p class="tool-section-title">⚙️ &nbsp;Actions</p>
-    <div style="display:flex; flex-direction:column; gap:0.5rem;">
-        <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true"
-                   id="delete-selected-btn"
-                   Style="border-radius:8px; font-family:'Outfit',sans-serif; border-color: rgba(124,58,237,0.3);"
+    <p class="tool-section-title">Actions</p>
+    <div class="tool-actions">
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true" Class="tool-btn"
+                   id="delete-selected-btn" StartIcon="@Icons.Material.Filled.Delete"
                    OnClick="DeleteSelected">
-            🗑 &nbsp;Delete Selected
+            Delete Selected Item
         </MudButton>
-        <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true"
-                   id="clear-design-btn"
-                   Style="border-radius:8px; font-family:'Outfit',sans-serif;"
+        <MudButton Variant="Variant.Outlined" Color="Color.Error" FullWidth="true" Class="tool-btn"
+                   id="clear-design-btn" StartIcon="@Icons.Material.Filled.ClearAll"
                    OnClick="ClearDesign">
-            ✕ &nbsp;Clear All
+            Clear Everything
         </MudButton>
     </div>
 </div>
@@ -260,7 +254,7 @@
         await LiveUpdateText();
     }
 
-    private async Task HandleFontChange(string font)
+    private async Task ChangeFont(string font)
     {
         _textFont = font;
         await LiveUpdateText();

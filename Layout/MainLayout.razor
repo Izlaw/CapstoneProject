@@ -1,4 +1,5 @@
 @inherits LayoutComponentBase
+@implements IDisposable
 @using CapstoneProject.Commons
 
 <MudThemeProvider Theme="_theme" IsDarkMode="true" />
@@ -7,41 +8,59 @@
 <MudSnackbarProvider />
 
 <MudLayout>
-    <MudAppBar Elevation="0" Class="glass-appbar">
+    <MudAppBar Elevation="0" Class="site-appbar">
         <a href="/" class="nav-brand">
             7 Guys <span class="brand-accent">House of Fashion</span>
         </a>
         <MudSpacer />
-        <MudButton Href="/" Variant="Variant.Text" Class="nav-btn">
+        <MudButton Href="/" Variant="Variant.Text" Class="@GetNavClass("", "nav-secondary")">
             Home
         </MudButton>
-        <MudButton Href="/gallery" Variant="Variant.Text" Class="nav-btn ml-1">
-            Gallery
+        <MudButton Href="/collections" Variant="Variant.Text" Class="@GetNavClass("collections", "nav-secondary")">
+            Collections
         </MudButton>
 
         <AuthorizeView>
             <Authorized>
-                <MudButton Href="/dashboard" Variant="Variant.Text" Class="nav-btn ml-1">
+                <MudButton Href="/dashboard" Variant="Variant.Text" Class="@GetNavClass("dashboard")">
                     My Orders
-                </MudButton>
-                <MudChip T="string" Size="Size.Small" Class="user-chip">
-                    @context.User.Identity?.Name?.Split(' ')[0]
-                </MudChip>
-                <MudButton OnClick="HandleLogout" Variant="Variant.Outlined" Color="Color.Secondary" Size="Size.Small" Class="action-btn-outlined">
-                    Logout
                 </MudButton>
             </Authorized>
             <NotAuthorized>
-                <MudButton Href="/login" Variant="Variant.Text" Class="nav-btn ml-1">
+                <MudButton Href="/login" Variant="Variant.Text" Class="@GetNavClass("login")">
                     Login
                 </MudButton>
             </NotAuthorized>
         </AuthorizeView>
 
-        <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary"
-                   Size="Size.Small" Class="primary-action-btn ml-2">
-            ✦ &nbsp;Design Now
+        <AuthorizeView Roles="admin">
+            <MudButton Href="/admin/catalog" Variant="Variant.Text" Class="@GetNavClass("admin/catalog")">
+                Catalog
+            </MudButton>
+        </AuthorizeView>
+
+        <MudButton Href="/add-order" Variant="Variant.Filled" Color="Color.Primary"
+                   Size="Size.Small" DropShadow="false" Class="primary-action-btn">
+            New Order
         </MudButton>
+
+        <AuthorizeView>
+            <Authorized>
+                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="account-menu">
+                    <ActivatorContent>
+                        <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                    </ActivatorContent>
+                    <ChildContent>
+                        <div class="account-menu-header">
+                            <span class="account-menu-name">@(context.User.Identity?.Name ?? "-")</span>
+                            <span class="account-menu-role">Signed in</span>
+                        </div>
+                        <MudDivider />
+                        <MudMenuItem OnClick="Logout">Logout</MudMenuItem>
+                    </ChildContent>
+                </MudMenu>
+            </Authorized>
+        </AuthorizeView>
     </MudAppBar>
 
     <MudMainContent Class="main-content">
@@ -50,24 +69,30 @@
 </MudLayout>
 
 @code {
+    #region Properties
     private readonly MudTheme _theme = new()
     {
         PaletteDark = new PaletteDark
         {
-            Primary           = "#B51A2B",
-            PrimaryDarken     = "#541A2E",
-            PrimaryLighten    = "#FFA586",
-            Secondary         = "#FFA586",
-            Background        = "#161E2F",
-            BackgroundGray    = "#242E49",
-            Surface           = "#384358",
-            DrawerBackground  = "#242E49",
-            AppbarBackground  = "rgba(84,26,46,0.85)", 
-            TextPrimary       = "#f1f0ff",
-            TextSecondary     = "#cbd5e1",
-            ActionDefault     = "#cbd5e1",
-            Divider           = "rgba(181,26,43,0.2)",
-            OverlayLight      = "rgba(0,0,0,0.6)",
+            Primary            = "#B4182D",
+            PrimaryDarken      = "#8F1222",
+            PrimaryLighten     = "#CF2038",
+            PrimaryContrastText = "#FFFFFF",
+            Secondary          = "#FDA481",
+            SecondaryContrastText = "#10121F",
+            Background         = "#10121F",
+            BackgroundGray     = "#1A1E38",
+            Surface            = "#242E49",
+            DrawerBackground   = "#1A1E38",
+            AppbarBackground   = "#1A1E38",
+            AppbarText         = "#F1F0FF",
+            TextPrimary        = "#F1F0FF",
+            TextSecondary      = "#B8B7D0",
+            ActionDefault      = "#B8B7D0",
+            Divider            = "rgba(255,255,255,0.08)",
+            DividerLight       = "rgba(255,255,255,0.08)",
+            LinesDefault       = "rgba(255,255,255,0.08)",
+            OverlayLight       = "rgba(0,0,0,0.6)",
         },
         Typography = new Typography
         {
@@ -83,7 +108,52 @@
     [Inject] private CapstoneProject.Services.SupabaseService SupabaseSvc { get; set; } = default!;
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
-    private async Task HandleLogout()
+    private string _currentPath = string.Empty;
+    #endregion
+
+    #region Lifecycle
+    protected override void OnInitialized()
+    {
+        _currentPath = GetCurrentPath();
+        NavManager.LocationChanged += OnLocationChanged;
+    }
+
+    public void Dispose()
+    {
+        NavManager.LocationChanged -= OnLocationChanged;
+    }
+    #endregion
+
+    #region Methods
+    private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
+    {
+        _currentPath = GetCurrentPath();
+        StateHasChanged();
+    }
+
+    private string GetCurrentPath()
+    {
+        return NavManager.ToBaseRelativePath(NavManager.Uri).Split('?', '#')[0].Trim('/');
+    }
+
+    private string GetNavClass(string path, string extraClass = "")
+    {
+        var isActive = string.Equals(_currentPath, path, StringComparison.OrdinalIgnoreCase);
+        return $"nav-btn {extraClass} {(isActive ? "nav-btn-active" : string.Empty)}".Trim();
+    }
+
+    private string GetInitials(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName)) return "-";
+
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var first = parts[0][0];
+        var last = parts.Length > 1 ? parts[^1][0] : (char?)null;
+
+        return last is null ? char.ToUpper(first).ToString() : $"{char.ToUpper(first)}{char.ToUpper(last.Value)}";
+    }
+
+    private async Task Logout()
     {
         try
         {
@@ -96,4 +166,5 @@
             Extension.ShowAlert("Failed to log out. Please try again.", Variant.Filled, Snackbar, Severity.Error);
         }
     }
+    #endregion
 }
