@@ -13,58 +13,6 @@ public class SupabaseService
         _supabase = supabase;
     }
 
-    /// <summary>
-    /// Save a design record to the orders table.
-    /// </summary>
-    public async Task<string?> PlaceOrderAsync(string name, string shirtColor, string? textOverlay, string? textureUrl, string size, string fabric, int quantity)
-    {
-        try
-        {
-            var order = new AppOrderModel
-            {
-                OrderType = "custom",
-                Status = "Pending",
-                TotalPrice = quantity * 1250, // Dummy calculation for custom design price
-                DesignReference = textureUrl,
-                FabricType = fabric,
-                CreatedAt = DateTime.UtcNow
-            };
-            
-            // Set the customer ID if logged in
-            if (_supabase.Auth.CurrentUser != null)
-            {
-                order.CustomerId = _supabase.Auth.CurrentUser.Id;
-            }
-
-            var response = await _supabase.From<AppOrderModel>().Insert(order);
-            return response.Models.FirstOrDefault()?.Id;
-        }
-        catch
-        {
-            return null;
-        }
-    }
-
-    /// <summary>
-    /// Fetch all custom orders from the orders table.
-    /// </summary>
-    public async Task<List<AppOrderModel>> GetDesignsAsync()
-    {
-        try
-        {
-            var response = await _supabase.From<AppOrderModel>()
-                .Where(x => x.OrderType == "custom")
-                .Order(x => x.CreatedAt, Postgrest.Constants.Ordering.Descending)
-                .Get();
-                
-            return response.Models;
-        }
-        catch
-        {
-            return new List<AppOrderModel>();
-        }
-    }
-
     public async Task<List<AppOrderModel>> GetAllOrdersAsync()
     {
         try
@@ -93,21 +41,6 @@ public class SupabaseService
         catch
         {
             return new List<AppOrderModel>();
-        }
-    }
-
-    public async Task<AppOrderModel?> GetOrderByIdAsync(string orderId)
-    {
-        try
-        {
-            var response = await _supabase.From<AppOrderModel>()
-                .Where(x => x.Id == orderId)
-                .Single();
-            return response;
-        }
-        catch
-        {
-            return null;
         }
     }
 

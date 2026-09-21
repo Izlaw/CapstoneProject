@@ -1,170 +1,252 @@
 @page "/designer"
+@using System.Text.RegularExpressions
 @using CapstoneProject.Commons
 @inject DesignService DesignSvc
 @inject ExportService ExportSvc
-@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject OrderService OrderSvc
 @inject ISnackbar Snackbar
 @inject IDialogService DialogService
 @inject NavigationManager NavManager
-@inject IJSRuntime JS
 @implements IAsyncDisposable
 
-<PageTitle>Designer - 7Guys House of Fashion</PageTitle>
+<PageTitle>Designer - 7 Guys House of Fashion</PageTitle>
 
 <div class="designer-layout">
     <div class="designer-canvas-area">
-        <ShirtCanvasComponent @ref="_shirtCanvas" 
-                     OnModuleReady="OnModuleReady"
-                     OnObjectSelected="HandleObjectSelected"
-                     OnObjectCleared="HandleObjectCleared" />
+        <div class="designer-back"><BackButtonComponent Href="/add-order" Text="Back to New Order" /></div>
+        <ShirtCanvasComponent @ref="_shirtCanvas"
+                              OnModuleReady="OnModuleReady"
+                              OnObjectSelected="OnObjectSelected"
+                              OnObjectCleared="OnObjectCleared" />
     </div>
     <div class="designer-tools-area">
         <DesignToolbarComponent @ref="_toolbar"
-            OnColorChanged="HandleColorChanged"
-            OnBackgroundColorChanged="HandleBackgroundColorChanged"
-            OnTextAdded="HandleTextAdded"
-            OnTextUpdated="HandleTextUpdated"
-            OnLogoUploaded="HandleLogoUploaded"
-            OnClearDesign="HandleClearDesign"
-            OnDeleteSelected="HandleDeleteSelected"
-            OnDeselect="HandleDeselect" />
+            OnColorChanged="ChangeShirtColor"
+            OnBackgroundColorChanged="ChangeBackgroundColor"
+            OnTextAdded="AddText"
+            OnTextUpdated="UpdateText"
+            OnLogoUploaded="AddLogo"
+            OnClearDesign="ClearDesign"
+            OnDeleteSelected="DeleteSelected"
+            OnDeselect="DeselectObject" />
 
         <ExportPanelComponent
-            OnExport="HandleExport"
-            OnCheckout="HandleCheckout"
+            OnExport="DownloadPreview"
+            OnCheckout="PlaceOrder"
             IsSaving="_isSaving" />
     </div>
 </div>
 
 @code {
+    #region Properties
+    private static readonly HashSet<string> AllowedImageTypes = new() { "image/png", "image/jpeg", "image/webp" };
+    private static readonly Regex HexColorPattern = new("^#[0-9A-Fa-f]{6}$");
+
     private ShirtCanvasComponent _shirtCanvas = default!;
     private DesignToolbarComponent _toolbar = default!;
-    private bool _isSaving = false;
+    private bool _isSaving;
+    #endregion
 
+    #region Lifecycle
+    public async ValueTask DisposeAsync()
+    {
+        await _shirtCanvas.DisposeAsync();
+    }
+    #endregion
+
+    #region Canvas events
     private void OnModuleReady()
     {
         StateHasChanged();
     }
 
-    private void HandleObjectSelected(Dictionary<string, object> properties)
+    private void OnObjectSelected(Dictionary<string, object> properties)
     {
         _toolbar.SetSelectedObject(properties);
     }
 
-    private void HandleObjectCleared()
+    private void OnObjectCleared()
     {
         _toolbar.ClearSelectedObject();
     }
 
-    private async Task HandleColorChanged(string hex)
+    private async Task ChangeShirtColor(string hex)
     {
         DesignSvc.SetColor(hex);
         await _shirtCanvas.SetColorAsync(hex);
     }
 
-    private async Task HandleBackgroundColorChanged(string hex)
+    private async Task ChangeBackgroundColor(string hex)
     {
         await _shirtCanvas.SetBackgroundColorAsync(hex);
     }
 
-    private async Task HandleTextAdded((string text, int size, string color, string font) args)
+    private async Task AddText((string text, int size, string color, string font) args)
     {
         DesignSvc.SetTextOverlay(args.text, args.size, args.color, args.font);
         await _shirtCanvas.AddTextAsync(args.text, args.size, args.color, args.font);
     }
 
-    private async Task HandleTextUpdated((string text, int size, string color, string font) args)
+    private async Task UpdateText((string text, int size, string color, string font) args)
     {
-        // Update the active object without registering as a brand new element in DesignSvc 
-        // unless you want to track it, but for real-time sync this is enough.
         await _shirtCanvas.UpdateSelectedTextAsync(args.text, args.size, args.color, args.font);
     }
 
-    private async Task HandleLogoUploaded(string dataUrl)
+    private async Task AddLogo(string dataUrl)
     {
         DesignSvc.SetLogo(dataUrl);
         await _shirtCanvas.AddImageAsync(dataUrl);
     }
 
-    private async Task HandleClearDesign()
+    private async Task ClearDesign()
     {
         DesignSvc.ClearDesign();
         await _shirtCanvas.ClearDesignAsync();
     }
 
-    private async Task HandleDeleteSelected()
+    private async Task DeleteSelected()
     {
         await _shirtCanvas.DeleteSelectedAsync();
     }
 
-    private async Task HandleDeselect()
+    private async Task DeselectObject()
     {
         await _shirtCanvas.DeselectActiveObjectAsync();
     }
 
-    private async Task HandleExport()
+    private async Task DownloadPreview()
     {
         if (_shirtCanvas.Module is null) return;
         await ExportSvc.DownloadPngAsync(_shirtCanvas.Module);
     }
+    #endregion
 
-    private async Task HandleCheckout((string size, string fabric, int quantity) args)
+    #region Checkout
+    private async Task PlaceOrder(OrderRequestModel request)
     {
-        if (_shirtCanvas.Module is null) return;
-        
+        if (_isSaving || _shirtCanvas.Module is null) return;
+
+        var shirtColor = DesignSvc.CurrentDesign.ShirtColor;
+        if (!HexColorPattern.IsMatch(shirtColor))
+        {
+            Extension.ShowAlert("Choose a shirt color first.", Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
         _isSaving = true;
-        StateHasChanged();
 
         try
         {
-            var dataUrl = await _shirtCanvas.Module.InvokeAsync<string>("exportPng");
-            
-            string? orderId = await SupabaseSvc.PlaceOrderAsync(
-                DesignSvc.CurrentDesign.Name ?? "Custom Order",
-                DesignSvc.CurrentDesign.ShirtColor,
-                DesignSvc.CurrentDesign.TextOverlay,
-                dataUrl,
-                args.size,
-                args.fabric,
-                args.quantity
-            );
+            var previewPath = await UploadPreviewAsync();
+            if (previewPath == null) return;
 
-            if (!string.IsNullOrEmpty(orderId))
+            var elements = await UploadDesignElementsAsync();
+            if (elements == null) return;
+
+            request.ShirtColor = shirtColor;
+            request.DesignData = new DesignDataModel { Elements = elements };
+            request.ImagePath = previewPath;
+
+            var result = await OrderSvc.PlaceOrderAsync(request);
+            if (!result.IsSuccess)
             {
-                Extension.ShowAlert("Order successfully placed!", Variant.Filled, Snackbar, Severity.Success);
-                
-                var parameters = new DialogParameters<CapstoneProject.Dialogs.OrderSuccessDialog>
-                {
-                    { x => x.OrderId, orderId },
-                    { x => x.PreviewUrl, NavManager.ToAbsoluteUri($"/order-preview/{orderId}").ToString() }
-                };
-                
-                var options = new DialogOptions { CloseOnEscapeKey = false, BackdropClick = false, MaxWidth = MaxWidth.Small };
-                var dialog = await DialogService.ShowAsync<CapstoneProject.Dialogs.OrderSuccessDialog>("Success", parameters, options);
-                var result = await dialog.Result;
-                
-                // After they close it, redirect to dashboard or clear design
-                NavManager.NavigateTo("/dashboard");
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
             }
-            else
-            {
-                Extension.ShowAlert("Failed to place order. Please try again.", Variant.Filled, Snackbar, Severity.Error);
-            }
+
+            await ShowOrderPlacedDialog(result.Value!);
+            NavManager.NavigateTo("/dashboard");
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
-            Extension.ShowAlert("Something went wrong while saving your order.", Variant.Filled, Snackbar, Severity.Error);
+            Extension.ShowAlert("Something went wrong while placing your order. Please try again.", Variant.Filled, Snackbar, Severity.Error);
         }
         finally
         {
             _isSaving = false;
-            StateHasChanged();
         }
     }
 
-    public async ValueTask DisposeAsync()
+    private async Task<string?> UploadPreviewAsync()
     {
-        await _shirtCanvas.DisposeAsync();
+        var dataUrl = await _shirtCanvas.Module!.InvokeAsync<string>("exportPng");
+        if (!TryReadDataUrl(dataUrl, out var bytes, out var contentType))
+        {
+            Extension.ShowAlert("The design preview could not be created. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+            return null;
+        }
+
+        var upload = await OrderSvc.UploadImageAsync(bytes, contentType);
+        if (!upload.IsSuccess)
+        {
+            Extension.ShowAlert(upload.Message, Variant.Filled, Snackbar, Severity.Error);
+            return null;
+        }
+
+        return upload.Value;
     }
+
+    private async Task<List<DesignElementModel>?> UploadDesignElementsAsync()
+    {
+        var elements = await _shirtCanvas.Module!.InvokeAsync<List<DesignElementModel>>("getDesignElements");
+
+        foreach (var element in elements.Where(item => item.Type == "image"))
+        {
+            if (!TryReadDataUrl(element.DataUrl, out var bytes, out var contentType) || !AllowedImageTypes.Contains(contentType))
+            {
+                Extension.ShowAlert("Logos and images must be PNG, JPG or WebP files.", Variant.Filled, Snackbar, Severity.Warning);
+                return null;
+            }
+
+            var upload = await OrderSvc.UploadImageAsync(bytes, contentType);
+            if (!upload.IsSuccess)
+            {
+                Extension.ShowAlert(upload.Message, Variant.Filled, Snackbar, Severity.Error);
+                return null;
+            }
+
+            element.Path = upload.Value;
+            element.DataUrl = null;
+        }
+
+        return elements;
+    }
+
+    private async Task ShowOrderPlacedDialog(string orderId)
+    {
+        var parameters = new DialogParameters<OrderSuccessDialog>
+        {
+            { x => x.OrderId, orderId },
+            { x => x.PreviewUrl, NavManager.ToAbsoluteUri($"/order-preview/{orderId}").ToString() }
+        };
+        var options = new DialogOptions { CloseOnEscapeKey = false, BackdropClick = false, MaxWidth = MaxWidth.Small };
+
+        var dialog = await DialogService.ShowAsync<OrderSuccessDialog>("Order placed", parameters, options);
+        await dialog.Result;
+    }
+
+    private static bool TryReadDataUrl(string? dataUrl, out byte[] bytes, out string contentType)
+    {
+        bytes = Array.Empty<byte>();
+        contentType = string.Empty;
+
+        if (string.IsNullOrEmpty(dataUrl) || !dataUrl.StartsWith("data:")) return false;
+
+        var separatorIndex = dataUrl.IndexOf(";base64,", StringComparison.Ordinal);
+        if (separatorIndex < 0) return false;
+
+        contentType = dataUrl.Substring(5, separatorIndex - 5);
+
+        try
+        {
+            bytes = Convert.FromBase64String(dataUrl.Substring(separatorIndex + ";base64,".Length));
+            return bytes.Length > 0;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+    #endregion
 }

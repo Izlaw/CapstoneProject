@@ -1,0 +1,124 @@
+@page "/collections"
+@using CapstoneProject.Commons
+@inject CatalogService CatalogSvc
+@inject IDialogService DialogService
+@inject AuthenticationStateProvider AuthStateProvider
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Collections - 7 Guys House of Fashion</PageTitle>
+
+<div class="customer-page">
+    <div class="page-back"><BackButtonComponent Href="/add-order" Text="Back to New Order" /></div>
+
+    <div class="customer-header">
+        <h1 class="customer-title">Collections</h1>
+        <p class="customer-subtitle">Ready-made designs from our shop. Pick one, choose your sizes and we will make it for you.</p>
+    </div>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_loadFailed)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+            The collections could not be loaded. Please refresh the page.
+        </MudAlert>
+    }
+    else if (_collections.Count == 0)
+    {
+        <div class="customer-empty">
+            <h2>No designs available yet</h2>
+            <p>Check back soon, or create your own design in the designer.</p>
+            <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                       StartIcon="@Icons.Material.Filled.Brush">
+                Open the Designer
+            </MudButton>
+        </div>
+    }
+    else
+    {
+        <div class="collection-grid">
+            @foreach (var collection in _collections)
+            {
+                <div class="collection-card">
+                    @if (!string.IsNullOrEmpty(collection.ImageUrl))
+                    {
+                        <img src="@collection.ImageUrl" alt="@collection.Name" class="collection-card-image" />
+                    }
+                    else
+                    {
+                        <div class="collection-card-image collection-card-image-empty">No image</div>
+                    }
+                    <div class="collection-card-body">
+                        <h2 class="collection-card-name">@collection.Name</h2>
+                        <p class="collection-card-price">From ₱@collection.Price.ToString("N2") per piece</p>
+                        <p class="collection-card-note">Plus the price of your size</p>
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" DropShadow="false"
+                                   StartIcon="@Icons.Material.Filled.ShoppingCart" OnClick="@(() => OrderCollection(collection))">
+                            Order This Design
+                        </MudButton>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    #region Properties
+    private List<CollectionItemModel> _collections = new();
+    private bool _isLoading;
+    private bool _loadFailed;
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var collections = await CatalogSvc.GetCollectionsAsync();
+            _collections = collections.Where(collection => collection.IsActive).ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            _loadFailed = true;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    #endregion
+
+    #region Methods
+    private async Task OrderCollection(CollectionItemModel collection)
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        if (authState.User.Identity?.IsAuthenticated != true)
+        {
+            NavManager.NavigateTo("/login");
+            return;
+        }
+
+        var parameters = new DialogParameters<CollectionOrderDialog>
+        {
+            { x => x.Collection, collection }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<CollectionOrderDialog>($"Order: {collection.Name}", parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false)
+        {
+            Extension.ShowAlert("Your order has been placed.", Variant.Filled, Snackbar, Severity.Success);
+            NavManager.NavigateTo("/dashboard");
+        }
+    }
+    #endregion
+}

@@ -1,0 +1,71 @@
+@using CapstoneProject.Commons
+@inject OrderService OrderSvc
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <div class="collection-order-header">
+            @if (!string.IsNullOrEmpty(Collection.ImageUrl))
+            {
+                <img src="@Collection.ImageUrl" alt="@Collection.Name" class="collection-order-image" />
+            }
+            <div>
+                <p class="collection-order-name">@Collection.Name</p>
+                <p class="collection-order-price">₱@Collection.Price.ToString("N2") per piece, plus the price of your size</p>
+            </div>
+        </div>
+
+        <OrderFormComponent @ref="_orderForm" OrderType="collection" CollectionId="@Collection.Id"
+                            CollectionPrice="@Collection.Price" Disabled="@_isSubmitting" />
+    </DialogContent>
+    <DialogActions>
+        <DialogButtonComponent Loading="@_isSubmitting" Submit="PlaceOrder" Cancel="Cancel" ButtonText="Place Order" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Properties
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public CollectionItemModel Collection { get; set; } = new();
+
+    private OrderFormComponent _orderForm = default!;
+    private bool _isSubmitting;
+    #endregion
+
+    #region Methods
+    private async Task PlaceOrder()
+    {
+        if (_isSubmitting) return;
+
+        var message = _orderForm.GetValidationMessage();
+        if (message != null)
+        {
+            Extension.ShowAlert(message, Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var result = await OrderSvc.PlaceOrderAsync(_orderForm.BuildRequest());
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(result.Value));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    #endregion
+}

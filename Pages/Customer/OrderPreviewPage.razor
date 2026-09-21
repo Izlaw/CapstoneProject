@@ -1,77 +1,154 @@
 @page "/order-preview/{Id}"
+@using Microsoft.AspNetCore.Authorization
 @using CapstoneProject.Commons
-@inject CapstoneProject.Services.SupabaseService SupabaseSvc
-@inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
+@attribute [Authorize]
+@inject SupabaseService SupabaseSvc
+@inject OrderService OrderSvc
+@inject AuthenticationStateProvider AuthStateProvider
 @inject ISnackbar Snackbar
-@layout MainLayout
 
-<PageTitle>Digital Receipt - 7Guys House of Fashion</PageTitle>
+<PageTitle>Order Receipt - 7 Guys House of Fashion</PageTitle>
 
-<div class="pa-4 pa-md-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
+<div class="customer-page">
+    <div class="page-back"><BackButtonComponent Href="@_backHref" Text="@_backText" /></div>
+
     @if (_isLoading)
     {
-        <div class="d-flex justify-center align-center" style="height: 60vh;">
-            <MudProgressCircular Color="Color.Primary" Size="Size.Large" Indeterminate="true" />
-        </div>
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
     }
     else if (_order == null)
     {
-        <div class="d-flex flex-column justify-center align-center text-center" style="height: 60vh;">
-            <MudIcon Icon="@Icons.Material.Filled.ErrorOutline" Color="Color.Error" Style="font-size: 64px; margin-bottom: 16px;" />
-            <MudText Typo="Typo.h5" Style="font-weight: 600; color: var(--text-primary);">Order Not Found</MudText>
-            <MudText Typo="Typo.body1" Style="color: var(--text-secondary);">The order you are looking for does not exist or has been deleted.</MudText>
+        <div class="customer-empty">
+            <h1 class="customer-title">Order Not Found</h1>
+            <p>@(_loadMessage ?? "This order does not exist, or you do not have access to it.")</p>
+            <MudButton Href="/dashboard" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false">
+                Back to My Orders
+            </MudButton>
         </div>
     }
     else
     {
         <MudGrid Spacing="4">
             <MudItem xs="12" md="7">
-                <MudPaper Elevation="0" Class="pa-6 mb-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px;">
-                    <div class="d-flex justify-space-between align-center mb-4">
+                <div class="receipt-panel">
+                    <div class="receipt-header">
                         <div>
-                            <MudText Typo="Typo.h5" Style="font-weight: 700; color: var(--text-primary);">Digital Receipt</MudText>
-                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary);">Order #@_order.Id.Substring(0, 8)</MudText>
+                            <h1 class="receipt-title">Order Receipt</h1>
+                            <p class="receipt-id">Order #@_order.Id.Substring(0, 8)</p>
                         </div>
-                        <MudChip T="string" Color="GetStatusColor(_order.Status)" Variant="Variant.Filled" Size="Size.Small">@_order.Status</MudChip>
+                        <MudChip T="string" Color="@GetStatusColor(_order.Status)" Variant="Variant.Filled" Size="Size.Small">@_order.Status</MudChip>
                     </div>
 
-                    <MudDivider Class="mb-4" />
-
-                    @if (!string.IsNullOrEmpty(_order.DesignReference))
+                    @if (_order.CustomOrder != null)
                     {
-                        <div class="d-flex justify-center mb-4" style="background-color: #f5f5f7; border-radius: 8px; padding: 16px;">
-                            <img src="@_order.DesignReference" alt="Shirt Design" style="max-width: 100%; max-height: 400px; object-fit: contain;" />
+                        <div class="receipt-3d">
+                            <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="ShowDesignIn3D" ShowControls="true" />
+                        </div>
+                        <p class="receipt-3d-hint">Drag to rotate the shirt and scroll to zoom.</p>
+                    }
+                    else if (!string.IsNullOrEmpty(_imageUrl))
+                    {
+                        <div class="receipt-image-frame">
+                            <img src="@_imageUrl" alt="Uploaded design" class="receipt-image" />
                         </div>
                     }
-                    
-                    <MudGrid>
-                        <MudItem xs="6">
-                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Date</MudText>
-                            <MudText Typo="Typo.body1" Style="font-weight: 500;">@_order.CreatedAt.ToString("MMM dd, yyyy")</MudText>
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Fabric</MudText>
-                            <MudText Typo="Typo.body1" Style="font-weight: 500;">@(_order.FabricType ?? "N/A")</MudText>
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Order Type</MudText>
-                            <MudText Typo="Typo.body1" Style="font-weight: 500; text-transform: capitalize;">@_order.OrderType</MudText>
-                        </MudItem>
-                        <MudItem xs="6">
-                            <MudText Typo="Typo.caption" Style="color: var(--text-secondary); text-transform: uppercase; font-weight: 600;">Total Price</MudText>
-                            <MudText Typo="Typo.h6" Style="font-weight: 700; color: var(--accent-color);">₱@_order.TotalPrice.ToString("N2")</MudText>
-                        </MudItem>
-                    </MudGrid>
-                </MudPaper>
-            </MudItem>
-            
-            <MudItem xs="12" md="5">
-                <MudPaper Elevation="0" Class="pa-6 d-flex flex-column" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color); border-radius: 12px; height: 100%; min-height: 500px;">
-                    <div class="mb-4">
-                        <MudText Typo="Typo.h6" Style="font-weight: 700; color: var(--text-primary);">Order Support</MudText>
-                        <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Message us regarding any changes to your order.</MudText>
+
+                    <div class="receipt-details">
+                        <div>
+                            <span class="receipt-label">Date</span>
+                            <span class="receipt-value">@_order.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div>
+                            <span class="receipt-label">Order Type</span>
+                            <span class="receipt-value">@GetOrderTypeText(_order.OrderType)</span>
+                        </div>
+                        <div>
+                            <span class="receipt-label">Delivery</span>
+                            <span class="receipt-value">@(_order.TimeframeLabel ?? "-")</span>
+                        </div>
+                        @if (_order.CustomOrder != null)
+                        {
+                            <div>
+                                <span class="receipt-label">Fabric</span>
+                                <span class="receipt-value">@GetFabricText(_order.CustomOrder.FabricName, _order.CustomOrder.FabricNote)</span>
+                            </div>
+                            <div>
+                                <span class="receipt-label">Shirt Color</span>
+                                <span class="receipt-value">
+                                    <span class="receipt-swatch" style="background-color: @_order.CustomOrder.ShirtColor;"></span>
+                                    @_order.CustomOrder.ShirtColor.ToUpper()
+                                </span>
+                            </div>
+                        }
+                        @if (_order.UploadOrder != null)
+                        {
+                            <div>
+                                <span class="receipt-label">Fabric</span>
+                                <span class="receipt-value">@GetFabricText(_order.UploadOrder.FabricName, _order.UploadOrder.FabricNote)</span>
+                            </div>
+                            <div>
+                                <span class="receipt-label">File</span>
+                                <span class="receipt-value">@(_order.UploadOrder.OriginalFileName ?? "-")</span>
+                            </div>
+                        }
+                        @if (_order.CollectionOrder != null)
+                        {
+                            <div>
+                                <span class="receipt-label">Design</span>
+                                <span class="receipt-value">@_order.CollectionOrder.CollectionName</span>
+                            </div>
+                        }
                     </div>
-                    
+
+                    <table class="receipt-table">
+                        <thead>
+                            <tr>
+                                <th>Size</th>
+                                <th class="receipt-num">Quantity</th>
+                                <th class="receipt-num">Price Each</th>
+                                <th class="receipt-num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in _order.Items.OrderBy(item => item.SizeName))
+                            {
+                                <tr>
+                                    <td>@item.SizeName</td>
+                                    <td class="receipt-num">@item.Quantity</td>
+                                    <td class="receipt-num">₱@item.UnitPrice.ToString("N2")</td>
+                                    <td class="receipt-num">₱@item.LineTotal.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="receipt-totals">
+                        <div class="receipt-total-row">
+                            <span>Subtotal (@_order.Quantity pieces)</span>
+                            <span>₱@((_order.Subtotal ?? _order.TotalPrice).ToString("N2"))</span>
+                        </div>
+                        @if ((_order.SurchargePercent ?? 0) > 0)
+                        {
+                            <div class="receipt-total-row">
+                                <span>Delivery Extra (@_order.SurchargePercent?.ToString("0.##")%)</span>
+                                <span>₱@((_order.SurchargeAmount ?? 0).ToString("N2"))</span>
+                            </div>
+                        }
+                        <div class="receipt-total-row receipt-grand-total">
+                            <span>Total</span>
+                            <span>₱@_order.TotalPrice.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+            </MudItem>
+
+            <MudItem xs="12" md="5">
+                <div class="receipt-panel receipt-chat">
+                    <div class="mb-4">
+                        <h2 class="receipt-chat-title">Order Support</h2>
+                        <p class="receipt-chat-subtitle">Message us about any changes to your order.</p>
+                    </div>
+
                     <MudDivider Class="mb-4" />
 
                     <div class="flex-grow-1 overflow-y-auto mb-4" style="background-color: var(--bg-base); border-radius: 8px; padding: 16px;">
@@ -88,9 +165,9 @@
                             foreach (var msg in _messages)
                             {
                                 bool isMyMessage = msg.SenderId == _currentUserId;
-                                string msgStyle = (isMyMessage ? "background-color: var(--primary-color); color: white; border-radius: 8px 8px 0 8px;" : "background-color: white; border-radius: 8px 8px 8px 0;") + " max-width: 85%;";
-                                string timeStyle = (isMyMessage ? "color: #e0e0e0;" : "color: #999;") + " display: block; text-align: right; margin-top: 4px;";
-                                
+                                string msgStyle = (isMyMessage ? "background-color: var(--primary); color: white; border-radius: 8px 8px 0 8px;" : "background-color: var(--bg-elevated); color: var(--text-primary); border-radius: 8px 8px 8px 0;") + " max-width: 85%;";
+                                string timeStyle = (isMyMessage ? "color: #e0e0e0;" : "color: var(--text-muted);") + " display: block; text-align: right; margin-top: 4px;";
+
                                 <div class="d-flex mb-4" style="justify-content: @(isMyMessage ? "flex-end" : "flex-start")">
                                     <MudPaper Elevation="0" Class="pa-3" Style="@msgStyle">
                                         <MudText Typo="Typo.body2">@msg.Content</MudText>
@@ -104,70 +181,168 @@
                     </div>
 
                     <div class="d-flex gap-2">
-                        <MudTextField @bind-Value="_newMessage" Placeholder="Type a message..." Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1" Immediate="true" OnKeyUp="HandleKeyPress" />
-                        <MudIconButton Icon="@Icons.Material.Filled.Send" Color="Color.Primary" Variant="Variant.Filled" Size="Size.Medium" OnClick="SendMessage" Disabled="string.IsNullOrWhiteSpace(_newMessage)" />
+                        <MudTextField @bind-Value="_newMessage" Placeholder="Type a message..." Variant="Variant.Outlined" Margin="Margin.Dense" Class="flex-grow-1" Immediate="true" OnKeyUp="SendOnEnter" />
+                        <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" StartIcon="@Icons.Material.Filled.Send"
+                                   OnClick="SendMessage" Disabled="@(string.IsNullOrWhiteSpace(_newMessage) || _isSending)">
+                            Send
+                        </MudButton>
                     </div>
-                </MudPaper>
+                </div>
             </MudItem>
         </MudGrid>
     }
 </div>
 
 @code {
-    [Parameter]
-    public string Id { get; set; } = string.Empty;
+    #region Properties
+    [Parameter] public string Id { get; set; } = string.Empty;
 
-    private CapstoneProject.Models.AppOrderModel? _order;
-    private List<CapstoneProject.Models.ChatMessageModel>? _messages;
+    private const string ViewerBackgroundColor = "#10121F";
+
+    private AppOrderModel? _order;
+    private ShirtViewerComponent? _shirtViewer;
+    private string _backHref = "/dashboard";
+    private string _backText = "Back to My Orders";
+    private string? _imageUrl;
+    private string? _loadMessage;
+    private List<ChatMessageModel>? _messages;
     private string? _conversationId;
     private string? _currentUserId;
+    private string _newMessage = string.Empty;
     private bool _isLoading = true;
-    private string _newMessage = "";
+    private bool _isSending;
+    #endregion
 
+    #region Lifecycle
     protected override async Task OnInitializedAsync()
     {
         _isLoading = true;
-        
-        if (!string.IsNullOrEmpty(Id))
+
+        try
         {
-            _order = await SupabaseSvc.GetOrderByIdAsync(Id);
-            
-            if (_order != null && !string.IsNullOrEmpty(_order.CustomerId))
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            _currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+            if (authState.User.IsInRole("employee") || authState.User.IsInRole("admin"))
             {
-                // Get the conversation for this customer
-                _conversationId = await SupabaseSvc.GetOrCreateConversationAsync(_order.CustomerId);
-                
-                if (!string.IsNullOrEmpty(_conversationId))
+                _backHref = "/employee/dashboard";
+                _backText = "Back to Order Management";
+            }
+
+            var result = await OrderSvc.GetOrderDetailsAsync(Id);
+            if (!result.IsSuccess)
+            {
+                _loadMessage = result.Message;
+                return;
+            }
+
+            _order = result.Value;
+            _imageUrl = await OrderSvc.GetImageUrlAsync(_order?.UploadOrder?.UploadedImagePath);
+            await LoadConversation();
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    #endregion
+
+    #region Methods
+    private async Task ShowDesignIn3D()
+    {
+        if (_shirtViewer == null || _order?.CustomOrder == null) return;
+
+        try
+        {
+            await _shirtViewer.SetBackgroundColorAsync(ViewerBackgroundColor);
+
+            var items = new List<object>();
+            foreach (var element in _order.CustomOrder.DesignData.Elements)
+            {
+                var item = await BuildViewerItem(element);
+                if (item != null)
                 {
-                    _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
+                    items.Add(item);
                 }
             }
-        }
-        
-        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
-        var user = authState.User;
-        if (user.Identity != null && user.Identity.IsAuthenticated)
-        {
-            _currentUserId = user.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
-        }
 
-        _isLoading = false;
+            await _shirtViewer.ApplyDesignBatchAsync(new { color = _order.CustomOrder.ShirtColor, items });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
     }
 
-    private Color GetStatusColor(string? status)
+    private async Task<object?> BuildViewerItem(DesignElementModel element)
+    {
+        string? imageUrl = null;
+
+        if (element.Type == "image")
+        {
+            imageUrl = await OrderSvc.GetImageUrlAsync(element.Path);
+            if (imageUrl == null) return null;
+        }
+
+        return new
+        {
+            type = element.Type,
+            text = element.Text,
+            fontSize = element.FontSize,
+            color = element.Color,
+            font = element.Font,
+            size = element.Size,
+            originX = element.OriginX,
+            originY = element.OriginY,
+            originZ = element.OriginZ,
+            dirX = element.DirX,
+            dirY = element.DirY,
+            dirZ = element.DirZ,
+            dataUrl = imageUrl
+        };
+    }
+
+    private async Task LoadConversation()
+    {
+        if (_order == null || string.IsNullOrEmpty(_order.CustomerId)) return;
+
+        _conversationId = await SupabaseSvc.GetOrCreateConversationAsync(_order.CustomerId);
+        if (!string.IsNullOrEmpty(_conversationId))
+        {
+            _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
+        }
+    }
+
+    private static string GetOrderTypeText(string orderType)
+    {
+        return orderType switch
+        {
+            "custom" => "Custom Design",
+            "collection" => "Collection Design",
+            "upload" => "Uploaded Design",
+            _ => "-"
+        };
+    }
+
+    private static string GetFabricText(string fabricName, string? fabricNote)
+    {
+        return string.IsNullOrWhiteSpace(fabricNote) ? fabricName : $"{fabricName} ({fabricNote})";
+    }
+
+    private static Color GetStatusColor(string? status)
     {
         return status switch
         {
             "Pending" => Color.Warning,
             "In Progress" => Color.Info,
-            "Shipped" => Color.Primary,
+            "Ready for Pickup" => Color.Primary,
             "Completed" => Color.Success,
             "Cancelled" => Color.Error,
             _ => Color.Default
         };
     }
 
-    private async Task HandleKeyPress(KeyboardEventArgs e)
+    private async Task SendOnEnter(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
@@ -177,22 +352,29 @@
 
     private async Task SendMessage()
     {
-        if (string.IsNullOrWhiteSpace(_newMessage) || string.IsNullOrEmpty(_conversationId) || string.IsNullOrEmpty(_currentUserId)) return;
-        
-        var msgText = _newMessage;
-        _newMessage = ""; // Clear input immediately
-        
-        bool success = await SupabaseSvc.SendMessageAsync(_conversationId, msgText);
-        if (success)
+        if (_isSending || string.IsNullOrWhiteSpace(_newMessage) || string.IsNullOrEmpty(_conversationId) || string.IsNullOrEmpty(_currentUserId)) return;
+
+        _isSending = true;
+        var messageText = _newMessage;
+        _newMessage = string.Empty;
+
+        try
         {
-            // Refresh messages
-            _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
-            StateHasChanged();
+            var success = await SupabaseSvc.SendMessageAsync(_conversationId, messageText);
+            if (success)
+            {
+                _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
+            }
+            else
+            {
+                _newMessage = messageText;
+                Extension.ShowAlert("Failed to send message. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+            }
         }
-        else
+        finally
         {
-            _newMessage = msgText; // Restore if failed
-            Extension.ShowAlert("Failed to send message. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+            _isSending = false;
         }
     }
+    #endregion
 }

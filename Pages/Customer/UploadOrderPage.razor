@@ -1,0 +1,154 @@
+@page "/upload-order"
+@using Microsoft.AspNetCore.Authorization
+@using CapstoneProject.Commons
+@attribute [Authorize]
+@inject OrderService OrderSvc
+@inject NavigationManager NavManager
+@inject ISnackbar Snackbar
+
+<PageTitle>Upload Your Design - 7 Guys House of Fashion</PageTitle>
+
+<div class="customer-page">
+    <div class="page-back"><BackButtonComponent Href="/add-order" Text="Back to New Order" /></div>
+
+    <div class="customer-header">
+        <h1 class="customer-title">Upload Your Design</h1>
+        <p class="customer-subtitle">Already have artwork? Upload it, choose your sizes and we will print it for you.</p>
+    </div>
+
+    <div class="upload-layout">
+        <div class="upload-image-panel">
+            <p class="order-form-title">Your Design</p>
+
+            @if (!string.IsNullOrEmpty(_previewUrl))
+            {
+                <img src="@_previewUrl" alt="Your design" class="upload-preview" />
+                <p class="upload-file-name">@_fileName</p>
+            }
+            else
+            {
+                <div class="upload-empty">No image chosen yet</div>
+            }
+
+            <MudFileUpload T="IBrowserFile" FilesChanged="SelectImage" Accept=".png,.jpg,.jpeg,.webp">
+                <ActivatorContent>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" FullWidth="true" Disabled="@_isSubmitting"
+                               StartIcon="@Icons.Material.Filled.CloudUpload">
+                        @(string.IsNullOrEmpty(_previewUrl) ? "Choose Image" : "Choose a Different Image")
+                    </MudButton>
+                </ActivatorContent>
+            </MudFileUpload>
+            <MudText Typo="Typo.caption" Class="upload-hint">PNG, JPG or WebP, up to 5 MB</MudText>
+        </div>
+
+        <div class="upload-form-panel">
+            <OrderFormComponent @ref="_orderForm" OrderType="upload" Disabled="@_isSubmitting" />
+
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" DropShadow="false" Class="mt-4"
+                       Disabled="@_isSubmitting" StartIcon="@Icons.Material.Filled.ShoppingCart" OnClick="PlaceOrder">
+                @if (_isSubmitting)
+                {
+                    <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                    <span>Placing Your Order...</span>
+                }
+                else
+                {
+                    <span>Place Order</span>
+                }
+            </MudButton>
+        </div>
+    </div>
+</div>
+
+@code {
+    #region Properties
+    private const long MaxImageBytes = 5 * 1024 * 1024;
+
+    private OrderFormComponent _orderForm = default!;
+    private byte[]? _imageBytes;
+    private string _imageContentType = string.Empty;
+    private string _fileName = string.Empty;
+    private string? _previewUrl;
+    private bool _isSubmitting;
+    #endregion
+
+    #region Methods
+    private async Task SelectImage(IBrowserFile file)
+    {
+        if (file.Size > MaxImageBytes)
+        {
+            Extension.ShowAlert("The image is larger than 5 MB. Please choose a smaller one.", Variant.Filled, Snackbar, Severity.Error);
+            return;
+        }
+
+        try
+        {
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream(MaxImageBytes).CopyToAsync(memoryStream);
+
+            _imageBytes = memoryStream.ToArray();
+            _imageContentType = file.ContentType;
+            _fileName = file.Name;
+            _previewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(_imageBytes)}";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("The image could not be read. Please try another file.", Variant.Filled, Snackbar, Severity.Error);
+        }
+    }
+
+    private async Task PlaceOrder()
+    {
+        if (_isSubmitting) return;
+
+        if (_imageBytes == null)
+        {
+            Extension.ShowAlert("Choose the image you want printed.", Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
+        var message = _orderForm.GetValidationMessage();
+        if (message != null)
+        {
+            Extension.ShowAlert(message, Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var upload = await OrderSvc.UploadImageAsync(_imageBytes, _imageContentType);
+            if (!upload.IsSuccess)
+            {
+                Extension.ShowAlert(upload.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            var request = _orderForm.BuildRequest();
+            request.ImagePath = upload.Value;
+            request.OriginalFileName = _fileName;
+
+            var result = await OrderSvc.PlaceOrderAsync(request);
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            Extension.ShowAlert("Your order has been placed.", Variant.Filled, Snackbar, Severity.Success);
+            NavManager.NavigateTo("/dashboard");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Something went wrong while placing your order. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+    #endregion
+}

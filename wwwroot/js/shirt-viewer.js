@@ -6,6 +6,8 @@ import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 let scene, camera, renderer, controls, shirtGroup;
 let currentColor = '#ffffff';
 let blazorRef = null;
+let modelReady = Promise.resolve();
+let resolveModelReady = () => {};
 
 const decals = [];
 let activeDecal = null;
@@ -35,7 +37,8 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     activeDecal = null;
     shirtGroup = null;
     currentColor = '#ffffff';
-    
+    modelReady = new Promise(resolve => { resolveModelReady = resolve; });
+
     const container = document.getElementById(containerId);
     if (!container) {
         console.error("Canvas container not found");
@@ -113,9 +116,13 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
             });
 
             scene.add(shirtGroup);
+            resolveModelReady();
         },
         undefined,
-        (err) => console.error('Error loading shirt model:', err)
+        (err) => {
+            console.error('Error loading shirt model:', err);
+            resolveModelReady();
+        }
     );
 
     // ── Window Resize ──────────────────────────────────────
@@ -294,11 +301,14 @@ export function addImage(dataUrl, size = 0.6, originX = 0, originY = 0.2, origin
 }
 
 export async function applyDesignBatch(config) {
+    await modelReady;
+
     // 1. Preload any images asynchronously FIRST
     const loadedItems = await Promise.all((config.items || []).map(async item => {
         if (item.type === 'image') {
             return new Promise((resolve) => {
                 const img = new Image();
+                img.crossOrigin = 'anonymous';
                 img.src = item.dataUrl;
                 img.onload = () => resolve({ ...item, loadedImg: img });
                 img.onerror = () => resolve(null);

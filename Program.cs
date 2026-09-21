@@ -25,6 +25,8 @@ builder.Services.AddScoped<Microsoft.AspNetCore.Components.Authorization.Authent
 builder.Services.AddScoped<DesignService>();
 builder.Services.AddScoped<ExportService>();
 builder.Services.AddScoped<SupabaseService>();
+builder.Services.AddScoped<CatalogService>();
+builder.Services.AddScoped<OrderService>();
 
 var supabaseUrl = "https://jvljcrwazmlcjkqomwdz.supabase.co";
 var supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imp2bGpjcndhem1sY2prcW9td2R6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxODM4MzYsImV4cCI6MjA5MDc1OTgzNn0.siWFE9V5QhJbNdCxq6U4wvfXhmemt1YzG6mx9p_pbO8";
@@ -47,5 +49,7 @@ var host = builder.Build();
 // Without this, CurrentSession is always null on page load and auth always fails.
 var supabaseClient = host.Services.GetRequiredService<Supabase.Client>();
 await supabaseClient.InitializeAsync();
+supabaseClient.Auth.LoadSession();
+await supabaseClient.Auth.RetrieveSessionAsync();
 
 await host.RunAsync();

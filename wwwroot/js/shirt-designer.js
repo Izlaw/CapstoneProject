@@ -304,6 +304,19 @@ function updateDecalPosition(decalObj, point, normal, shirtMesh) {
         decalObj.mesh.geometry.dispose();
     }
     decalObj.mesh = createDecalMesh(decalObj.texture, point, normal, shirtMesh, decalObj.size);
+    decalObj.placement = buildPlacement(point, normal, shirtMesh);
+}
+
+function buildPlacement(point, normal, shirtMesh) {
+    return {
+        point: point.clone(),
+        normal: normal.clone().transformDirection(shirtMesh.matrixWorld)
+    };
+}
+
+function roundTo(value, digits) {
+    const factor = Math.pow(10, digits);
+    return Math.round(value * factor) / factor;
 }
 
 function createTextCanvasTexture(text, fontSize, fillColor, fontFamily) {
@@ -389,6 +402,7 @@ export function addText(text, fontSize, fillColor, fontFamily) {
             mesh: mesh,
             texture: texture,
             size: 0.6,
+            placement: buildPlacement(point, normal, shirtMesh),
             textData: { text, fontSize, fillColor, fontFamily }
         };
         decals.push(decalObj);
@@ -439,7 +453,8 @@ export function addImageFromDataUrl(dataUrl) {
                 type: 'image',
                 mesh: mesh,
                 texture: texture,
-                size: 0.6
+                size: 0.6,
+                placement: buildPlacement(point, normal, shirtMesh)
             };
             decals.push(decalObj);
             activeDecal = decalObj;
@@ -468,7 +483,7 @@ export function deselectActiveObject() {
     triggerSelection();
 }
 
-export function clearCanvas() {
+export function clearDesign() {
     decals.forEach(d => {
         scene.remove(d.mesh);
         d.mesh.geometry.dispose();
@@ -477,6 +492,41 @@ export function clearCanvas() {
     decals.length = 0;
     activeDecal = null;
     triggerSelection();
+}
+
+export function exportPng() {
+    if (!renderer || !scene || !camera) return '';
+    renderer.render(scene, camera);
+    return renderer.domElement.toDataURL('image/png');
+}
+
+export function getDesignElements() {
+    return decals.map(decal => {
+        const origin = decal.placement.point.clone().addScaledVector(decal.placement.normal, 1);
+        const direction = decal.placement.normal.clone().negate();
+
+        const element = {
+            type: decal.type,
+            size: decal.size,
+            originX: roundTo(origin.x, 4),
+            originY: roundTo(origin.y, 4),
+            originZ: roundTo(origin.z, 4),
+            dirX: roundTo(direction.x, 4),
+            dirY: roundTo(direction.y, 4),
+            dirZ: roundTo(direction.z, 4)
+        };
+
+        if (decal.type === 'text') {
+            element.text = decal.textData.text;
+            element.fontSize = decal.textData.fontSize;
+            element.color = decal.textData.fillColor;
+            element.font = decal.textData.fontFamily;
+        } else {
+            element.dataUrl = decal.texture.image.src;
+        }
+
+        return element;
+    });
 }
 
 export function setCameraView(view) {

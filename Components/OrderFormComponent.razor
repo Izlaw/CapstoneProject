@@ -1,0 +1,340 @@
+@implements IDisposable
+@inject CatalogService CatalogSvc
+@inject OrderService OrderSvc
+
+<div class="order-form">
+    @if (_isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_loadFailed)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+            The order options could not be loaded. Please refresh the page.
+        </MudAlert>
+    }
+    else
+    {
+        <p class="order-form-title">Sizes and Quantities</p>
+
+        <MudSelect T="string" Value="@_sizeToAdd" ValueChanged="AddSize" Label="Add a Size"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@(Disabled || !AvailableSizes.Any())"
+                   HelperText="@(AvailableSizes.Any() ? "Choose a size to add it to your order" : "All sizes have been added")">
+            @foreach (var size in AvailableSizes)
+            {
+                <MudSelectItem Value="@size.Id">@GetSizeOptionText(size)</MudSelectItem>
+            }
+        </MudSelect>
+
+        @if (SelectedSizes.Count == 0)
+        {
+            <p class="order-empty-hint">No sizes added yet.</p>
+        }
+        else
+        {
+            <div class="order-lines">
+                @foreach (var size in SelectedSizes)
+                {
+                    <div class="order-line">
+                        <div class="order-line-info">
+                            <span class="order-line-name">@size.Name</span>
+                            <span class="order-line-detail">₱@GetPiecePrice(size).ToString("N2") each</span>
+                        </div>
+                        <div class="order-line-stepper">
+                            <MudIconButton Icon="@Icons.Material.Filled.Remove" Size="Size.Small" Variant="Variant.Outlined"
+                                           Disabled="@(Disabled || GetQuantity(size.Id) <= 1)" aria-label="@($"Decrease {size.Name}")"
+                                           OnClick="@(() => SetQuantity(size.Id, GetQuantity(size.Id) - 1))" />
+                            <MudNumericField T="int" Value="@GetQuantity(size.Id)" ValueChanged="@(value => SetQuantity(size.Id, value))"
+                                             Min="1" Max="100000" Variant="Variant.Outlined" Margin="Margin.Dense"
+                                             HideSpinButtons="true" Disabled="@Disabled" Immediate="true" Class="order-line-qty" />
+                            <MudIconButton Icon="@Icons.Material.Filled.Add" Size="Size.Small" Variant="Variant.Outlined"
+                                           Disabled="@Disabled" aria-label="@($"Increase {size.Name}")"
+                                           OnClick="@(() => SetQuantity(size.Id, GetQuantity(size.Id) + 1))" />
+                        </div>
+                        <span class="order-line-total">₱@((GetPiecePrice(size) * GetQuantity(size.Id)).ToString("N2"))</span>
+                        <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Disabled="@Disabled"
+                                   StartIcon="@Icons.Material.Filled.Close" OnClick="@(() => RemoveSize(size.Id))">
+                            Remove
+                        </MudButton>
+                    </div>
+                }
+            </div>
+        }
+
+        @if (!IsCollectionOrder)
+        {
+            <p class="order-form-title">Fabric</p>
+            <MudSelect T="string" Value="@_fabricId" ValueChanged="OnFabricChanged" Label="Fabric"
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@Disabled">
+                @foreach (var fabric in _fabrics)
+                {
+                    <MudSelectItem Value="@fabric.Id">@fabric.Name (₱@fabric.Price.ToString("N2") per piece)</MudSelectItem>
+                }
+            </MudSelect>
+
+            @if (SelectedFabric?.RequiresNote == true)
+            {
+                <MudTextField T="string" Value="@_fabricNote" ValueChanged="OnFabricNoteChanged" Label="Describe the Fabric You Want"
+                              Variant="Variant.Outlined" Margin="Margin.Dense" MaxLength="200" Class="mt-3"
+                              Disabled="@Disabled" Immediate="true" />
+            }
+        }
+
+        <p class="order-form-title">Delivery</p>
+        <MudSelect T="string" Value="@_timeframeId" ValueChanged="OnTimeframeChanged" Label="When Do You Need It?"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@Disabled">
+            @foreach (var timeframe in _timeframes)
+            {
+                <MudSelectItem Value="@timeframe.Id">@GetTimeframeText(timeframe)</MudSelectItem>
+            }
+        </MudSelect>
+
+        <div class="order-summary">
+            <p class="order-form-title">Price</p>
+            @if (_quoteError != null)
+            {
+                <p class="order-summary-error">@_quoteError</p>
+            }
+            else if (_quote == null)
+            {
+                <p class="order-summary-hint">Add a size to see the price.</p>
+            }
+            else
+            {
+                <div class="order-summary-row">
+                    <span>Subtotal (@_quote.TotalQuantity pieces)</span>
+                    <span>₱@_quote.Subtotal.ToString("N2")</span>
+                </div>
+                @if (_quote.SurchargePercent > 0)
+                {
+                    <div class="order-summary-row">
+                        <span>Delivery Extra (@_quote.SurchargePercent.ToString("0.##")%)</span>
+                        <span>₱@_quote.SurchargeAmount.ToString("N2")</span>
+                    </div>
+                }
+                <div class="order-summary-row order-summary-total">
+                    <span>Total</span>
+                    <span>₱@_quote.Total.ToString("N2")</span>
+                </div>
+            }
+            @if (_isQuoting)
+            {
+                <MudProgressLinear Indeterminate="true" Color="Color.Primary" Class="mt-2" />
+            }
+        </div>
+    }
+</div>
+
+@code {
+    #region Properties
+    [Parameter] public string OrderType { get; set; } = "custom";
+    [Parameter] public string? CollectionId { get; set; }
+    [Parameter] public decimal CollectionPrice { get; set; }
+    [Parameter] public bool Disabled { get; set; }
+
+    private List<SizeModel> _sizes = new();
+    private List<FabricModel> _fabrics = new();
+    private List<TimeframeModel> _timeframes = new();
+    private readonly Dictionary<string, int> _quantities = new();
+    private string? _sizeToAdd;
+    private string? _fabricId;
+    private string _fabricNote = string.Empty;
+    private string? _timeframeId;
+    private OrderQuoteModel? _quote;
+    private string? _quoteError;
+    private bool _isLoading;
+    private bool _loadFailed;
+    private bool _isQuoting;
+    private CancellationTokenSource? _quoteDelay;
+    private string? _lastCollectionId;
+
+    private bool IsCollectionOrder => OrderType == "collection";
+    private FabricModel? SelectedFabric => _fabrics.FirstOrDefault(fabric => fabric.Id == _fabricId);
+    private int TotalQuantity => _quantities.Values.Sum();
+    private IEnumerable<SizeModel> AvailableSizes => _sizes.Where(size => !_quantities.ContainsKey(size.Id));
+    private List<SizeModel> SelectedSizes => _sizes.Where(size => _quantities.ContainsKey(size.Id)).ToList();
+    public OrderQuoteModel? Quote => _quote;
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            _sizes = await CatalogSvc.GetSizesAsync();
+            _timeframes = await CatalogSvc.GetTimeframesAsync();
+            _fabrics = IsCollectionOrder ? new List<FabricModel>() : await CatalogSvc.GetFabricsAsync();
+
+            _fabricId = _fabrics.FirstOrDefault()?.Id;
+            _timeframeId = _timeframes.OrderBy(timeframe => timeframe.SurchargePercent).FirstOrDefault()?.Id;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            _loadFailed = true;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    protected override async Task OnParametersSetAsync()
+    {
+        if (_isLoading || _loadFailed || CollectionId == _lastCollectionId) return;
+
+        _lastCollectionId = CollectionId;
+        await RefreshQuote();
+    }
+
+    public void Dispose()
+    {
+        _quoteDelay?.Cancel();
+        _quoteDelay?.Dispose();
+    }
+    #endregion
+
+    #region Methods
+    public string? GetValidationMessage()
+    {
+        if (TotalQuantity < 1) return "Add at least one size.";
+        if (!IsCollectionOrder && string.IsNullOrEmpty(_fabricId)) return "Choose a fabric.";
+        if (SelectedFabric?.RequiresNote == true && string.IsNullOrWhiteSpace(_fabricNote)) return "Describe the fabric you want.";
+        if (string.IsNullOrEmpty(_timeframeId)) return "Choose when you need your order.";
+        if (_quoteError != null) return _quoteError;
+        return null;
+    }
+
+    public OrderRequestModel BuildRequest()
+    {
+        return new OrderRequestModel
+        {
+            OrderType = OrderType,
+            Items = _quantities
+                .Where(entry => entry.Value > 0)
+                .Select(entry => new OrderItemRequestModel { SizeId = entry.Key, Quantity = entry.Value })
+                .ToList(),
+            FabricId = IsCollectionOrder ? null : _fabricId,
+            FabricNote = SelectedFabric?.RequiresNote == true ? _fabricNote.Trim() : null,
+            CollectionId = IsCollectionOrder ? CollectionId : null,
+            TimeframeId = _timeframeId
+        };
+    }
+
+    private int GetQuantity(string sizeId)
+    {
+        return _quantities.TryGetValue(sizeId, out var quantity) ? quantity : 1;
+    }
+
+    private decimal GetPiecePrice(SizeModel size)
+    {
+        var basePrice = IsCollectionOrder ? CollectionPrice : SelectedFabric?.Price ?? 0;
+        return size.Price + basePrice;
+    }
+
+    private string GetSizeOptionText(SizeModel size)
+    {
+        var measurements = size.WidthIn.HasValue && size.LengthIn.HasValue
+            ? $"  ({size.WidthIn:0.##} x {size.LengthIn:0.##} in)"
+            : string.Empty;
+        return $"{size.Name}{measurements}";
+    }
+
+    private string GetTimeframeText(TimeframeModel timeframe)
+    {
+        var extra = timeframe.SurchargePercent > 0 ? $"+{timeframe.SurchargePercent:0.##}%" : "no extra charge";
+        var limit = timeframe.MaxQuantity.HasValue ? $", up to {timeframe.MaxQuantity:N0} pieces" : string.Empty;
+        return $"{timeframe.Label} ({extra}{limit})";
+    }
+
+    private async Task AddSize(string sizeId)
+    {
+        if (string.IsNullOrEmpty(sizeId)) return;
+
+        _quantities[sizeId] = 1;
+        _sizeToAdd = null;
+        await RefreshQuote();
+    }
+
+    private async Task RemoveSize(string sizeId)
+    {
+        _quantities.Remove(sizeId);
+        await RefreshQuote();
+    }
+
+    private async Task SetQuantity(string sizeId, int quantity)
+    {
+        _quantities[sizeId] = Math.Clamp(quantity, 1, 100000);
+        await RefreshQuote();
+    }
+
+    private async Task OnFabricChanged(string fabricId)
+    {
+        _fabricId = fabricId;
+        await RefreshQuote();
+    }
+
+    private async Task OnFabricNoteChanged(string note)
+    {
+        _fabricNote = note;
+        await RefreshQuote();
+    }
+
+    private async Task OnTimeframeChanged(string timeframeId)
+    {
+        _timeframeId = timeframeId;
+        await RefreshQuote();
+    }
+
+    private async Task RefreshQuote()
+    {
+        _quoteDelay?.Cancel();
+        _quoteDelay?.Dispose();
+        _quoteDelay = new CancellationTokenSource();
+        var token = _quoteDelay.Token;
+
+        try
+        {
+            await Task.Delay(300, token);
+        }
+        catch (TaskCanceledException)
+        {
+            return;
+        }
+
+        var isMissingFabric = !IsCollectionOrder && string.IsNullOrEmpty(_fabricId);
+        var isMissingFabricNote = SelectedFabric?.RequiresNote == true && string.IsNullOrWhiteSpace(_fabricNote);
+
+        if (TotalQuantity < 1 || isMissingFabric || isMissingFabricNote)
+        {
+            _quote = null;
+            _quoteError = null;
+            _isQuoting = false;
+            StateHasChanged();
+            return;
+        }
+
+        _isQuoting = true;
+        StateHasChanged();
+
+        try
+        {
+            var result = await OrderSvc.GetQuoteAsync(BuildRequest());
+            if (token.IsCancellationRequested) return;
+
+            _quote = result.IsSuccess ? result.Value : null;
+            _quoteError = result.IsSuccess ? null : result.Message;
+        }
+        finally
+        {
+            if (!token.IsCancellationRequested)
+            {
+                _isQuoting = false;
+                StateHasChanged();
+            }
+        }
+    }
+    #endregion
+}

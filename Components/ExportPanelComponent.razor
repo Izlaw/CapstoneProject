@@ -1,60 +1,64 @@
+@inject ISnackbar Snackbar
+@using CapstoneProject.Commons
+
 <div class="export-section">
-    <p class="tool-section-title">📤 &nbsp;Export &amp; Save</p>
+    <p class="tool-section-title">Order</p>
 
-    <MudSelect T="string" Label="Shirt Size" @bind-Value="Size" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mb-4">
-        <MudSelectItem Value="@("S")">Small (S)</MudSelectItem>
-        <MudSelectItem Value="@("M")">Medium (M)</MudSelectItem>
-        <MudSelectItem Value="@("L")">Large (L)</MudSelectItem>
-        <MudSelectItem Value="@("XL")">Extra Large (XL)</MudSelectItem>
-    </MudSelect>
+    <OrderFormComponent @ref="_orderForm" OrderType="custom" Disabled="@IsSaving" />
 
-    <MudSelect T="string" Label="Fabric Type" @bind-Value="Fabric" Variant="Variant.Outlined" AnchorOrigin="Origin.BottomCenter" Class="mb-4">
-        <MudSelectItem Value="@("Cotton")">100% Cotton</MudSelectItem>
-        <MudSelectItem Value="@("Polyester")">Polyester Blend</MudSelectItem>
-        <MudSelectItem Value="@("DriFit")">Dri-Fit</MudSelectItem>
-    </MudSelect>
+    <div class="order-actions">
+        <AuthorizeView>
+            <Authorized>
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" DropShadow="false"
+                           Disabled="@IsSaving" StartIcon="@Icons.Material.Filled.ShoppingCart" OnClick="PlaceOrder">
+                    @if (IsSaving)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Placing Your Order...</span>
+                    }
+                    else
+                    {
+                        <span>Place Order</span>
+                    }
+                </MudButton>
+            </Authorized>
+            <NotAuthorized>
+                <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" DropShadow="false"
+                           StartIcon="@Icons.Material.Filled.Login">
+                    Sign In to Place Your Order
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
 
-    <MudNumericField @bind-Value="Quantity" Label="Quantity" Variant="Variant.Outlined" Min="1" Max="999" Class="mb-4" />
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true" Disabled="@IsSaving"
+                   StartIcon="@Icons.Material.Filled.Download" OnClick="@(() => OnExport.InvokeAsync())">
+            Download Preview Image
+        </MudButton>
+    </div>
 
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true"
-               id="export-png-btn"
-               Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:700; letter-spacing:0.05em; margin-bottom:0.5rem;"
-               OnClick="() => OnExport.InvokeAsync()">
-        📸 &nbsp;Export as PNG
-    </MudButton>
-
-    <MudButton Variant="Variant.Filled" Color="Color.Secondary" FullWidth="true"
-               id="save-design-btn"
-               Disabled="@IsSaving"
-               Style="border-radius:8px; font-family:'Outfit',sans-serif; font-weight:600;"
-               OnClick="HandlePlaceOrder">
-        @if (IsSaving)
-        {
-            <MudProgressCircular Size="MudBlazor.Size.Small" Indeterminate="true" Class="mr-2" />
-            <span>Processing...</span>
-        }
-        else
-        {
-            <span>🛒 &nbsp;Place Order</span>
-        }
-    </MudButton>
-
-    <MudText Typo="Typo.caption" Style="color:#5c5b7a; margin-top:0.75rem; display:block; text-align:center; font-size:0.72rem;">
-        Tip: Rotate the shirt with drag · Zoom with scroll
-    </MudText>
+    <MudText Typo="Typo.caption" Class="order-tip">Tip: drag to rotate the shirt and scroll to zoom.</MudText>
 </div>
 
 @code {
+    #region Properties
     [Parameter] public EventCallback OnExport { get; set; }
-    [Parameter] public EventCallback<(string size, string fabric, int quantity)> OnCheckout { get; set; }
+    [Parameter] public EventCallback<OrderRequestModel> OnCheckout { get; set; }
     [Parameter] public bool IsSaving { get; set; }
 
-    public string Size { get; set; } = "M";
-    public string Fabric { get; set; } = "Cotton";
-    public int Quantity { get; set; } = 1;
+    private OrderFormComponent _orderForm = default!;
+    #endregion
 
-    private async Task HandlePlaceOrder()
+    #region Methods
+    private async Task PlaceOrder()
     {
-        await OnCheckout.InvokeAsync((Size, Fabric, Quantity));
+        var message = _orderForm.GetValidationMessage();
+        if (message != null)
+        {
+            Extension.ShowAlert(message, Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
+        await OnCheckout.InvokeAsync(_orderForm.BuildRequest());
     }
+    #endregion
 }

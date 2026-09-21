@@ -21,21 +21,42 @@ public class AppOrderModel : BaseModel
     [Column("total_price")]
     public decimal TotalPrice { get; set; }
 
-    [Column("fabric_type")]
-    public string? FabricType { get; set; }
-
-    [Column("size")]
-    public string? Size { get; set; }
-
     [Column("quantity")]
     public int Quantity { get; set; } = 1;
 
-    [Column("timeframe")]
-    public string Timeframe { get; set; } = "Standard"; // Standard, Rush
+    [Column("base_unit_price")]
+    public decimal? BaseUnitPrice { get; set; }
 
-    [Column("design_reference")]
-    public string? DesignReference { get; set; } // URL to saved design PNG or Collection Item ID
+    [Column("timeframe_id")]
+    public string? TimeframeId { get; set; }
+
+    [Column("timeframe_label")]
+    public string? TimeframeLabel { get; set; }
+
+    [Column("surcharge_percent")]
+    public decimal? SurchargePercent { get; set; }
+
+    [Column("subtotal")]
+    public decimal? Subtotal { get; set; }
+
+    [Column("surcharge_amount")]
+    public decimal? SurchargeAmount { get; set; }
 
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
+
+    [Column("updated_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
+    public DateTime? UpdatedAt { get; set; }
+
+    [Reference(typeof(CustomOrderModel), ReferenceAttribute.JoinType.Left, includeInQuery: false)]
+    public CustomOrderModel? CustomOrder { get; set; }
+
+    [Reference(typeof(CollectionOrderModel), ReferenceAttribute.JoinType.Left, includeInQuery: false)]
+    public CollectionOrderModel? CollectionOrder { get; set; }
+
+    [Reference(typeof(UploadOrderModel), ReferenceAttribute.JoinType.Left, includeInQuery: false)]
+    public UploadOrderModel? UploadOrder { get; set; }
+
+    [Reference(typeof(OrderItemModel), ReferenceAttribute.JoinType.Left, includeInQuery: false)]
+    public List<OrderItemModel> Items { get; set; } = new();
 }

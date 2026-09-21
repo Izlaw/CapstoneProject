@@ -1,10 +1,14 @@
 @page "/dashboard"
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
 @inject Microsoft.AspNetCore.Components.Authorization.AuthenticationStateProvider AuthStateProvider
 
 <PageTitle>Customer Dashboard - 7Guys House of Fashion</PageTitle>
 
 <div class="pa-6 pa-md-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
+    <div class="page-back"><BackButtonComponent Href="/" Text="Back to Home" /></div>
+
     <!-- Page Header -->
     <div class="d-flex justify-space-between align-center mb-6" style="flex-wrap: wrap; gap: 1rem;">
         <div>
@@ -29,14 +33,14 @@
         <MudItem xs="12" sm="4">
             <div class="dash-stat-card">
                 <div class="dash-stat-icon">⏳</div>
-                <div class="dash-stat-value">@Orders.Count(o => o.Status == "Pending" || o.Status == "In Progress")</div>
+                <div class="dash-stat-value">@Orders.Count(o => o.Status != "Completed" && o.Status != "Cancelled")</div>
                 <div class="dash-stat-label">Active Orders</div>
             </div>
         </MudItem>
         <MudItem xs="12" sm="4">
             <div class="dash-stat-card">
                 <div class="dash-stat-icon">💰</div>
-                <div class="dash-stat-value">₱@Orders.Sum(o => o.TotalPrice).ToString("N0")</div>
+                <div class="dash-stat-value">₱@Orders.Where(o => o.Status != "Cancelled").Sum(o => o.TotalPrice).ToString("N0")</div>
                 <div class="dash-stat-label">Total Spent</div>
             </div>
         </MudItem>
@@ -99,6 +103,7 @@
                             {
                                 "Pending"     => ("status-pending", "Pending"),
                                 "In Progress" => ("status-progress", "In Progress"),
+                                "Ready for Pickup" => ("status-progress", "Ready for Pickup"),
                                 "Completed"   => ("status-completed", "Completed"),
                                 "Cancelled"   => ("status-cancelled", "Cancelled"),
                                 _             => ("status-pending", context.Status ?? "-")
