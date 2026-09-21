@@ -42,6 +42,9 @@ public class AppOrderModel : BaseModel
     [Column("surcharge_amount")]
     public decimal? SurchargeAmount { get; set; }
 
+    [Column("share_token", ignoreOnInsert: true, ignoreOnUpdate: true)]
+    public string ShareToken { get; set; } = string.Empty;
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
 

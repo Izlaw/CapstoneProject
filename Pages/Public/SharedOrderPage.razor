@@ -1,0 +1,242 @@
+@page "/shared/{Token:guid}"
+@inject OrderService OrderSvc
+
+<PageTitle>Shared Order - 7 Guys House of Fashion</PageTitle>
+
+<div class="customer-page">
+    @if (_isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_order == null)
+    {
+        <div class="customer-empty">
+            <h1 class="customer-title">Order Not Found</h1>
+            <p>@_loadMessage</p>
+            <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false">
+                Go to Home
+            </MudButton>
+        </div>
+    }
+    else
+    {
+        <MudGrid Justify="Justify.Center">
+            <MudItem xs="12" md="8">
+                <div class="receipt-panel">
+                    <div class="receipt-header">
+                        <div>
+                            <h1 class="receipt-title">Order Details</h1>
+                            <p class="receipt-id">Order #@_order.ShortId</p>
+                        </div>
+                        <MudChip T="string" Color="@GetStatusColor(_order.Status)" Variant="Variant.Filled" Size="Size.Small">@_order.Status</MudChip>
+                    </div>
+
+                    @if (_order.Custom != null)
+                    {
+                        <div class="receipt-3d">
+                            <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="ShowDesignIn3D" ShowControls="true" />
+                        </div>
+                        <p class="receipt-3d-hint">Drag to rotate the shirt and scroll to zoom.</p>
+                    }
+                    else if (!string.IsNullOrEmpty(_order.Upload?.ImageUrl))
+                    {
+                        <div class="receipt-image-frame">
+                            <img src="@_order.Upload.ImageUrl" alt="Uploaded design" class="receipt-image" />
+                        </div>
+                    }
+
+                    <div class="receipt-details">
+                        <div>
+                            <span class="receipt-label">Date</span>
+                            <span class="receipt-value">@_order.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                        </div>
+                        <div>
+                            <span class="receipt-label">Order Type</span>
+                            <span class="receipt-value">@GetOrderTypeText(_order.OrderType)</span>
+                        </div>
+                        <div>
+                            <span class="receipt-label">Delivery</span>
+                            <span class="receipt-value">@(_order.TimeframeLabel ?? "-")</span>
+                        </div>
+                        @if (_order.Custom != null)
+                        {
+                            <div>
+                                <span class="receipt-label">Fabric</span>
+                                <span class="receipt-value">@GetFabricText(_order.Custom.FabricName, _order.Custom.FabricNote)</span>
+                            </div>
+                            <div>
+                                <span class="receipt-label">Shirt Color</span>
+                                <span class="receipt-value">
+                                    <span class="receipt-swatch" style="background-color: @_order.Custom.ShirtColor;"></span>
+                                    @_order.Custom.ShirtColor.ToUpper()
+                                </span>
+                            </div>
+                        }
+                        @if (_order.Upload != null)
+                        {
+                            <div>
+                                <span class="receipt-label">Fabric</span>
+                                <span class="receipt-value">@GetFabricText(_order.Upload.FabricName, _order.Upload.FabricNote)</span>
+                            </div>
+                        }
+                        @if (_order.Collection != null)
+                        {
+                            <div>
+                                <span class="receipt-label">Design</span>
+                                <span class="receipt-value">@_order.Collection.CollectionName</span>
+                            </div>
+                        }
+                    </div>
+
+                    <table class="receipt-table">
+                        <thead>
+                            <tr>
+                                <th>Size</th>
+                                <th class="receipt-num">Quantity</th>
+                                <th class="receipt-num">Price Each</th>
+                                <th class="receipt-num">Amount</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var item in _order.Items)
+                            {
+                                <tr>
+                                    <td>@item.SizeName</td>
+                                    <td class="receipt-num">@item.Quantity</td>
+                                    <td class="receipt-num">₱@item.UnitPrice.ToString("N2")</td>
+                                    <td class="receipt-num">₱@item.LineTotal.ToString("N2")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+
+                    <div class="receipt-totals">
+                        <div class="receipt-total-row">
+                            <span>Subtotal (@_order.Quantity pieces)</span>
+                            <span>₱@((_order.Subtotal ?? _order.TotalPrice).ToString("N2"))</span>
+                        </div>
+                        @if ((_order.SurchargePercent ?? 0) > 0)
+                        {
+                            <div class="receipt-total-row">
+                                <span>Delivery Extra (@_order.SurchargePercent?.ToString("0.##")%)</span>
+                                <span>₱@((_order.SurchargeAmount ?? 0).ToString("N2"))</span>
+                            </div>
+                        }
+                        <div class="receipt-total-row receipt-grand-total">
+                            <span>Total</span>
+                            <span>₱@_order.TotalPrice.ToString("N2")</span>
+                        </div>
+                    </div>
+                </div>
+            </MudItem>
+        </MudGrid>
+    }
+</div>
+
+@code {
+    #region Properties
+    [Parameter] public Guid Token { get; set; }
+
+    private const string ViewerBackgroundColor = "#10121F";
+
+    private SharedOrderModel? _order;
+    private ShirtViewerComponent? _shirtViewer;
+    private string? _loadMessage;
+    private bool _isLoading = true;
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var result = await OrderSvc.GetSharedOrderAsync(Token);
+            if (!result.IsSuccess)
+            {
+                _loadMessage = result.Message;
+                return;
+            }
+
+            _order = result.Value;
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    #endregion
+
+    #region Methods
+    private async Task ShowDesignIn3D()
+    {
+        if (_shirtViewer == null || _order?.Custom == null) return;
+
+        try
+        {
+            await _shirtViewer.SetBackgroundColorAsync(ViewerBackgroundColor);
+
+            var items = _order.Custom.DesignData.Elements
+                .Where(element => element.Type != "image" || !string.IsNullOrEmpty(element.DataUrl))
+                .Select(BuildViewerItem)
+                .ToList();
+
+            await _shirtViewer.ApplyDesignBatchAsync(new { color = _order.Custom.ShirtColor, items });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
+    private static object BuildViewerItem(DesignElementModel element)
+    {
+        return new
+        {
+            type = element.Type,
+            text = element.Text,
+            fontSize = element.FontSize,
+            color = element.Color,
+            font = element.Font,
+            size = element.Size,
+            originX = element.OriginX,
+            originY = element.OriginY,
+            originZ = element.OriginZ,
+            dirX = element.DirX,
+            dirY = element.DirY,
+            dirZ = element.DirZ,
+            dataUrl = element.DataUrl
+        };
+    }
+
+    private static string GetOrderTypeText(string orderType)
+    {
+        return orderType switch
+        {
+            "custom" => "Custom Design",
+            "collection" => "Collection Design",
+            "upload" => "Uploaded Design",
+            _ => "-"
+        };
+    }
+
+    private static string GetFabricText(string fabricName, string? fabricNote)
+    {
+        return string.IsNullOrWhiteSpace(fabricNote) ? fabricName : $"{fabricName} ({fabricNote})";
+    }
+
+    private static Color GetStatusColor(string? status)
+    {
+        return status switch
+        {
+            OrderStatuses.Pending => Color.Warning,
+            OrderStatuses.InProgress => Color.Info,
+            OrderStatuses.ReadyForPickup => Color.Primary,
+            OrderStatuses.Completed => Color.Success,
+            OrderStatuses.Cancelled => Color.Error,
+            _ => Color.Default
+        };
+    }
+    #endregion
+}

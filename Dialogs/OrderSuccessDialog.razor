@@ -4,12 +4,15 @@
 <MudDialog Style="border-radius: 12px; max-width: 450px;">
     <DialogContent>
         <div class="d-flex flex-column align-center text-center pa-4">
-            <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size: 64px; margin-bottom: 16px;" />
-            
-            <MudText Typo="Typo.h5" Style="font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">Order Placed Successfully!</MudText>
-            
+            @if (ShowSuccessIcon)
+            {
+                <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size: 64px; margin-bottom: 16px;" />
+            }
+
+            <MudText Typo="Typo.h5" Style="font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">@HeaderText</MudText>
+
             <MudText Typo="Typo.body1" Style="color: var(--text-secondary); margin-bottom: 24px;">
-                Your custom design has been saved. Scan the QR code below to view your digital receipt.
+                @MessageText
             </MudText>
 
             @if (!string.IsNullOrEmpty(_qrCodeBase64))
@@ -26,7 +29,7 @@
     </DialogContent>
     <DialogActions>
         <MudButton Color="Color.Primary" Variant="Variant.Filled" OnClick="Close" Style="border-radius: 100px; padding: 0.5rem 2rem; width: 100%;">
-            View My Orders
+            @CloseText
         </MudButton>
     </DialogActions>
 </MudDialog>
@@ -36,6 +39,10 @@
 
     [Parameter] public string OrderId { get; set; } = string.Empty;
     [Parameter] public string PreviewUrl { get; set; } = string.Empty;
+    [Parameter] public string HeaderText { get; set; } = "Order Placed Successfully!";
+    [Parameter] public string MessageText { get; set; } = "Your custom design has been saved. Scan the QR code below to view your digital receipt.";
+    [Parameter] public string CloseText { get; set; } = "View My Orders";
+    [Parameter] public bool ShowSuccessIcon { get; set; } = true;
 
     private string _qrCodeBase64 = "";
 

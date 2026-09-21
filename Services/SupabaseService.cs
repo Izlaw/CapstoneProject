@@ -70,22 +70,6 @@ public class SupabaseService
         }
     }
 
-    public async Task<bool> UpdateOrderStatusAsync(string orderId, string status)
-    {
-        try
-        {
-            var update = await _supabase.From<AppOrderModel>()
-                .Where(x => x.Id == orderId)
-                .Set(x => x.Status, status)
-                .Update();
-            return update.Models.Count > 0;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
     public async Task<string?> GetOrCreateConversationAsync(string customerId)
     {
         try

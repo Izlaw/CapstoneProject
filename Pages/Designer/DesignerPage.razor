@@ -222,10 +222,15 @@
 
     private async Task ShowOrderPlacedDialog(string orderId)
     {
+        var shareToken = await OrderSvc.GetShareTokenAsync(orderId);
+        var previewUrl = shareToken.IsSuccess
+            ? NavManager.ToAbsoluteUri($"/shared/{shareToken.Value}").ToString()
+            : string.Empty;
+
         var parameters = new DialogParameters<OrderSuccessDialog>
         {
             { x => x.OrderId, orderId },
-            { x => x.PreviewUrl, NavManager.ToAbsoluteUri($"/order-preview/{orderId}").ToString() }
+            { x => x.PreviewUrl, previewUrl }
         };
         var options = new DialogOptions { CloseOnEscapeKey = false, BackdropClick = false, MaxWidth = MaxWidth.Small };
 

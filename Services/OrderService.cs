@@ -1,4 +1,5 @@
 using CapstoneProject.Models;
+using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
 using Postgrest.Exceptions;
 using Supabase;
@@ -152,6 +153,89 @@ public class OrderService
         }
     }
 
+    public async Task<OperationResult<string>> GetShareTokenAsync(string orderId)
+    {
+        try
+        {
+            var order = await _supabase.From<AppOrderModel>()
+                .Where(x => x.Id == orderId)
+                .Single();
+
+            if (order == null || string.IsNullOrEmpty(order.ShareToken))
+            {
+                return OperationResult<string>.Failure("The share link could not be found.");
+            }
+
+            return OperationResult<string>.Success(order.ShareToken);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return OperationResult<string>.Failure("The share link could not be loaded. Please try again.");
+        }
+    }
+
+    public async Task<OperationResult<SharedOrderModel>> GetSharedOrderAsync(Guid token)
+    {
+        try
+        {
+            var options = new Supabase.Functions.Client.InvokeFunctionOptions
+            {
+                Body = new Dictionary<string, object> { { "token", token.ToString() } }
+            };
+            var json = await _supabase.Functions.Invoke("shared-order", options: options);
+
+            var order = JsonConvert.DeserializeObject<SharedOrderModel>(json);
+            if (order == null)
+            {
+                return OperationResult<SharedOrderModel>.Failure("This order could not be found.");
+            }
+
+            return OperationResult<SharedOrderModel>.Success(order);
+        }
+        catch (Supabase.Functions.Exceptions.FunctionsException ex)
+        {
+            Console.WriteLine(ex.Message);
+            var message = ex.StatusCode == 404 || ex.StatusCode == 400
+                ? "This link is not valid, or the order no longer exists."
+                : "This order could not be loaded. Please try again.";
+            return OperationResult<SharedOrderModel>.Failure(message);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return OperationResult<SharedOrderModel>.Failure("This order could not be loaded. Please try again.");
+        }
+    }
+
+    public async Task<OperationResult> UpdateOrderStatusAsync(string orderId, string status)
+    {
+        try
+        {
+            var update = await _supabase.From<AppOrderModel>()
+                .Where(x => x.Id == orderId)
+                .Set(x => x.Status, status)
+                .Update();
+
+            if (update.Models.Count == 0)
+            {
+                return OperationResult.Failure("The order status could not be updated.");
+            }
+
+            return OperationResult.Success();
+        }
+        catch (PostgrestException ex)
+        {
+            Console.WriteLine(ex.Message);
+            return OperationResult.Failure(GetReadableMessage(ex));
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return OperationResult.Failure("The order status could not be updated. Please try again.");
+        }
+    }
+
     private static Dictionary<string, object?> BuildQuoteParameters(OrderRequestModel request)
     {
         return new Dictionary<string, object?>
@@ -173,7 +257,7 @@ public class OrderService
             var code = content["code"]?.ToString();
             var message = content["message"]?.ToString();
 
-            var isFriendlyCode = code == "22023" || code == "28000" || code == "23503";
+            var isFriendlyCode = code == "22023" || code == "28000" || code == "23503" || code == "42501";
             if (isFriendlyCode && !string.IsNullOrWhiteSpace(message))
             {
                 return message;
