@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Newtonsoft.Json;
 using Postgrest.Attributes;
 using Postgrest.Models;
@@ -51,6 +52,13 @@ public class DesignElementModel
 
 public class DesignPartsModel
 {
+    private static readonly Regex HexColorPattern = new("^#[0-9A-Fa-f]{6}\\z");
+
+    public static string ToSafeColor(string? color)
+    {
+        return color != null && HexColorPattern.IsMatch(color) ? color : "-";
+    }
+
     [JsonProperty("body")]
     public string Body { get; set; } = "#ffffff";
 
@@ -83,9 +91,9 @@ public class DesignPartsModel
     public List<(string Label, string Color)> GetColorRows()
     {
         var rows = new List<(string Label, string Color)>();
-        AddPairRows(rows, "Body", "Front", Front ?? Body, "Back", Back ?? Body);
-        AddPairRows(rows, "Sleeves", "Left Sleeve", LeftSleeve ?? Sleeves, "Right Sleeve", RightSleeve ?? Sleeves);
-        rows.Add(("Collar Color", Collar));
+        AddPairRows(rows, "Body", "Front", ToSafeColor(Front ?? Body), "Back", ToSafeColor(Back ?? Body));
+        AddPairRows(rows, "Sleeves", "Left Sleeve", ToSafeColor(LeftSleeve ?? Sleeves), "Right Sleeve", ToSafeColor(RightSleeve ?? Sleeves));
+        rows.Add(("Collar Color", ToSafeColor(Collar)));
 
         return rows;
     }
@@ -115,7 +123,7 @@ public class DesignDataModel
     {
         if (Parts == null)
         {
-            return new List<(string, string)> { ("Shirt Color", shirtColor) };
+            return new List<(string, string)> { ("Shirt Color", DesignPartsModel.ToSafeColor(shirtColor)) };
         }
 
         return Parts.GetColorRows();
