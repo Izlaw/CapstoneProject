@@ -62,6 +62,17 @@
     #endregion
 
     #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        var user = authState.User;
+
+        if (user.IsInRole("admin") || user.IsInRole("employee"))
+        {
+            NavManager.NavigateTo("/employee/dashboard", replace: true);
+        }
+    }
+
     public async ValueTask DisposeAsync()
     {
         _cts.Cancel();

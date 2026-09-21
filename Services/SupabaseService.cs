@@ -28,6 +28,32 @@ public class SupabaseService
         }
     }
 
+    public async Task<Dictionary<string, string>> GetCustomerNamesAsync(IEnumerable<string> customerIds)
+    {
+        var names = new Dictionary<string, string>();
+        var ids = customerIds.Distinct().ToList();
+        if (ids.Count == 0) return names;
+
+        try
+        {
+            var response = await _supabase.From<UserProfileModel>()
+                .Filter("id", Postgrest.Constants.Operator.In, ids)
+                .Get();
+
+                foreach (var profile in response.Models)
+                {
+                    names[profile.Id] = string.IsNullOrWhiteSpace(profile.FullName) ? "-" : profile.FullName;
+                }
+            
+            return names;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return names;
+        }
+    }
+
     public async Task<List<AppOrderModel>> GetCustomerOrdersAsync(string customerId)
     {
         try

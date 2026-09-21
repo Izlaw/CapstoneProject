@@ -19,7 +19,7 @@
     </div>
     
     <MudPaper Elevation="0" Class="pa-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
-        <MudTable Items="@Orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;" Loading="@_isLoading">
+        <MudTable Items="@_orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;" Loading="@_isLoading">
             <HeaderContent>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Order ID</MudText></MudTh>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Customer</MudText></MudTh>
@@ -30,8 +30,8 @@
                 <MudTh></MudTh>
             </HeaderContent>
             <RowTemplate>
-                <MudTd DataLabel="Order ID">#@context.Id.Substring(0, 8)</MudTd>
-                <MudTd DataLabel="Customer">@context.CustomerId?.Substring(0, 8)</MudTd>
+                <MudTd DataLabel="Order ID">#@ShortId(context.Id)</MudTd>
+                <MudTd DataLabel="Customer">@GetCustomerName(context.CustomerId)</MudTd>
                 <MudTd DataLabel="Type">
                     @if (context.OrderType == "custom")
                     {
@@ -70,9 +70,10 @@
 </div>
 
 @code {
-    private List<CapstoneProject.Models.AppOrderModel> Orders = new();
+    private List<CapstoneProject.Models.AppOrderModel> _orders = new();
+    private Dictionary<string, string> _customerNames = new();
     private bool _isLoading = true;
-    
+
     protected override async Task OnInitializedAsync()
     {
         await LoadOrders();
@@ -81,8 +82,25 @@
     private async Task LoadOrders()
     {
         _isLoading = true;
-        Orders = await SupabaseSvc.GetAllOrdersAsync();
-        _isLoading = false;
+        try
+        {
+            _orders = await SupabaseSvc.GetAllOrdersAsync();
+            _customerNames = await SupabaseSvc.GetCustomerNamesAsync(_orders.Select(x => x.CustomerId));
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetCustomerName(string customerId)
+    {
+        return _customerNames.TryGetValue(customerId, out var name) ? name : "-";
+    }
+
+    private static string ShortId(string id)
+    {
+        return id.Length <= 8 ? id : id[..8];
     }
 
     private async Task UpdateStatus(CapstoneProject.Models.AppOrderModel order, string newStatus)
@@ -92,7 +110,7 @@
         
         if (success)
         {
-            Extension.ShowAlert($"Order #{order.Id.Substring(0, 8)} status updated to {newStatus}", Variant.Filled, Snackbar, Severity.Success);
+            Extension.ShowAlert($"Order #{ShortId(order.Id)} status updated to {newStatus}", Variant.Filled, Snackbar, Severity.Success);
         }
         else
         {

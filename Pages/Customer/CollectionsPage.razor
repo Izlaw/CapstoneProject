@@ -53,8 +53,7 @@
                     }
                     <div class="collection-card-body">
                         <h2 class="collection-card-name">@collection.Name</h2>
-                        <p class="collection-card-price">From ₱@collection.Price.ToString("N2") per piece</p>
-                        <p class="collection-card-note">Plus the price of your size</p>
+                        <p class="collection-card-price">₱@collection.Price.ToString("N2") per piece</p>
                         <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" DropShadow="false"
                                    StartIcon="@Icons.Material.Filled.ShoppingCart" OnClick="@(() => OrderCollection(collection))">
                             Order This Design

@@ -41,6 +41,7 @@
     #region Properties
     private static readonly HashSet<string> AllowedImageTypes = new() { "image/png", "image/jpeg", "image/webp" };
     private static readonly Regex HexColorPattern = new("^#[0-9A-Fa-f]{6}$");
+    private readonly List<string> _uploadedPaths = new();
 
     private ShirtCanvasComponent _shirtCanvas = default!;
     private DesignToolbarComponent _toolbar = default!;
@@ -134,6 +135,8 @@
         }
 
         _isSaving = true;
+        _uploadedPaths.Clear();
+        var orderPlaced = false;
 
         try
         {
@@ -154,6 +157,7 @@
                 return;
             }
 
+            orderPlaced = true;
             await ShowOrderPlacedDialog(result.Value!);
             NavManager.NavigateTo("/dashboard");
         }
@@ -164,6 +168,7 @@
         }
         finally
         {
+            if (!orderPlaced) await OrderSvc.DeleteImagesAsync(_uploadedPaths);
             _isSaving = false;
         }
     }
@@ -184,6 +189,7 @@
             return null;
         }
 
+        _uploadedPaths.Add(upload.Value!);
         return upload.Value;
     }
 
@@ -206,6 +212,7 @@
                 return null;
             }
 
+            _uploadedPaths.Add(upload.Value!);
             element.Path = upload.Value;
             element.DataUrl = null;
         }

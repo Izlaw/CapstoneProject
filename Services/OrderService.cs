@@ -115,6 +115,20 @@ public class OrderService
         }
     }
 
+    public async Task DeleteImagesAsync(List<string> imagePaths)
+    {
+        if (imagePaths.Count == 0) return;
+
+        try
+        {
+            await _supabase.Storage.From(OrderImagesBucket).Remove(imagePaths);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+    }
+
     public async Task<OperationResult<AppOrderModel>> GetOrderDetailsAsync(string orderId)
     {
         try

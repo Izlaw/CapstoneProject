@@ -17,7 +17,6 @@
         <HeaderContent>
             <MudTh>Fabric</MudTh>
             <MudTh Class="admin-num">Price</MudTh>
-            <MudTh>Customer Describes It</MudTh>
             <MudTh Class="admin-num">Order</MudTh>
             <MudTh>Status</MudTh>
             <MudTh></MudTh>
@@ -25,7 +24,6 @@
         <RowTemplate>
             <MudTd DataLabel="Fabric"><span class="admin-name">@context.Name</span></MudTd>
             <MudTd DataLabel="Price" Class="admin-num">₱@context.Price.ToString("N2")</MudTd>
-            <MudTd DataLabel="Customer Describes It">@(context.RequiresNote ? "Yes" : "No")</MudTd>
             <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
             <MudTd DataLabel="Status">
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>

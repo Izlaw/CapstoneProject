@@ -13,24 +13,35 @@
             7 Guys <span class="brand-accent">House of Fashion</span>
         </a>
         <MudSpacer />
-        <MudButton Href="/" Variant="Variant.Text" Class="@GetNavClass("", "nav-secondary")">
-            Home
-        </MudButton>
+        <AuthorizeView Roles="employee,admin">
+            <NotAuthorized>
+                <MudButton Href="/" Variant="Variant.Text" Class="@GetNavClass("", "nav-secondary")">
+                    Home
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
         <MudButton Href="/collections" Variant="Variant.Text" Class="@GetNavClass("collections", "nav-secondary")">
             Collections
         </MudButton>
 
+        <AuthorizeView Roles="customer">
+            <MudButton Href="/dashboard" Variant="Variant.Text" Class="@GetNavClass("dashboard")">
+                My Orders
+            </MudButton>
+        </AuthorizeView>
+
         <AuthorizeView>
-            <Authorized>
-                <MudButton Href="/dashboard" Variant="Variant.Text" Class="@GetNavClass("dashboard")">
-                    My Orders
-                </MudButton>
-            </Authorized>
             <NotAuthorized>
                 <MudButton Href="/login" Variant="Variant.Text" Class="@GetNavClass("login")">
                     Login
                 </MudButton>
             </NotAuthorized>
+        </AuthorizeView>
+
+        <AuthorizeView Roles="employee,admin">
+            <MudButton Href="/employee/dashboard" Variant="Variant.Text" Class="@GetNavClass("employee/dashboard")">
+                Orders
+            </MudButton>
         </AuthorizeView>
 
         <AuthorizeView Roles="admin">
@@ -39,10 +50,14 @@
             </MudButton>
         </AuthorizeView>
 
-        <MudButton Href="/add-order" Variant="Variant.Filled" Color="Color.Primary"
-                   Size="Size.Small" DropShadow="false" Class="primary-action-btn">
-            New Order
-        </MudButton>
+        <AuthorizeView Roles="employee,admin">
+            <NotAuthorized>
+                <MudButton Href="/add-order" Variant="Variant.Filled" Color="Color.Primary"
+                           Size="Size.Small" DropShadow="false" Class="primary-action-btn">
+                    New Order
+                </MudButton>
+            </NotAuthorized>
+        </AuthorizeView>
 
         <AuthorizeView>
             <Authorized>

@@ -116,6 +116,8 @@
         }
 
         _isSubmitting = true;
+        string? uploadedPath = null;
+        var orderPlaced = false;
 
         try
         {
@@ -125,6 +127,7 @@
                 Extension.ShowAlert(upload.Message, Variant.Filled, Snackbar, Severity.Error);
                 return;
             }
+            uploadedPath = upload.Value;
 
             var request = _orderForm.BuildRequest();
             request.ImagePath = upload.Value;
@@ -137,6 +140,7 @@
                 return;
             }
 
+            orderPlaced = true;
             Extension.ShowAlert("Your order has been placed.", Variant.Filled, Snackbar, Severity.Success);
             NavManager.NavigateTo("/dashboard");
         }
@@ -147,6 +151,10 @@
         }
         finally
         {
+            if (!orderPlaced && uploadedPath != null)
+            {
+                await OrderSvc.DeleteImagesAsync(new List<string> { uploadedPath });
+            }
             _isSubmitting = false;
         }
     }
