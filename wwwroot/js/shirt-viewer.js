@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 
 let scene, camera, renderer, controls, shirtGroup;
-let currentColor = '#ffffff';
 let blazorRef = null;
 let modelReady = Promise.resolve();
 let resolveModelReady = () => {};
@@ -36,7 +36,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     decals.length = 0;
     activeDecal = null;
     shirtGroup = null;
-    currentColor = '#ffffff';
+    Object.keys(partColors).forEach(piece => { partColors[piece] = '#ffffff'; });
     modelReady = new Promise(resolve => { resolveModelReady = resolve; });
 
     const container = document.getElementById(containerId);
@@ -83,7 +83,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     scene.add(rimLight);
 
     // ── Load Model ─────────────────────────────────────────
-    const loader = new GLTFLoader();
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     loader.load(
         './models/shirt.glb',
         (gltf) => {
@@ -105,10 +105,12 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
 
             shirtGroup.traverse((child) => {
                 if (child.isMesh) {
+                    child.userData.piece = getPieceOf(child);
                     child.material = new THREE.MeshStandardMaterial({
-                        color: new THREE.Color(currentColor),
+                        color: new THREE.Color(partColors[child.userData.piece]),
                         roughness: 0.75,
                         metalness: 0.0,
+                        side: THREE.DoubleSide,
                     });
                     child.castShadow = true;
                     child.receiveShadow = true;
@@ -141,6 +143,55 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
 }
 
 // ── Decal Helper Functions ─────────────────────────────────
+
+const PIECE_BY_MESH = {
+    Object_111: 'back',
+    Object_113: 'back',
+    Object_115: 'front',
+    Object_117: 'front',
+    Object_121: 'collar',
+    Object_123: 'leftSleeve',
+    Object_125: 'rightSleeve'
+};
+const PIECE_BY_MATERIAL = {
+    'Default_Topstitch_2803.002': 'front',
+    'Default_Topstitch_2747.001': 'front'
+};
+const PIECE_GROUPS = {
+    all: ['front', 'back', 'leftSleeve', 'rightSleeve', 'collar'],
+    body: ['front', 'back'],
+    sleeves: ['leftSleeve', 'rightSleeve'],
+    collar: ['collar']
+};
+const PART_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+const partColors = {
+    front: '#ffffff',
+    back: '#ffffff',
+    leftSleeve: '#ffffff',
+    rightSleeve: '#ffffff',
+    collar: '#ffffff'
+};
+
+function getPieceOf(mesh) {
+    return PIECE_BY_MESH[mesh.name] || PIECE_BY_MATERIAL[mesh.material && mesh.material.name] || 'front';
+}
+
+function applyPartColors() {
+    if (!shirtGroup) return;
+    shirtGroup.traverse((child) => {
+        if (child.isMesh && child.userData.piece) child.material.color.set(partColors[child.userData.piece]);
+    });
+}
+
+const DECAL_PANELS = ['Object_113', 'Object_115', 'Object_117', 'Object_121', 'Object_123', 'Object_125'];
+
+function getDecalTargets() {
+    const targets = [];
+    if (!shirtGroup) return targets;
+    shirtGroup.traverse(c => { if (c.isMesh && DECAL_PANELS.includes(c.name)) targets.push(c); });
+    return targets;
+}
+
 
 function createDecalMesh(texture, point, normal, shirtMesh, size) {
     const material = decalMaterial.clone();
@@ -213,15 +264,36 @@ function createTextCanvasTexture(text, fontSize, fillColor, fontFamily) {
 
 // ── Exported Blazor API ────────────────────────────────────
 
-export function setColor(hex) {
-    currentColor = hex;
-    if (shirtGroup) {
-        shirtGroup.traverse((child) => {
-            if (child.isMesh && !decals.find(d => d.mesh === child)) {
-                child.material.color.set(hex);
-            }
-        });
-    }
+export function setColor(hex, target = 'all') {
+    if (!PART_COLOR_PATTERN.test(hex)) return;
+    const pieces = PIECE_GROUPS[target] || (partColors[target] !== undefined ? [target] : []);
+    pieces.forEach(piece => { partColors[piece] = hex; });
+    applyPartColors();
+}
+
+export function getPartColors() {
+    return {
+        body: partColors.front,
+        sleeves: partColors.leftSleeve,
+        collar: partColors.collar,
+        ...partColors
+    };
+}
+
+export function setPartColors(parts) {
+    const isHex = (value) => typeof value === 'string' && PART_COLOR_PATTERN.test(value);
+    const resolve = (...candidates) => candidates.find(isHex);
+    const resolved = {
+        front: resolve(parts.front, parts.body),
+        back: resolve(parts.back, parts.body),
+        leftSleeve: resolve(parts.leftSleeve, parts.sleeves, parts.body),
+        rightSleeve: resolve(parts.rightSleeve, parts.sleeves, parts.body),
+        collar: resolve(parts.collar, parts.body)
+    };
+    Object.entries(resolved).forEach(([piece, hex]) => {
+        if (hex) partColors[piece] = hex;
+    });
+    applyPartColors();
 }
 
 export function setBackgroundColor(hex) {
@@ -233,18 +305,16 @@ export function setBackgroundColor(hex) {
 export function addText(text, fontSize, fillColor, fontFamily, originX = 0, originY = 0.2, originZ = 2, dirX = 0, dirY = 0, dirZ = -1) {
     const texture = createTextCanvasTexture(text, parseInt(fontSize)*2 || 100, fillColor, fontFamily);
     
-    let shirtMesh = null;
-    if (shirtGroup) {
-        shirtGroup.traverse(c => { if (c.isMesh && !shirtMesh) shirtMesh = c; });
-    }
+    const shirtTargets = getDecalTargets();
     
-    if (shirtMesh) {
+    if (shirtTargets.length > 0) {
         // Raycast from the specific origin in the specific direction
         const rc = new THREE.Raycaster();
         const origin = new THREE.Vector3(originX, originY, originZ);
         const dir = new THREE.Vector3(dirX, dirY, dirZ).normalize();
         rc.set(origin, dir);
-        const intersects = rc.intersectObject(shirtMesh, false);
+        const intersects = rc.intersectObjects(shirtTargets, false);
+        const shirtMesh = intersects.length > 0 ? intersects[0].object : shirtTargets[0];
         
         if (intersects.length === 0) return; // Missed the shirt completely!
         
@@ -271,17 +341,15 @@ export function addImage(dataUrl, size = 0.6, originX = 0, originY = 0.2, origin
         texture.needsUpdate = true;
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
         
-        let shirtMesh = null;
-        if (shirtGroup) {
-            shirtGroup.traverse(c => { if (c.isMesh && !shirtMesh) shirtMesh = c; });
-        }
+        const shirtTargets = getDecalTargets();
         
-        if (shirtMesh) {
+        if (shirtTargets.length > 0) {
             const rc = new THREE.Raycaster();
             const origin = new THREE.Vector3(originX, originY, originZ);
             const dir = new THREE.Vector3(dirX, dirY, dirZ).normalize();
             rc.set(origin, dir);
-            const intersects = rc.intersectObject(shirtMesh, false);
+            const intersects = rc.intersectObjects(shirtTargets, false);
+            const shirtMesh = intersects.length > 0 ? intersects[0].object : shirtTargets[0];
             
             if (intersects.length === 0) return;
             
@@ -324,20 +392,21 @@ export async function applyDesignBatch(config) {
     if (config.color) {
         setColor(config.color);
     }
-
-    // 4. Apply items instantly
-    let shirtMesh = null;
-    if (shirtGroup) {
-        shirtGroup.traverse(c => { if (c.isMesh && !shirtMesh) shirtMesh = c; });
+    if (config.parts) {
+        setPartColors(config.parts);
     }
 
-    if (shirtMesh) {
+    // 4. Apply items instantly
+    const shirtTargets = getDecalTargets();
+
+    if (shirtTargets.length > 0) {
         loadedItems.filter(x => x !== null).forEach(item => {
             const rc = new THREE.Raycaster();
             const origin = new THREE.Vector3(item.originX, item.originY, item.originZ);
             const dir = new THREE.Vector3(item.dirX, item.dirY, item.dirZ).normalize();
             rc.set(origin, dir);
-            const intersects = rc.intersectObject(shirtMesh, false);
+            const intersects = rc.intersectObjects(shirtTargets, false);
+            const shirtMesh = intersects.length > 0 ? intersects[0].object : shirtTargets[0];
             
             if (intersects.length === 0) return;
             

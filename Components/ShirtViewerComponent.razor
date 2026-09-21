@@ -53,10 +53,10 @@
         StateHasChanged();
     }
 
-    public async Task SetColorAsync(string hexColor)
+    public async Task SetColorAsync(string hexColor, string target = "all")
     {
         if (Module is null) return;
-        await Module.InvokeVoidAsync("setColor", hexColor);
+        await Module.InvokeVoidAsync("setColor", hexColor, target);
     }
 
     public async Task SetBackgroundColorAsync(string hexColor)

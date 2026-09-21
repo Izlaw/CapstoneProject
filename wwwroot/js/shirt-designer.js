@@ -1,10 +1,10 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
 import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 
 let scene, camera, renderer, controls, shirtGroup;
-let currentColor = '#ffffff';
 let blazorRef = null;
 
 const decals = [];
@@ -34,7 +34,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     decals.length = 0;
     activeDecal = null;
     shirtGroup = null;
-    currentColor = '#ffffff';
+    Object.keys(partColors).forEach(piece => { partColors[piece] = '#ffffff'; });
     
     const container = document.getElementById(containerId);
     if (!container) {
@@ -80,7 +80,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     scene.add(rimLight);
 
     // ── Load Model ─────────────────────────────────────────
-    const loader = new GLTFLoader();
+    const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
     loader.load(
         './models/shirt.glb',
         (gltf) => {
@@ -102,10 +102,12 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
 
             shirtGroup.traverse((child) => {
                 if (child.isMesh) {
+                    child.userData.piece = getPieceOf(child);
                     child.material = new THREE.MeshStandardMaterial({
-                        color: new THREE.Color(currentColor),
+                        color: new THREE.Color(partColors[child.userData.piece]),
                         roughness: 0.75,
                         metalness: 0.0,
+                        side: THREE.DoubleSide,
                     });
                     child.castShadow = true;
                     child.receiveShadow = true;
@@ -176,8 +178,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
             mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
             raycaster.setFromCamera(mouse, camera);
 
-            const shirtMeshes = [];
-            shirtGroup.traverse(c => { if (c.isMesh && !decals.find(d => d.mesh === c)) shirtMeshes.push(c); });
+            const shirtMeshes = getDecalTargets();
             
             const intersects = raycaster.intersectObjects(shirtMeshes, false);
             if (intersects.length > 0) {
@@ -209,8 +210,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
                 mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
                 raycaster.setFromCamera(mouse, camera);
                 
-                const shirtMeshes = [];
-                shirtGroup.traverse(c => { if (c.isMesh && !decals.find(d => d.mesh === c)) shirtMeshes.push(c); });
+                const shirtMeshes = getDecalTargets();
                 const intersects = raycaster.intersectObjects(shirtMeshes, false);
                 
                 if (intersects.length > 0) {
@@ -238,8 +238,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
         if (raycaster.intersectObjects(decalMeshes, false).length > 0) return; // Handled in pointerdown
 
         if (activeDecal && shirtGroup) {
-            const shirtMeshes = [];
-            shirtGroup.traverse(c => { if (c.isMesh && !decals.find(d => d.mesh === c)) shirtMeshes.push(c); });
+            const shirtMeshes = getDecalTargets();
             
             const intersects = raycaster.intersectObjects(shirtMeshes, false);
             if (intersects.length > 0) {
@@ -277,6 +276,55 @@ function triggerSelection() {
 }
 
 // ── Decal Helper Functions ─────────────────────────────────
+
+const PIECE_BY_MESH = {
+    Object_111: 'back',
+    Object_113: 'back',
+    Object_115: 'front',
+    Object_117: 'front',
+    Object_121: 'collar',
+    Object_123: 'leftSleeve',
+    Object_125: 'rightSleeve'
+};
+const PIECE_BY_MATERIAL = {
+    'Default_Topstitch_2803.002': 'front',
+    'Default_Topstitch_2747.001': 'front'
+};
+const PIECE_GROUPS = {
+    all: ['front', 'back', 'leftSleeve', 'rightSleeve', 'collar'],
+    body: ['front', 'back'],
+    sleeves: ['leftSleeve', 'rightSleeve'],
+    collar: ['collar']
+};
+const PART_COLOR_PATTERN = /^#[0-9A-Fa-f]{6}$/;
+const partColors = {
+    front: '#ffffff',
+    back: '#ffffff',
+    leftSleeve: '#ffffff',
+    rightSleeve: '#ffffff',
+    collar: '#ffffff'
+};
+
+function getPieceOf(mesh) {
+    return PIECE_BY_MESH[mesh.name] || PIECE_BY_MATERIAL[mesh.material && mesh.material.name] || 'front';
+}
+
+function applyPartColors() {
+    if (!shirtGroup) return;
+    shirtGroup.traverse((child) => {
+        if (child.isMesh && child.userData.piece) child.material.color.set(partColors[child.userData.piece]);
+    });
+}
+
+const DECAL_PANELS = ['Object_113', 'Object_115', 'Object_117', 'Object_121', 'Object_123', 'Object_125'];
+
+function getDecalTargets() {
+    const targets = [];
+    if (!shirtGroup) return targets;
+    shirtGroup.traverse(c => { if (c.isMesh && DECAL_PANELS.includes(c.name)) targets.push(c); });
+    return targets;
+}
+
 
 function createDecalMesh(texture, point, normal, shirtMesh, size) {
     const material = decalMaterial.clone();
@@ -362,15 +410,20 @@ function createTextCanvasTexture(text, fontSize, fillColor, fontFamily) {
 
 // ── Exported Blazor API ────────────────────────────────────
 
-export function setColor(hex) {
-    currentColor = hex;
-    if (shirtGroup) {
-        shirtGroup.traverse((child) => {
-            if (child.isMesh && !decals.find(d => d.mesh === child)) {
-                child.material.color.set(hex);
-            }
-        });
-    }
+export function setColor(hex, target = 'all') {
+    if (!PART_COLOR_PATTERN.test(hex)) return;
+    const pieces = PIECE_GROUPS[target] || (partColors[target] !== undefined ? [target] : []);
+    pieces.forEach(piece => { partColors[piece] = hex; });
+    applyPartColors();
+}
+
+export function getPartColors() {
+    return {
+        body: partColors.front,
+        sleeves: partColors.leftSleeve,
+        collar: partColors.collar,
+        ...partColors
+    };
 }
 
 export function setBackgroundColor(hex) {
@@ -382,16 +435,14 @@ export function setBackgroundColor(hex) {
 export function addText(text, fontSize, fillColor, fontFamily) {
     const texture = createTextCanvasTexture(text, parseInt(fontSize)*2 || 100, fillColor, fontFamily);
     
-    let shirtMesh = null;
-    if (shirtGroup) {
-        shirtGroup.traverse(c => { if (c.isMesh && !shirtMesh) shirtMesh = c; });
-    }
+    const shirtTargets = getDecalTargets();
     
-    if (shirtMesh) {
+    if (shirtTargets.length > 0) {
         // Raycast from front to hit the exact chest surface
         const rc = new THREE.Raycaster();
         rc.set(new THREE.Vector3(0, 0.2, 2), new THREE.Vector3(0, 0, -1));
-        const intersects = rc.intersectObject(shirtMesh, false);
+        const intersects = rc.intersectObjects(shirtTargets, false);
+        const shirtMesh = intersects.length > 0 ? intersects[0].object : shirtTargets[0];
         
         const point = intersects.length > 0 ? intersects[0].point : new THREE.Vector3(0, 0.2, 0.2);
         const normal = intersects.length > 0 ? intersects[0].face.normal : new THREE.Vector3(0, 0, 1);
@@ -435,15 +486,13 @@ export function addImageFromDataUrl(dataUrl) {
         texture.needsUpdate = true;
         texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
         
-        let shirtMesh = null;
-        if (shirtGroup) {
-            shirtGroup.traverse(c => { if (c.isMesh && !shirtMesh) shirtMesh = c; });
-        }
+        const shirtTargets = getDecalTargets();
         
-        if (shirtMesh) {
+        if (shirtTargets.length > 0) {
             const rc = new THREE.Raycaster();
             rc.set(new THREE.Vector3(0, 0.2, 2), new THREE.Vector3(0, 0, -1));
-            const intersects = rc.intersectObject(shirtMesh, false);
+            const intersects = rc.intersectObjects(shirtTargets, false);
+            const shirtMesh = intersects.length > 0 ? intersects[0].object : shirtTargets[0];
             
             const point = intersects.length > 0 ? intersects[0].point : new THREE.Vector3(0, 0.2, 0.2);
             const normal = intersects.length > 0 ? intersects[0].face.normal : new THREE.Vector3(0, 0, 1);

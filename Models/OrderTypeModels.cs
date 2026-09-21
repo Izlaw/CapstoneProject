@@ -49,10 +49,77 @@ public class DesignElementModel
     public string? DataUrl { get; set; }
 }
 
+public class DesignPartsModel
+{
+    [JsonProperty("body")]
+    public string Body { get; set; } = "#ffffff";
+
+    [JsonProperty("sleeves")]
+    public string Sleeves { get; set; } = "#ffffff";
+
+    [JsonProperty("collar")]
+    public string Collar { get; set; } = "#ffffff";
+
+    [JsonProperty("front", NullValueHandling = NullValueHandling.Ignore)]
+    public string? Front { get; set; }
+
+    [JsonProperty("back", NullValueHandling = NullValueHandling.Ignore)]
+    public string? Back { get; set; }
+
+    [JsonProperty("leftSleeve", NullValueHandling = NullValueHandling.Ignore)]
+    public string? LeftSleeve { get; set; }
+
+    [JsonProperty("rightSleeve", NullValueHandling = NullValueHandling.Ignore)]
+    public string? RightSleeve { get; set; }
+
+    public List<string> GetAllColors()
+    {
+        return new List<string?>
+        {
+            Body, Sleeves, Collar, Front, Back, LeftSleeve, RightSleeve
+        }.Where(color => color != null).Select(color => color!).ToList();
+    }
+
+    public List<(string Label, string Color)> GetColorRows()
+    {
+        var rows = new List<(string Label, string Color)>();
+        AddPairRows(rows, "Body", "Front", Front ?? Body, "Back", Back ?? Body);
+        AddPairRows(rows, "Sleeves", "Left Sleeve", LeftSleeve ?? Sleeves, "Right Sleeve", RightSleeve ?? Sleeves);
+        rows.Add(("Collar Color", Collar));
+
+        return rows;
+    }
+
+    private static void AddPairRows(List<(string Label, string Color)> rows, string groupLabel, string firstLabel, string firstColor, string secondLabel, string secondColor)
+    {
+        if (string.Equals(firstColor, secondColor, StringComparison.OrdinalIgnoreCase))
+        {
+            rows.Add(($"{groupLabel} Color", firstColor));
+            return;
+        }
+
+        rows.Add(($"{firstLabel} Color", firstColor));
+        rows.Add(($"{secondLabel} Color", secondColor));
+    }
+}
+
 public class DesignDataModel
 {
     [JsonProperty("elements")]
     public List<DesignElementModel> Elements { get; set; } = new();
+
+    [JsonProperty("parts", NullValueHandling = NullValueHandling.Ignore)]
+    public DesignPartsModel? Parts { get; set; }
+
+    public List<(string Label, string Color)> GetColorRows(string shirtColor)
+    {
+        if (Parts == null)
+        {
+            return new List<(string, string)> { ("Shirt Color", shirtColor) };
+        }
+
+        return Parts.GetColorRows();
+    }
 }
 
 [Table("custom_orders")]

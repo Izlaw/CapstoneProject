@@ -64,13 +64,16 @@
                                 <span class="receipt-label">Fabric</span>
                                 <span class="receipt-value">@GetFabricText(_order.Custom.FabricName, _order.Custom.FabricNote)</span>
                             </div>
-                            <div>
-                                <span class="receipt-label">Shirt Color</span>
-                                <span class="receipt-value">
-                                    <span class="receipt-swatch" style="background-color: @_order.Custom.ShirtColor;"></span>
-                                    @_order.Custom.ShirtColor.ToUpper()
-                                </span>
-                            </div>
+                            @foreach (var row in _order.Custom.DesignData.GetColorRows(_order.Custom.ShirtColor))
+                            {
+                                <div>
+                                    <span class="receipt-label">@row.Label</span>
+                                    <span class="receipt-value">
+                                        <span class="receipt-swatch" style="background-color: @row.Color;"></span>
+                                        @row.Color.ToUpper()
+                                    </span>
+                                </div>
+                            }
                         }
                         @if (_order.Upload != null)
                         {
@@ -182,7 +185,7 @@
                 .Select(BuildViewerItem)
                 .ToList();
 
-            await _shirtViewer.ApplyDesignBatchAsync(new { color = _order.Custom.ShirtColor, items });
+            await _shirtViewer.ApplyDesignBatchAsync(new { color = _order.Custom.ShirtColor, parts = _order.Custom.DesignData.Parts, items });
         }
         catch (Exception ex)
         {

@@ -16,10 +16,33 @@
 
     @if (_activeColorTab == "Shirt")
     {
+        <div class="piece-picker">
+            <p class="piece-picker-label">Apply To</p>
+            <div class="piece-chips">
+                @foreach (var group in _groups)
+                {
+                    @RenderTargetChip(group)
+                }
+            </div>
+            <button type="button" class="piece-toggle" aria-expanded="@(_showPieces ? "true" : "false")"
+                    @onclick="() => _showPieces = !_showPieces">
+                <MudIcon Icon="@(_showPieces ? Icons.Material.Filled.ExpandLess : Icons.Material.Filled.ExpandMore)" Size="Size.Small" />
+                Individual Pieces
+            </button>
+            @if (_showPieces)
+            {
+                <div class="piece-chips">
+                    @foreach (var piece in _pieces)
+                    {
+                        @RenderTargetChip(piece)
+                    }
+                </div>
+            }
+        </div>
         <div class="color-swatches">
             @foreach (var swatch in _swatches)
             {
-                <div class="color-swatch @(_selectedColor == swatch ? "active" : "")"
+                <div class="color-swatch @(GetSelectedColor() == swatch ? "active" : "")"
                      style="background-color: @swatch;"
                      title="@swatch"
                      @onclick="() => SelectColor(swatch)">
@@ -28,12 +51,12 @@
         </div>
         <div style="display:flex; gap:0.75rem; align-items:center; margin-top:1rem;">
             <input type="color"
-                   value="@_selectedColor"
+                   value="@GetTargetColor(_activeTarget)"
                    id="custom-color-input"
                    style="width:40px; height:36px; border:none; border-radius:8px; cursor:pointer; background:transparent;"
                    @onchange="OnCustomColorInput" />
             <MudText Typo="Typo.caption" Style="color:#9998b3;">Custom Color</MudText>
-            <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@_selectedColor</MudText>
+            <MudText Typo="Typo.caption" Style="color:#5c5b7a; font-family: monospace;">@(IsMixed(_activeTarget) ? "Mixed" : GetTargetColor(_activeTarget))</MudText>
         </div>
     }
     else if (_activeColorTab == "Background")
@@ -170,7 +193,7 @@
 @code {
     [Inject] private IJSRuntime JS { get; set; } = default!;
 
-    [Parameter] public EventCallback<string> OnColorChanged { get; set; }
+    [Parameter] public EventCallback<(string Target, string Hex)> OnColorChanged { get; set; }
     [Parameter] public EventCallback<string> OnBackgroundColorChanged { get; set; }
     [Parameter] public EventCallback<(string, int, string, string)> OnTextAdded { get; set; }
     [Parameter] public EventCallback<(string, int, string, string)> OnTextUpdated { get; set; }
@@ -181,7 +204,35 @@
 
     // Color state
     private string _activeColorTab = "Shirt";
-    private string _selectedColor = "#ffffff";
+    private string _activeTarget = "all";
+    private bool _showPieces = false;
+    private static readonly Dictionary<string, string[]> TargetPieces = new()
+    {
+        ["all"] = ["front", "back", "leftSleeve", "rightSleeve", "collar"],
+        ["body"] = ["front", "back"],
+        ["sleeves"] = ["leftSleeve", "rightSleeve"],
+        ["collar"] = ["collar"],
+        ["front"] = ["front"],
+        ["back"] = ["back"],
+        ["leftSleeve"] = ["leftSleeve"],
+        ["rightSleeve"] = ["rightSleeve"]
+    };
+    private readonly Dictionary<string, string> _pieceColors = new()
+    {
+        ["front"] = "#ffffff",
+        ["back"] = "#ffffff",
+        ["leftSleeve"] = "#ffffff",
+        ["rightSleeve"] = "#ffffff",
+        ["collar"] = "#ffffff"
+    };
+    private readonly (string Key, string Label)[] _groups =
+    [
+        ("all", "Whole Shirt"), ("body", "Body"), ("sleeves", "Sleeves"), ("collar", "Collar")
+    ];
+    private readonly (string Key, string Label)[] _pieces =
+    [
+        ("front", "Front"), ("back", "Back"), ("leftSleeve", "Left Sleeve"), ("rightSleeve", "Right Sleeve")
+    ];
     private string _backgroundColor = "#f5f5f5";
     private readonly string[] _swatches =
     [
@@ -224,16 +275,52 @@
         StateHasChanged();
     }
 
+    private RenderFragment RenderTargetChip((string Key, string Label) target) => @<button type="button"
+            aria-pressed="@(_activeTarget == target.Key ? "true" : "false")"
+            class="piece-chip @(_activeTarget == target.Key ? "active" : "")"
+            @onclick="() => SelectTarget(target.Key)">
+        <span class="piece-dot @(IsMixed(target.Key) ? "mixed" : "")" style="@GetDotStyle(target.Key)"></span>@target.Label
+    </button>;
+
+    private void SelectTarget(string target)
+    {
+        _activeTarget = target;
+    }
+
+    private string GetTargetColor(string target)
+    {
+        return _pieceColors[TargetPieces[target][0]];
+    }
+
+    private bool IsMixed(string target)
+    {
+        return TargetPieces[target].Select(piece => _pieceColors[piece]).Distinct().Count() > 1;
+    }
+
+    private string GetSelectedColor()
+    {
+        return IsMixed(_activeTarget) ? "" : GetTargetColor(_activeTarget);
+    }
+
+    private string GetDotStyle(string target)
+    {
+        return IsMixed(target) ? "" : $"background-color: {GetTargetColor(target)};";
+    }
+
     private async Task SelectColor(string hex)
     {
-        _selectedColor = hex;
-        await OnColorChanged.InvokeAsync(hex);
+        await ApplyTargetColor(hex);
     }
 
     private async Task OnCustomColorInput(ChangeEventArgs e)
     {
-        _selectedColor = e.Value?.ToString() ?? "#ffffff";
-        await OnColorChanged.InvokeAsync(_selectedColor);
+        await ApplyTargetColor(e.Value?.ToString() ?? "#ffffff");
+    }
+
+    private async Task ApplyTargetColor(string hex)
+    {
+        foreach (var piece in TargetPieces[_activeTarget]) _pieceColors[piece] = hex;
+        await OnColorChanged.InvokeAsync((_activeTarget, hex));
     }
 
     private async Task SelectBgColor(string hex)
@@ -309,7 +396,8 @@
     {
         _hasLogo = false;
         _textInput = "";
-        _selectedColor = "#ffffff";
+        _activeTarget = "all";
+        foreach (var key in _pieceColors.Keys.ToList()) _pieceColors[key] = "#ffffff";
         ClearSelectedObject();
         await OnClearDesign.InvokeAsync();
     }

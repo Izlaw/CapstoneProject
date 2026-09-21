@@ -71,10 +71,13 @@
         _toolbar.ClearSelectedObject();
     }
 
-    private async Task ChangeShirtColor(string hex)
+    private async Task ChangeShirtColor((string Target, string Hex) args)
     {
-        DesignSvc.SetColor(hex);
-        await _shirtCanvas.SetColorAsync(hex);
+        if (args.Target is "all" or "body")
+        {
+            DesignSvc.SetColor(args.Hex);
+        }
+        await _shirtCanvas.SetColorAsync(args.Hex, args.Target);
     }
 
     private async Task ChangeBackgroundColor(string hex)
@@ -103,6 +106,7 @@
     {
         DesignSvc.ClearDesign();
         await _shirtCanvas.ClearDesignAsync();
+        await _shirtCanvas.SetColorAsync("#ffffff");
     }
 
     private async Task DeleteSelected()
@@ -127,8 +131,9 @@
     {
         if (_isSaving || _shirtCanvas.Module is null) return;
 
-        var shirtColor = DesignSvc.CurrentDesign.ShirtColor;
-        if (!HexColorPattern.IsMatch(shirtColor))
+        var parts = await _shirtCanvas.GetPartColorsAsync();
+        var shirtColor = parts.Body;
+        if (!HexColorPattern.IsMatch(shirtColor) || parts.GetAllColors().Any(color => !HexColorPattern.IsMatch(color)))
         {
             Extension.ShowAlert("Choose a shirt color first.", Variant.Filled, Snackbar, Severity.Warning);
             return;
@@ -147,7 +152,7 @@
             if (elements == null) return;
 
             request.ShirtColor = shirtColor;
-            request.DesignData = new DesignDataModel { Elements = elements };
+            request.DesignData = new DesignDataModel { Elements = elements, Parts = parts };
             request.ImagePath = previewPath;
 
             var result = await OrderSvc.PlaceOrderAsync(request);
