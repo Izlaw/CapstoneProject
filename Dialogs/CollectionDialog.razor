@@ -44,12 +44,6 @@
                         <MudText Typo="Typo.caption" Class="collection-image-hint">PNG, JPG or WebP, up to 2 MB</MudText>
                     </div>
                 </div>
-
-                <MudNumericField T="int" @bind-Value="Item.SortOrder" Label="Display Order" Variant="Variant.Outlined"
-                                 Min="0" HideSpinButtons="true" HelperText="Smaller numbers appear first" />
-
-                <MudSwitch T="bool" @bind-Value="Item.IsActive" Color="Color.Primary"
-                           Label="@(Item.IsActive ? "Active: customers can order this design" : "Inactive: hidden from customers")" />
             </MudStack>
         </MudForm>
     </DialogContent>

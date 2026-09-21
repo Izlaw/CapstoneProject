@@ -13,13 +13,13 @@
 </div>
 
 <div class="admin-panel">
-    <MudTable Items="@VisibleSizes" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+    <MudTable Items="@VisibleSizes" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
         <HeaderContent>
             <MudTh>Size</MudTh>
             <MudTh Class="admin-num">Price</MudTh>
             <MudTh Class="admin-num">Width (in)</MudTh>
             <MudTh Class="admin-num">Length (in)</MudTh>
-            <MudTh Class="admin-num">Order</MudTh>
+            <MudTh>Order</MudTh>
             <MudTh>Status</MudTh>
             <MudTh></MudTh>
         </HeaderContent>
@@ -28,7 +28,10 @@
             <MudTd DataLabel="Price" Class="admin-num">₱@context.Price.ToString("N2")</MudTd>
             <MudTd DataLabel="Width (in)" Class="admin-num">@(context.WidthIn?.ToString("0.##") ?? "-")</MudTd>
             <MudTd DataLabel="Length (in)" Class="admin-num">@(context.LengthIn?.ToString("0.##") ?? "-")</MudTd>
-            <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Order">
+                <MoveButtonsComponent CanMoveUp="@CanMoveUp(context)" CanMoveDown="@CanMoveDown(context)" Disabled="@_isProcessing"
+                                      MoveUp="@(() => MoveItem(context, -1))" MoveDown="@(() => MoveItem(context, 1))" />
+            </MudTd>
             <MudTd DataLabel="Status">
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
             </MudTd>
@@ -55,6 +58,7 @@
     private List<SizeModel> _sizes = new();
     private bool _isLoading;
     private bool _isProcessing;
+    private string? _lastMovedId;
     private bool _showInactive;
 
     private IEnumerable<SizeModel> VisibleSizes => _sizes.Where(size => _showInactive || size.IsActive);
@@ -129,6 +133,69 @@
         {
             await LoadSizes();
         }
+    }
+
+    private bool CanMoveUp(SizeModel item)
+    {
+        return VisibleSizes.First().Id != item.Id;
+    }
+
+    private bool CanMoveDown(SizeModel item)
+    {
+        return VisibleSizes.Last().Id != item.Id;
+    }
+
+    private async Task MoveItem(SizeModel item, int direction)
+    {
+        if (_isProcessing) return;
+
+        var visibleItems = VisibleSizes.ToList();
+        var index = visibleItems.FindIndex(candidate => candidate.Id == item.Id);
+        var neighborIndex = index + direction;
+        if (index < 0 || neighborIndex < 0 || neighborIndex >= visibleItems.Count) return;
+
+        var isMoved = false;
+        _isProcessing = true;
+
+        try
+        {
+            var result = await CatalogSvc.MoveAsync(_sizes, item, visibleItems[neighborIndex]);
+            isMoved = result.IsSuccess;
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+
+        await LoadSizes();
+
+        if (isMoved)
+        {
+            await ShowMovedFeedback(item, direction);
+        }
+    }
+
+    private async Task ShowMovedFeedback(SizeModel item, int direction)
+    {
+        Extension.ShowAlert($"{item.Name} moved {(direction < 0 ? "up" : "down")}.", Variant.Filled, Snackbar, Severity.Success);
+
+        _lastMovedId = item.Id;
+        StateHasChanged();
+
+        await Task.Delay(2200);
+        if (_lastMovedId == item.Id)
+        {
+            _lastMovedId = null;
+        }
+    }
+
+    private string GetRowClass(SizeModel item, int rowNumber)
+    {
+        return item.Id == _lastMovedId ? "row-moved" : string.Empty;
     }
 
     private async Task ToggleActive(SizeModel size)

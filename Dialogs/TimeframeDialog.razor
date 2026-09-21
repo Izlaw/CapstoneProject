@@ -18,12 +18,6 @@
                 <MudNumericField T="int?" @bind-Value="Item.MaxQuantity" Label="Maximum Pieces per Order" Variant="Variant.Outlined"
                                  Min="1" Clearable="true" HideSpinButtons="true"
                                  HelperText="Leave empty for no limit" />
-
-                <MudNumericField T="int" @bind-Value="Item.SortOrder" Label="Display Order" Variant="Variant.Outlined"
-                                 Min="0" HideSpinButtons="true" HelperText="Smaller numbers appear first" />
-
-                <MudSwitch T="bool" @bind-Value="Item.IsActive" Color="Color.Primary"
-                           Label="@(Item.IsActive ? "Active: customers can choose this option" : "Inactive: hidden from customers")" />
             </MudStack>
         </MudForm>
     </DialogContent>

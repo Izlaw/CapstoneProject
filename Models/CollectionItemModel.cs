@@ -5,7 +5,7 @@ using Postgrest.Models;
 namespace CapstoneProject.Models;
 
 [Table("collections")]
-public class CollectionItemModel : BaseModel
+public class CollectionItemModel : BaseModel, ISortableItem
 {
     [PrimaryKey("id")]
     public string Id { get; set; } = string.Empty;

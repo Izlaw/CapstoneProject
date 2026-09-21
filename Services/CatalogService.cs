@@ -103,6 +103,39 @@ public class CatalogService
         }
     }
 
+    public async Task<OperationResult> MoveAsync<T>(List<T> allItems, T item, T neighbor) where T : BaseModel, ISortableItem, new()
+    {
+        try
+        {
+            var reordered = allItems.ToList();
+            var itemIndex = reordered.FindIndex(candidate => ReferenceEquals(candidate, item));
+            var neighborIndex = reordered.FindIndex(candidate => ReferenceEquals(candidate, neighbor));
+            if (itemIndex < 0 || neighborIndex < 0)
+            {
+                return OperationResult.Failure("The item could not be found. Please refresh the page.");
+            }
+
+            (reordered[itemIndex], reordered[neighborIndex]) = (reordered[neighborIndex], reordered[itemIndex]);
+
+            for (var position = 0; position < reordered.Count; position++)
+            {
+                var newOrder = (position + 1) * 10;
+                if (reordered[position].SortOrder == newOrder) continue;
+
+                reordered[position].SortOrder = newOrder;
+                var saved = await SaveAsync(reordered[position], false);
+                if (!saved.IsSuccess) return saved;
+            }
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return OperationResult.Failure("The order could not be changed. Please try again.");
+        }
+    }
+
     public async Task<OperationResult<string>> UploadCollectionImageAsync(byte[] fileBytes, string contentType)
     {
         try

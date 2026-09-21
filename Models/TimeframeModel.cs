@@ -5,7 +5,7 @@ using Postgrest.Models;
 namespace CapstoneProject.Models;
 
 [Table("timeframes")]
-public class TimeframeModel : BaseModel
+public class TimeframeModel : BaseModel, ISortableItem
 {
     [PrimaryKey("id")]
     public string Id { get; set; } = string.Empty;

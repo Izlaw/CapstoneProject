@@ -21,12 +21,6 @@
                     <MudNumericField T="decimal?" @bind-Value="Item.LengthIn" Label="Length (inches)" Variant="Variant.Outlined"
                                      Min="0" Max="200" Clearable="true" HideSpinButtons="true" />
                 </MudStack>
-
-                <MudNumericField T="int" @bind-Value="Item.SortOrder" Label="Display Order" Variant="Variant.Outlined"
-                                 Min="0" HideSpinButtons="true" HelperText="Smaller numbers appear first" />
-
-                <MudSwitch T="bool" @bind-Value="Item.IsActive" Color="Color.Primary"
-                           Label="@(Item.IsActive ? "Active: customers can choose this size" : "Inactive: hidden from customers")" />
             </MudStack>
         </MudForm>
     </DialogContent>

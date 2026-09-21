@@ -17,12 +17,6 @@
 
                 <MudSwitch T="bool" @bind-Value="Item.RequiresNote" Color="Color.Primary"
                            Label="Customer must describe the fabric (use for a custom or special fabric)" />
-
-                <MudNumericField T="int" @bind-Value="Item.SortOrder" Label="Display Order" Variant="Variant.Outlined"
-                                 Min="0" HideSpinButtons="true" HelperText="Smaller numbers appear first" />
-
-                <MudSwitch T="bool" @bind-Value="Item.IsActive" Color="Color.Primary"
-                           Label="@(Item.IsActive ? "Active: customers can choose this fabric" : "Inactive: hidden from customers")" />
             </MudStack>
         </MudForm>
     </DialogContent>

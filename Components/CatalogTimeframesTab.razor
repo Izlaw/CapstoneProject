@@ -13,12 +13,12 @@
 </div>
 
 <div class="admin-panel">
-    <MudTable Items="@VisibleTimeframes" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+    <MudTable Items="@VisibleTimeframes" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
         <HeaderContent>
             <MudTh>Delivery Option</MudTh>
             <MudTh Class="admin-num">Extra Charge</MudTh>
             <MudTh Class="admin-num">Max Pieces per Order</MudTh>
-            <MudTh Class="admin-num">Order</MudTh>
+            <MudTh>Order</MudTh>
             <MudTh>Status</MudTh>
             <MudTh></MudTh>
         </HeaderContent>
@@ -26,7 +26,10 @@
             <MudTd DataLabel="Delivery Option"><span class="admin-name">@context.Label</span></MudTd>
             <MudTd DataLabel="Extra Charge" Class="admin-num">@context.SurchargePercent.ToString("0.##")%</MudTd>
             <MudTd DataLabel="Max Pieces per Order" Class="admin-num">@(context.MaxQuantity?.ToString("N0") ?? "No limit")</MudTd>
-            <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Order">
+                <MoveButtonsComponent CanMoveUp="@CanMoveUp(context)" CanMoveDown="@CanMoveDown(context)" Disabled="@_isProcessing"
+                                      MoveUp="@(() => MoveItem(context, -1))" MoveDown="@(() => MoveItem(context, 1))" />
+            </MudTd>
             <MudTd DataLabel="Status">
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
             </MudTd>
@@ -53,6 +56,7 @@
     private List<TimeframeModel> _timeframes = new();
     private bool _isLoading;
     private bool _isProcessing;
+    private string? _lastMovedId;
     private bool _showInactive;
 
     private IEnumerable<TimeframeModel> VisibleTimeframes => _timeframes.Where(timeframe => _showInactive || timeframe.IsActive);
@@ -126,6 +130,69 @@
         {
             await LoadTimeframes();
         }
+    }
+
+    private bool CanMoveUp(TimeframeModel item)
+    {
+        return VisibleTimeframes.First().Id != item.Id;
+    }
+
+    private bool CanMoveDown(TimeframeModel item)
+    {
+        return VisibleTimeframes.Last().Id != item.Id;
+    }
+
+    private async Task MoveItem(TimeframeModel item, int direction)
+    {
+        if (_isProcessing) return;
+
+        var visibleItems = VisibleTimeframes.ToList();
+        var index = visibleItems.FindIndex(candidate => candidate.Id == item.Id);
+        var neighborIndex = index + direction;
+        if (index < 0 || neighborIndex < 0 || neighborIndex >= visibleItems.Count) return;
+
+        var isMoved = false;
+        _isProcessing = true;
+
+        try
+        {
+            var result = await CatalogSvc.MoveAsync(_timeframes, item, visibleItems[neighborIndex]);
+            isMoved = result.IsSuccess;
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+
+        await LoadTimeframes();
+
+        if (isMoved)
+        {
+            await ShowMovedFeedback(item, direction);
+        }
+    }
+
+    private async Task ShowMovedFeedback(TimeframeModel item, int direction)
+    {
+        Extension.ShowAlert($"{item.Label} moved {(direction < 0 ? "up" : "down")}.", Variant.Filled, Snackbar, Severity.Success);
+
+        _lastMovedId = item.Id;
+        StateHasChanged();
+
+        await Task.Delay(2200);
+        if (_lastMovedId == item.Id)
+        {
+            _lastMovedId = null;
+        }
+    }
+
+    private string GetRowClass(TimeframeModel item, int rowNumber)
+    {
+        return item.Id == _lastMovedId ? "row-moved" : string.Empty;
     }
 
     private async Task ToggleActive(TimeframeModel timeframe)

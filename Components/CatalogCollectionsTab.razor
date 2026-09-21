@@ -13,12 +13,12 @@
 </div>
 
 <div class="admin-panel">
-    <MudTable Items="@VisibleCollections" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+    <MudTable Items="@VisibleCollections" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
         <HeaderContent>
             <MudTh>Image</MudTh>
             <MudTh>Design</MudTh>
             <MudTh Class="admin-num">Price</MudTh>
-            <MudTh Class="admin-num">Order</MudTh>
+            <MudTh>Order</MudTh>
             <MudTh>Status</MudTh>
             <MudTh></MudTh>
         </HeaderContent>
@@ -35,7 +35,10 @@
             </MudTd>
             <MudTd DataLabel="Design"><span class="admin-name">@context.Name</span></MudTd>
             <MudTd DataLabel="Price" Class="admin-num">₱@context.Price.ToString("N2")</MudTd>
-            <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Order">
+                <MoveButtonsComponent CanMoveUp="@CanMoveUp(context)" CanMoveDown="@CanMoveDown(context)" Disabled="@_isProcessing"
+                                      MoveUp="@(() => MoveItem(context, -1))" MoveDown="@(() => MoveItem(context, 1))" />
+            </MudTd>
             <MudTd DataLabel="Status">
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
             </MudTd>
@@ -62,6 +65,7 @@
     private List<CollectionItemModel> _collections = new();
     private bool _isLoading;
     private bool _isProcessing;
+    private string? _lastMovedId;
     private bool _showInactive;
 
     private IEnumerable<CollectionItemModel> VisibleCollections => _collections.Where(collection => _showInactive || collection.IsActive);
@@ -135,6 +139,69 @@
         {
             await LoadCollections();
         }
+    }
+
+    private bool CanMoveUp(CollectionItemModel item)
+    {
+        return VisibleCollections.First().Id != item.Id;
+    }
+
+    private bool CanMoveDown(CollectionItemModel item)
+    {
+        return VisibleCollections.Last().Id != item.Id;
+    }
+
+    private async Task MoveItem(CollectionItemModel item, int direction)
+    {
+        if (_isProcessing) return;
+
+        var visibleItems = VisibleCollections.ToList();
+        var index = visibleItems.FindIndex(candidate => candidate.Id == item.Id);
+        var neighborIndex = index + direction;
+        if (index < 0 || neighborIndex < 0 || neighborIndex >= visibleItems.Count) return;
+
+        var isMoved = false;
+        _isProcessing = true;
+
+        try
+        {
+            var result = await CatalogSvc.MoveAsync(_collections, item, visibleItems[neighborIndex]);
+            isMoved = result.IsSuccess;
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+            }
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+
+        await LoadCollections();
+
+        if (isMoved)
+        {
+            await ShowMovedFeedback(item, direction);
+        }
+    }
+
+    private async Task ShowMovedFeedback(CollectionItemModel item, int direction)
+    {
+        Extension.ShowAlert($"{item.Name} moved {(direction < 0 ? "up" : "down")}.", Variant.Filled, Snackbar, Severity.Success);
+
+        _lastMovedId = item.Id;
+        StateHasChanged();
+
+        await Task.Delay(2200);
+        if (_lastMovedId == item.Id)
+        {
+            _lastMovedId = null;
+        }
+    }
+
+    private string GetRowClass(CollectionItemModel item, int rowNumber)
+    {
+        return item.Id == _lastMovedId ? "row-moved" : string.Empty;
     }
 
     private async Task ToggleActive(CollectionItemModel collection)
