@@ -28,8 +28,9 @@ public class BlazorSessionHandler : IGotrueSessionPersistence<Session>
             if (string.IsNullOrEmpty(json)) return null;
             return Newtonsoft.Json.JsonConvert.DeserializeObject<Session>(json);
         }
-        catch
+        catch (Exception ex)
         {
+            Console.WriteLine(ex.Message);
             return null;
         }
     }

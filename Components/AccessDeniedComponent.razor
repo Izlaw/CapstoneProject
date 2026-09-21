@@ -1,0 +1,27 @@
+<PageTitle>Access denied - 7 Guys House of Fashion</PageTitle>
+
+<div class="access-denied">
+    <MudIcon Icon="@Icons.Material.Outlined.Lock" Class="access-denied-icon" />
+    <h1 class="access-denied-title">@(IsSignedIn ? "You do not have access to this page" : "Please sign in to continue")</h1>
+    <p class="access-denied-text">
+        @(IsSignedIn ? "This page is only available to authorized staff." : "You need to sign in before you can open this page.")
+    </p>
+    @if (IsSignedIn)
+    {
+        <MudButton Href="/" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" Class="access-denied-btn">
+            Back to Home
+        </MudButton>
+    }
+    else
+    {
+        <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" Class="access-denied-btn">
+            Go to Login
+        </MudButton>
+    }
+</div>
+
+@code {
+    #region Properties
+    [Parameter] public bool IsSignedIn { get; set; }
+    #endregion
+}
