@@ -4,20 +4,20 @@ using Postgrest.Models;
 
 namespace CapstoneProject.Models;
 
-[Table("collections")]
-public class CollectionItemModel : BaseModel
+[Table("timeframes")]
+public class TimeframeModel : BaseModel
 {
     [PrimaryKey("id")]
     public string Id { get; set; } = string.Empty;
 
-    [Column("name")]
-    public string Name { get; set; } = string.Empty;
+    [Column("label")]
+    public string Label { get; set; } = string.Empty;
 
-    [Column("price")]
-    public decimal Price { get; set; }
+    [Column("surcharge_percent")]
+    public decimal SurchargePercent { get; set; }
 
-    [Column("image_url", NullValueHandling.Include)]
-    public string? ImageUrl { get; set; }
+    [Column("max_quantity", NullValueHandling.Include)]
+    public int? MaxQuantity { get; set; }
 
     [Column("sort_order")]
     public int SortOrder { get; set; }

@@ -1,0 +1,158 @@
+@using CapstoneProject.Commons
+@inject CatalogService CatalogSvc
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudStack Spacing="2">
+                <MudTextField T="string" @bind-Value="Item.Name" Label="Design Name" Variant="Variant.Outlined"
+                              Required="true" RequiredError="Enter a design name." MaxLength="80"
+                              Validation="@_validateName" />
+
+                <MudNumericField T="decimal" @bind-Value="Item.Price" Label="Price" Variant="Variant.Outlined"
+                                 Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
+                                 Adornment="Adornment.Start" AdornmentText="₱"
+                                 HelperText="Added to the price of every piece of this design" />
+
+                <div class="collection-image-field">
+                    @if (!string.IsNullOrEmpty(PreviewUrl))
+                    {
+                        <img src="@PreviewUrl" alt="Design preview" class="collection-image-preview" />
+                    }
+                    else
+                    {
+                        <div class="collection-image-empty">No image</div>
+                    }
+
+                    <div class="collection-image-actions">
+                        <MudFileUpload T="IBrowserFile" FilesChanged="SelectImage" Accept=".png,.jpg,.jpeg,.webp">
+                            <ActivatorContent>
+                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isSubmitting"
+                                           StartIcon="@Icons.Material.Filled.CloudUpload">
+                                    Choose Image
+                                </MudButton>
+                            </ActivatorContent>
+                        </MudFileUpload>
+                        @if (!string.IsNullOrEmpty(PreviewUrl))
+                        {
+                            <MudButton Variant="Variant.Text" Color="Color.Default" Disabled="@_isSubmitting"
+                                       StartIcon="@Icons.Material.Filled.Delete" OnClick="RemoveImage">
+                                Remove Image
+                            </MudButton>
+                        }
+                        <MudText Typo="Typo.caption" Class="collection-image-hint">PNG, JPG or WebP, up to 2 MB</MudText>
+                    </div>
+                </div>
+
+                <MudNumericField T="int" @bind-Value="Item.SortOrder" Label="Display Order" Variant="Variant.Outlined"
+                                 Min="0" HideSpinButtons="true" HelperText="Smaller numbers appear first" />
+
+                <MudSwitch T="bool" @bind-Value="Item.IsActive" Color="Color.Primary"
+                           Label="@(Item.IsActive ? "Active: customers can order this design" : "Inactive: hidden from customers")" />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel" ButtonText="Save" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Properties
+    private const long MaxImageBytes = 2 * 1024 * 1024;
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public CollectionItemModel Item { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; }
+
+    private MudForm _form = default!;
+    private bool _isSubmitting;
+    private byte[]? _pendingImageBytes;
+    private string _pendingImageContentType = string.Empty;
+    private string? _pendingImagePreviewUrl;
+    private readonly Func<string, string?> _validateName = value =>
+        string.IsNullOrWhiteSpace(value) ? "Enter a design name." : null;
+
+    private string? PreviewUrl => _pendingImagePreviewUrl ?? Item.ImageUrl;
+    #endregion
+
+    #region Methods
+    private async Task SelectImage(IBrowserFile file)
+    {
+        if (file.Size > MaxImageBytes)
+        {
+            Extension.ShowAlert("The image is larger than 2 MB. Please choose a smaller one.", Variant.Filled, Snackbar, Severity.Error);
+            return;
+        }
+
+        try
+        {
+            using var memoryStream = new MemoryStream();
+            await file.OpenReadStream(MaxImageBytes).CopyToAsync(memoryStream);
+
+            _pendingImageBytes = memoryStream.ToArray();
+            _pendingImageContentType = file.ContentType;
+            _pendingImagePreviewUrl = $"data:{file.ContentType};base64,{Convert.ToBase64String(_pendingImageBytes)}";
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("The image could not be read. Please try another file.", Variant.Filled, Snackbar, Severity.Error);
+        }
+    }
+
+    private void RemoveImage()
+    {
+        _pendingImageBytes = null;
+        _pendingImageContentType = string.Empty;
+        _pendingImagePreviewUrl = null;
+        Item.ImageUrl = null;
+    }
+
+    private async Task Save()
+    {
+        if (_isSubmitting) return;
+
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _isSubmitting = true;
+
+        try
+        {
+            if (_pendingImageBytes != null)
+            {
+                var upload = await CatalogSvc.UploadCollectionImageAsync(_pendingImageBytes, _pendingImageContentType);
+                if (!upload.IsSuccess)
+                {
+                    Extension.ShowAlert(upload.Message, Variant.Filled, Snackbar, Severity.Error);
+                    return;
+                }
+
+                Item.ImageUrl = upload.Value;
+            }
+
+            Item.Name = Item.Name.Trim();
+            var result = await CatalogSvc.SaveAsync(Item, IsNew);
+
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    #endregion
+}

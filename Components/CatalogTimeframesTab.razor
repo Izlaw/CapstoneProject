@@ -1,0 +1,170 @@
+@using CapstoneProject.Commons
+@using CapstoneProject.Dialogs
+@inject CatalogService CatalogSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="admin-toolbar">
+    <MudSwitch T="bool" @bind-Value="_showInactive" Color="Color.Primary" Label="Show Inactive Options" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddTimeframe">
+        Add Delivery Option
+    </MudButton>
+</div>
+
+<div class="admin-panel">
+    <MudTable Items="@VisibleTimeframes" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+        <HeaderContent>
+            <MudTh>Delivery Option</MudTh>
+            <MudTh Class="admin-num">Extra Charge</MudTh>
+            <MudTh Class="admin-num">Max Pieces per Order</MudTh>
+            <MudTh Class="admin-num">Order</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Delivery Option"><span class="admin-name">@context.Label</span></MudTd>
+            <MudTd DataLabel="Extra Charge" Class="admin-num">@context.SurchargePercent.ToString("0.##")%</MudTd>
+            <MudTd DataLabel="Max Pieces per Order" Class="admin-num">@(context.MaxQuantity?.ToString("N0") ?? "No limit")</MudTd>
+            <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Status">
+                <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
+            </MudTd>
+            <MudTd Class="admin-actions">
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditTimeframe(context))">
+                    Edit
+                </MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                           OnClick="@(() => ToggleActive(context))">
+                    @(context.IsActive ? "Deactivate" : "Activate")
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="admin-empty">No delivery options to show. Use "Add Delivery Option" to create one.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</div>
+
+@code {
+    #region Properties
+    private List<TimeframeModel> _timeframes = new();
+    private bool _isLoading;
+    private bool _isProcessing;
+    private bool _showInactive;
+
+    private IEnumerable<TimeframeModel> VisibleTimeframes => _timeframes.Where(timeframe => _showInactive || timeframe.IsActive);
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadTimeframes();
+    }
+    #endregion
+
+    #region Methods
+    private async Task LoadTimeframes()
+    {
+        if (_isLoading) return;
+        _isLoading = true;
+
+        try
+        {
+            _timeframes = await CatalogSvc.GetTimeframesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Delivery options could not be loaded. Please refresh the page.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private TimeframeModel CopyOf(TimeframeModel timeframe)
+    {
+        return new TimeframeModel
+        {
+            Id = timeframe.Id,
+            Label = timeframe.Label,
+            SurchargePercent = timeframe.SurchargePercent,
+            MaxQuantity = timeframe.MaxQuantity,
+            SortOrder = timeframe.SortOrder,
+            IsActive = timeframe.IsActive
+        };
+    }
+
+    private async Task AddTimeframe()
+    {
+        var nextOrder = _timeframes.Count == 0 ? 10 : _timeframes.Max(timeframe => timeframe.SortOrder) + 10;
+        await OpenTimeframeDialog(new TimeframeModel { SortOrder = nextOrder }, true, "Add Delivery Option");
+    }
+
+    private async Task EditTimeframe(TimeframeModel timeframe)
+    {
+        await OpenTimeframeDialog(CopyOf(timeframe), false, "Edit Delivery Option");
+    }
+
+    private async Task OpenTimeframeDialog(TimeframeModel item, bool isNew, string title)
+    {
+        var parameters = new DialogParameters<TimeframeDialog>
+        {
+            { x => x.Item, item },
+            { x => x.IsNew, isNew }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<TimeframeDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false)
+        {
+            await LoadTimeframes();
+        }
+    }
+
+    private async Task ToggleActive(TimeframeModel timeframe)
+    {
+        if (_isProcessing) return;
+
+        if (timeframe.IsActive)
+        {
+            var confirmed = await DialogService.ShowMessageBox(
+                "Deactivate Delivery Option",
+                $"Customers will no longer be able to choose \"{timeframe.Label}\". Existing orders are not affected.",
+                yesText: "Deactivate",
+                cancelText: "Cancel");
+
+            if (confirmed != true) return;
+        }
+
+        _isProcessing = true;
+
+        try
+        {
+            var updated = CopyOf(timeframe);
+            updated.IsActive = !timeframe.IsActive;
+
+            var result = await CatalogSvc.SaveAsync(updated, false);
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            Extension.ShowAlert($"\"{timeframe.Label}\" is now {(updated.IsActive ? "active" : "inactive")}.", Variant.Filled, Snackbar, Severity.Success);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+
+        await LoadTimeframes();
+    }
+    #endregion
+}

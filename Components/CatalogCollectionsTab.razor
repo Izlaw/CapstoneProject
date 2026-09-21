@@ -1,0 +1,179 @@
+@using CapstoneProject.Commons
+@using CapstoneProject.Dialogs
+@inject CatalogService CatalogSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="admin-toolbar">
+    <MudSwitch T="bool" @bind-Value="_showInactive" Color="Color.Primary" Label="Show Inactive Designs" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddCollection">
+        Add Design
+    </MudButton>
+</div>
+
+<div class="admin-panel">
+    <MudTable Items="@VisibleCollections" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+        <HeaderContent>
+            <MudTh>Image</MudTh>
+            <MudTh>Design</MudTh>
+            <MudTh Class="admin-num">Price</MudTh>
+            <MudTh Class="admin-num">Order</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Image">
+                @if (!string.IsNullOrEmpty(context.ImageUrl))
+                {
+                    <img src="@context.ImageUrl" alt="@context.Name" class="collection-thumb" />
+                }
+                else
+                {
+                    <div class="collection-thumb collection-thumb-empty">-</div>
+                }
+            </MudTd>
+            <MudTd DataLabel="Design"><span class="admin-name">@context.Name</span></MudTd>
+            <MudTd DataLabel="Price" Class="admin-num">₱@context.Price.ToString("N2")</MudTd>
+            <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Status">
+                <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
+            </MudTd>
+            <MudTd Class="admin-actions">
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditCollection(context))">
+                    Edit
+                </MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                           OnClick="@(() => ToggleActive(context))">
+                    @(context.IsActive ? "Deactivate" : "Activate")
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="admin-empty">No designs to show. Use "Add Design" to create one.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</div>
+
+@code {
+    #region Properties
+    private List<CollectionItemModel> _collections = new();
+    private bool _isLoading;
+    private bool _isProcessing;
+    private bool _showInactive;
+
+    private IEnumerable<CollectionItemModel> VisibleCollections => _collections.Where(collection => _showInactive || collection.IsActive);
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCollections();
+    }
+    #endregion
+
+    #region Methods
+    private async Task LoadCollections()
+    {
+        if (_isLoading) return;
+        _isLoading = true;
+
+        try
+        {
+            _collections = await CatalogSvc.GetCollectionsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Designs could not be loaded. Please refresh the page.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private CollectionItemModel CopyOf(CollectionItemModel collection)
+    {
+        return new CollectionItemModel
+        {
+            Id = collection.Id,
+            Name = collection.Name,
+            Price = collection.Price,
+            ImageUrl = collection.ImageUrl,
+            SortOrder = collection.SortOrder,
+            IsActive = collection.IsActive
+        };
+    }
+
+    private async Task AddCollection()
+    {
+        var nextOrder = _collections.Count == 0 ? 10 : _collections.Max(collection => collection.SortOrder) + 10;
+        await OpenCollectionDialog(new CollectionItemModel { SortOrder = nextOrder }, true, "Add Design");
+    }
+
+    private async Task EditCollection(CollectionItemModel collection)
+    {
+        await OpenCollectionDialog(CopyOf(collection), false, "Edit Design");
+    }
+
+    private async Task OpenCollectionDialog(CollectionItemModel item, bool isNew, string title)
+    {
+        var parameters = new DialogParameters<CollectionDialog>
+        {
+            { x => x.Item, item },
+            { x => x.IsNew, isNew }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<CollectionDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false)
+        {
+            await LoadCollections();
+        }
+    }
+
+    private async Task ToggleActive(CollectionItemModel collection)
+    {
+        if (_isProcessing) return;
+
+        if (collection.IsActive)
+        {
+            var confirmed = await DialogService.ShowMessageBox(
+                "Deactivate Design",
+                $"Customers will no longer be able to order \"{collection.Name}\". Existing orders are not affected.",
+                yesText: "Deactivate",
+                cancelText: "Cancel");
+
+            if (confirmed != true) return;
+        }
+
+        _isProcessing = true;
+
+        try
+        {
+            var updated = CopyOf(collection);
+            updated.IsActive = !collection.IsActive;
+
+            var result = await CatalogSvc.SaveAsync(updated, false);
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            Extension.ShowAlert($"\"{collection.Name}\" is now {(updated.IsActive ? "active" : "inactive")}.", Variant.Filled, Snackbar, Severity.Success);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+
+        await LoadCollections();
+    }
+    #endregion
+}

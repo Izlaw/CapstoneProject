@@ -1,0 +1,25 @@
+<MudButton Variant="Variant.Text" Disabled="@Loading" OnClick="@(() => Cancel.InvokeAsync())" Class="dialog-btn">
+    Cancel
+</MudButton>
+<MudButton Variant="Variant.Filled" Color="@ButtonColor" Disabled="@Loading" DropShadow="false"
+           OnClick="@(() => Submit.InvokeAsync())" Class="dialog-btn">
+    @if (Loading)
+    {
+        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+        <span>Saving...</span>
+    }
+    else
+    {
+        <span>@ButtonText</span>
+    }
+</MudButton>
+
+@code {
+    #region Properties
+    [Parameter] public bool Loading { get; set; }
+    [Parameter] public EventCallback Submit { get; set; }
+    [Parameter] public EventCallback Cancel { get; set; }
+    [Parameter] public string ButtonText { get; set; } = "Save";
+    [Parameter] public Color ButtonColor { get; set; } = Color.Primary;
+    #endregion
+}

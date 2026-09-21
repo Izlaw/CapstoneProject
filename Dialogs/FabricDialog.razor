@@ -1,0 +1,80 @@
+@using CapstoneProject.Commons
+@inject CatalogService CatalogSvc
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudStack Spacing="2">
+                <MudTextField T="string" @bind-Value="Item.Name" Label="Fabric Name" Variant="Variant.Outlined"
+                              Required="true" RequiredError="Enter a fabric name." MaxLength="50"
+                              Validation="@_validateName" HelperText="For example: Cotton, Polyester" />
+
+                <MudNumericField T="decimal" @bind-Value="Item.Price" Label="Price" Variant="Variant.Outlined"
+                                 Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
+                                 Adornment="Adornment.Start" AdornmentText="₱"
+                                 HelperText="Added to the price of every piece made with this fabric" />
+
+                <MudSwitch T="bool" @bind-Value="Item.RequiresNote" Color="Color.Primary"
+                           Label="Customer must describe the fabric (use for a custom or special fabric)" />
+
+                <MudNumericField T="int" @bind-Value="Item.SortOrder" Label="Display Order" Variant="Variant.Outlined"
+                                 Min="0" HideSpinButtons="true" HelperText="Smaller numbers appear first" />
+
+                <MudSwitch T="bool" @bind-Value="Item.IsActive" Color="Color.Primary"
+                           Label="@(Item.IsActive ? "Active: customers can choose this fabric" : "Inactive: hidden from customers")" />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel" ButtonText="Save" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Properties
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public FabricModel Item { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; }
+
+    private MudForm _form = default!;
+    private bool _isSubmitting;
+    private readonly Func<string, string?> _validateName = value =>
+        string.IsNullOrWhiteSpace(value) ? "Enter a fabric name." : null;
+    #endregion
+
+    #region Methods
+    private async Task Save()
+    {
+        if (_isSubmitting) return;
+
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _isSubmitting = true;
+
+        try
+        {
+            Item.Name = Item.Name.Trim();
+            var result = await CatalogSvc.SaveAsync(Item, IsNew);
+
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    #endregion
+}

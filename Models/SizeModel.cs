@@ -4,8 +4,8 @@ using Postgrest.Models;
 
 namespace CapstoneProject.Models;
 
-[Table("collections")]
-public class CollectionItemModel : BaseModel
+[Table("sizes")]
+public class SizeModel : BaseModel
 {
     [PrimaryKey("id")]
     public string Id { get; set; } = string.Empty;
@@ -16,8 +16,11 @@ public class CollectionItemModel : BaseModel
     [Column("price")]
     public decimal Price { get; set; }
 
-    [Column("image_url", NullValueHandling.Include)]
-    public string? ImageUrl { get; set; }
+    [Column("width_in", NullValueHandling.Include)]
+    public decimal? WidthIn { get; set; }
+
+    [Column("length_in", NullValueHandling.Include)]
+    public decimal? LengthIn { get; set; }
 
     [Column("sort_order")]
     public int SortOrder { get; set; }

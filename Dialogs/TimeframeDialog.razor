@@ -1,0 +1,81 @@
+@using CapstoneProject.Commons
+@inject CatalogService CatalogSvc
+@inject ISnackbar Snackbar
+
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudStack Spacing="2">
+                <MudTextField T="string" @bind-Value="Item.Label" Label="Delivery Option Name" Variant="Variant.Outlined"
+                              Required="true" RequiredError="Enter a name." MaxLength="50"
+                              Validation="@_validateLabel" HelperText="For example: 1 week, 2 weeks" />
+
+                <MudNumericField T="decimal" @bind-Value="Item.SurchargePercent" Label="Extra Charge" Variant="Variant.Outlined"
+                                 Min="0" Max="100" Format="N2" HideSpinButtons="true"
+                                 Adornment="Adornment.End" AdornmentText="%"
+                                 HelperText="Percentage added to the order subtotal. Use 0 for no extra charge." />
+
+                <MudNumericField T="int?" @bind-Value="Item.MaxQuantity" Label="Maximum Pieces per Order" Variant="Variant.Outlined"
+                                 Min="1" Clearable="true" HideSpinButtons="true"
+                                 HelperText="Leave empty for no limit" />
+
+                <MudNumericField T="int" @bind-Value="Item.SortOrder" Label="Display Order" Variant="Variant.Outlined"
+                                 Min="0" HideSpinButtons="true" HelperText="Smaller numbers appear first" />
+
+                <MudSwitch T="bool" @bind-Value="Item.IsActive" Color="Color.Primary"
+                           Label="@(Item.IsActive ? "Active: customers can choose this option" : "Inactive: hidden from customers")" />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel" ButtonText="Save" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Properties
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public TimeframeModel Item { get; set; } = new();
+    [Parameter] public bool IsNew { get; set; }
+
+    private MudForm _form = default!;
+    private bool _isSubmitting;
+    private readonly Func<string, string?> _validateLabel = value =>
+        string.IsNullOrWhiteSpace(value) ? "Enter a name." : null;
+    #endregion
+
+    #region Methods
+    private async Task Save()
+    {
+        if (_isSubmitting) return;
+
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        _isSubmitting = true;
+
+        try
+        {
+            Item.Label = Item.Label.Trim();
+            var result = await CatalogSvc.SaveAsync(Item, IsNew);
+
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            MudDialog.Close(DialogResult.Ok(true));
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    #endregion
+}

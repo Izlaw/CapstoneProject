@@ -1,11 +1,10 @@
-using Newtonsoft.Json;
 using Postgrest.Attributes;
 using Postgrest.Models;
 
 namespace CapstoneProject.Models;
 
-[Table("collections")]
-public class CollectionItemModel : BaseModel
+[Table("fabrics")]
+public class FabricModel : BaseModel
 {
     [PrimaryKey("id")]
     public string Id { get; set; } = string.Empty;
@@ -16,8 +15,8 @@ public class CollectionItemModel : BaseModel
     [Column("price")]
     public decimal Price { get; set; }
 
-    [Column("image_url", NullValueHandling.Include)]
-    public string? ImageUrl { get; set; }
+    [Column("requires_note")]
+    public bool RequiresNote { get; set; }
 
     [Column("sort_order")]
     public int SortOrder { get; set; }

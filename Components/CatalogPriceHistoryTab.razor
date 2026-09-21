@@ -1,0 +1,117 @@
+@using System.Globalization
+@using CapstoneProject.Commons
+@inject CatalogService CatalogSvc
+@inject ISnackbar Snackbar
+
+<div class="admin-toolbar">
+    <MudText Typo="Typo.body2" Class="admin-hint">The 200 most recent price and limit changes.</MudText>
+    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isLoading"
+               StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadHistory">
+        Refresh
+    </MudButton>
+</div>
+
+<div class="admin-panel">
+    <MudTable Items="@_history" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+        <HeaderContent>
+            <MudTh>When</MudTh>
+            <MudTh>Item</MudTh>
+            <MudTh>What Changed</MudTh>
+            <MudTh Class="admin-num">From</MudTh>
+            <MudTh Class="admin-num">To</MudTh>
+            <MudTh>Changed By</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="When">@context.ChangedAt.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")</MudTd>
+            <MudTd DataLabel="Item"><span class="admin-name">@(context.RowLabel ?? "-")</span></MudTd>
+            <MudTd DataLabel="What Changed">@DescribeChange(context)</MudTd>
+            <MudTd DataLabel="From" Class="admin-num">@FormatValue(context, context.OldValue)</MudTd>
+            <MudTd DataLabel="To" Class="admin-num">@FormatValue(context, context.NewValue)</MudTd>
+            <MudTd DataLabel="Changed By">@GetChangedByName(context)</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="admin-empty">No price changes have been recorded yet.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</div>
+
+@code {
+    #region Properties
+    private List<PriceAuditLogModel> _history = new();
+    private Dictionary<string, string> _profileNames = new();
+    private bool _isLoading;
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadHistory();
+    }
+    #endregion
+
+    #region Methods
+    private async Task LoadHistory()
+    {
+        if (_isLoading) return;
+        _isLoading = true;
+
+        try
+        {
+            _history = await CatalogSvc.GetPriceHistoryAsync();
+
+            var userIds = _history
+                .Where(entry => !string.IsNullOrEmpty(entry.ChangedBy))
+                .Select(entry => entry.ChangedBy!);
+            _profileNames = await CatalogSvc.GetProfileNamesAsync(userIds);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("The price history could not be loaded. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string DescribeChange(PriceAuditLogModel entry)
+    {
+        return (entry.SourceTable, entry.Field) switch
+        {
+            ("sizes", "price") => "Size Price",
+            ("fabrics", "price") => "Fabric Price",
+            ("collections", "price") => "Design Price",
+            ("timeframes", "surcharge_percent") => "Delivery Extra Charge",
+            ("timeframes", "max_quantity") => "Max Pieces per Order",
+            _ => entry.Field
+        };
+    }
+
+    private string FormatValue(PriceAuditLogModel entry, string? value)
+    {
+        if (string.IsNullOrEmpty(value))
+        {
+            return entry.Field == "max_quantity" ? "No limit" : "-";
+        }
+
+        if (!decimal.TryParse(value, NumberStyles.Number, CultureInfo.InvariantCulture, out var number))
+        {
+            return value;
+        }
+
+        return entry.Field switch
+        {
+            "surcharge_percent" => $"{number:0.##}%",
+            "max_quantity" => number.ToString("N0"),
+            _ => $"₱{number:N2}"
+        };
+    }
+
+    private string GetChangedByName(PriceAuditLogModel entry)
+    {
+        if (string.IsNullOrEmpty(entry.ChangedBy)) return "-";
+        return _profileNames.TryGetValue(entry.ChangedBy, out var name) ? name : "-";
+    }
+    #endregion
+}

@@ -1,0 +1,173 @@
+@using CapstoneProject.Commons
+@using CapstoneProject.Dialogs
+@inject CatalogService CatalogSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="admin-toolbar">
+    <MudSwitch T="bool" @bind-Value="_showInactive" Color="Color.Primary" Label="Show Inactive Sizes" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddSize">
+        Add Size
+    </MudButton>
+</div>
+
+<div class="admin-panel">
+    <MudTable Items="@VisibleSizes" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+        <HeaderContent>
+            <MudTh>Size</MudTh>
+            <MudTh Class="admin-num">Price</MudTh>
+            <MudTh Class="admin-num">Width (in)</MudTh>
+            <MudTh Class="admin-num">Length (in)</MudTh>
+            <MudTh Class="admin-num">Order</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Size"><span class="admin-name">@context.Name</span></MudTd>
+            <MudTd DataLabel="Price" Class="admin-num">₱@context.Price.ToString("N2")</MudTd>
+            <MudTd DataLabel="Width (in)" Class="admin-num">@(context.WidthIn?.ToString("0.##") ?? "-")</MudTd>
+            <MudTd DataLabel="Length (in)" Class="admin-num">@(context.LengthIn?.ToString("0.##") ?? "-")</MudTd>
+            <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Status">
+                <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
+            </MudTd>
+            <MudTd Class="admin-actions">
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditSize(context))">
+                    Edit
+                </MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                           OnClick="@(() => ToggleActive(context))">
+                    @(context.IsActive ? "Deactivate" : "Activate")
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="admin-empty">No sizes to show. Use "Add Size" to create one.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</div>
+
+@code {
+    #region Properties
+    private List<SizeModel> _sizes = new();
+    private bool _isLoading;
+    private bool _isProcessing;
+    private bool _showInactive;
+
+    private IEnumerable<SizeModel> VisibleSizes => _sizes.Where(size => _showInactive || size.IsActive);
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSizes();
+    }
+    #endregion
+
+    #region Methods
+    private async Task LoadSizes()
+    {
+        if (_isLoading) return;
+        _isLoading = true;
+
+        try
+        {
+            _sizes = await CatalogSvc.GetSizesAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Sizes could not be loaded. Please refresh the page.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private SizeModel CopyOf(SizeModel size)
+    {
+        return new SizeModel
+        {
+            Id = size.Id,
+            Name = size.Name,
+            Price = size.Price,
+            WidthIn = size.WidthIn,
+            LengthIn = size.LengthIn,
+            SortOrder = size.SortOrder,
+            IsActive = size.IsActive
+        };
+    }
+
+    private async Task AddSize()
+    {
+        var nextOrder = _sizes.Count == 0 ? 10 : _sizes.Max(size => size.SortOrder) + 10;
+        await OpenSizeDialog(new SizeModel { SortOrder = nextOrder }, true, "Add Size");
+    }
+
+    private async Task EditSize(SizeModel size)
+    {
+        await OpenSizeDialog(CopyOf(size), false, "Edit Size");
+    }
+
+    private async Task OpenSizeDialog(SizeModel item, bool isNew, string title)
+    {
+        var parameters = new DialogParameters<SizeDialog>
+        {
+            { x => x.Item, item },
+            { x => x.IsNew, isNew }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<SizeDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false)
+        {
+            await LoadSizes();
+        }
+    }
+
+    private async Task ToggleActive(SizeModel size)
+    {
+        if (_isProcessing) return;
+
+        if (size.IsActive)
+        {
+            var confirmed = await DialogService.ShowMessageBox(
+                "Deactivate Size",
+                $"Customers will no longer be able to choose size {size.Name}. Existing orders are not affected.",
+                yesText: "Deactivate",
+                cancelText: "Cancel");
+
+            if (confirmed != true) return;
+        }
+
+        _isProcessing = true;
+
+        try
+        {
+            var updated = CopyOf(size);
+            updated.IsActive = !size.IsActive;
+
+            var result = await CatalogSvc.SaveAsync(updated, false);
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            Extension.ShowAlert($"Size {size.Name} is now {(updated.IsActive ? "active" : "inactive")}.", Variant.Filled, Snackbar, Severity.Success);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+
+        await LoadSizes();
+    }
+    #endregion
+}

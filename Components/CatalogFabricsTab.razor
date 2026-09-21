@@ -1,0 +1,170 @@
+@using CapstoneProject.Commons
+@using CapstoneProject.Dialogs
+@inject CatalogService CatalogSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="admin-toolbar">
+    <MudSwitch T="bool" @bind-Value="_showInactive" Color="Color.Primary" Label="Show Inactive Fabrics" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+               StartIcon="@Icons.Material.Filled.Add" OnClick="AddFabric">
+        Add Fabric
+    </MudButton>
+</div>
+
+<div class="admin-panel">
+    <MudTable Items="@VisibleFabrics" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+        <HeaderContent>
+            <MudTh>Fabric</MudTh>
+            <MudTh Class="admin-num">Price</MudTh>
+            <MudTh>Customer Describes It</MudTh>
+            <MudTh Class="admin-num">Order</MudTh>
+            <MudTh>Status</MudTh>
+            <MudTh></MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Fabric"><span class="admin-name">@context.Name</span></MudTd>
+            <MudTd DataLabel="Price" Class="admin-num">₱@context.Price.ToString("N2")</MudTd>
+            <MudTd DataLabel="Customer Describes It">@(context.RequiresNote ? "Yes" : "No")</MudTd>
+            <MudTd DataLabel="Order" Class="admin-num">@context.SortOrder</MudTd>
+            <MudTd DataLabel="Status">
+                <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
+            </MudTd>
+            <MudTd Class="admin-actions">
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditFabric(context))">
+                    Edit
+                </MudButton>
+                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Disabled="@_isProcessing"
+                           StartIcon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                           OnClick="@(() => ToggleActive(context))">
+                    @(context.IsActive ? "Deactivate" : "Activate")
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="admin-empty">No fabrics to show. Use "Add Fabric" to create one.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</div>
+
+@code {
+    #region Properties
+    private List<FabricModel> _fabrics = new();
+    private bool _isLoading;
+    private bool _isProcessing;
+    private bool _showInactive;
+
+    private IEnumerable<FabricModel> VisibleFabrics => _fabrics.Where(fabric => _showInactive || fabric.IsActive);
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadFabrics();
+    }
+    #endregion
+
+    #region Methods
+    private async Task LoadFabrics()
+    {
+        if (_isLoading) return;
+        _isLoading = true;
+
+        try
+        {
+            _fabrics = await CatalogSvc.GetFabricsAsync();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Fabrics could not be loaded. Please refresh the page.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private FabricModel CopyOf(FabricModel fabric)
+    {
+        return new FabricModel
+        {
+            Id = fabric.Id,
+            Name = fabric.Name,
+            Price = fabric.Price,
+            RequiresNote = fabric.RequiresNote,
+            SortOrder = fabric.SortOrder,
+            IsActive = fabric.IsActive
+        };
+    }
+
+    private async Task AddFabric()
+    {
+        var nextOrder = _fabrics.Count == 0 ? 10 : _fabrics.Max(fabric => fabric.SortOrder) + 10;
+        await OpenFabricDialog(new FabricModel { SortOrder = nextOrder }, true, "Add Fabric");
+    }
+
+    private async Task EditFabric(FabricModel fabric)
+    {
+        await OpenFabricDialog(CopyOf(fabric), false, "Edit Fabric");
+    }
+
+    private async Task OpenFabricDialog(FabricModel item, bool isNew, string title)
+    {
+        var parameters = new DialogParameters<FabricDialog>
+        {
+            { x => x.Item, item },
+            { x => x.IsNew, isNew }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<FabricDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false)
+        {
+            await LoadFabrics();
+        }
+    }
+
+    private async Task ToggleActive(FabricModel fabric)
+    {
+        if (_isProcessing) return;
+
+        if (fabric.IsActive)
+        {
+            var confirmed = await DialogService.ShowMessageBox(
+                "Deactivate Fabric",
+                $"Customers will no longer be able to choose {fabric.Name}. Existing orders are not affected.",
+                yesText: "Deactivate",
+                cancelText: "Cancel");
+
+            if (confirmed != true) return;
+        }
+
+        _isProcessing = true;
+
+        try
+        {
+            var updated = CopyOf(fabric);
+            updated.IsActive = !fabric.IsActive;
+
+            var result = await CatalogSvc.SaveAsync(updated, false);
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            Extension.ShowAlert($"{fabric.Name} is now {(updated.IsActive ? "active" : "inactive")}.", Variant.Filled, Snackbar, Severity.Success);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+
+        await LoadFabrics();
+    }
+    #endregion
+}

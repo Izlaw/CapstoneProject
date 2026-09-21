@@ -1,0 +1,10 @@
+<MudButton Href="@Href" Variant="Variant.Text" Color="Color.Default" StartIcon="@Icons.Material.Filled.ArrowBack" Class="back-btn">
+    @Text
+</MudButton>
+
+@code {
+    #region Properties
+    [Parameter] public string Href { get; set; } = "/";
+    [Parameter] public string Text { get; set; } = "Back";
+    #endregion
+}
