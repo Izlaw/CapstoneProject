@@ -61,9 +61,14 @@
 
         <AuthorizeView>
             <Authorized>
+                <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" Size="Size.Medium" />
+                <MudIconButton Icon="@Icons.Material.Filled.SupportAgent" Color="Color.Inherit" Size="Size.Medium" />
                 <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="account-menu">
                     <ActivatorContent>
-                        <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                        <div class="account-trigger">
+                            <span class="account-trigger-name">@(context.User.Identity?.Name ?? "-")</span>
+                            <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                        </div>
                     </ActivatorContent>
                     <ChildContent>
                         <div class="account-menu-header">
@@ -89,17 +94,17 @@
     {
         PaletteDark = new PaletteDark
         {
-            Primary            = "#B4182D",
-            PrimaryDarken      = "#8F1222",
-            PrimaryLighten     = "#CF2038",
+            Primary            = "#541b2e",
+            PrimaryDarken      = "#3a1220",
+            PrimaryLighten     = "#b2192b",
             PrimaryContrastText = "#FFFFFF",
-            Secondary          = "#FDA481",
-            SecondaryContrastText = "#10121F",
-            Background         = "#10121F",
-            BackgroundGray     = "#1A1E38",
-            Surface            = "#242E49",
-            DrawerBackground   = "#1A1E38",
-            AppbarBackground   = "#1A1E38",
+            Secondary          = "#faa183",
+            SecondaryContrastText = "#171c2f",
+            Background         = "#171c2f",
+            BackgroundGray     = "#232f49",
+            Surface            = "#374256",
+            DrawerBackground   = "#232f49",
+            AppbarBackground   = "#541b2e",
             AppbarText         = "#F1F0FF",
             TextPrimary        = "#F1F0FF",
             TextSecondary      = "#B8B7D0",
