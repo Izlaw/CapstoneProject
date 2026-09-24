@@ -22,7 +22,7 @@
             <MudTh>Changed By</MudTh>
         </HeaderContent>
         <RowTemplate>
-            <MudTd DataLabel="When">@context.ChangedAt.ToLocalTime().ToString("MMM dd, yyyy h:mm tt")</MudTd>
+            <MudTd DataLabel="When">@Extension.ToDisplayTime(context.ChangedAt).ToString("MMM dd, yyyy h:mm tt")</MudTd>
             <MudTd DataLabel="Item"><span class="admin-name">@(context.RowLabel ?? "-")</span></MudTd>
             <MudTd DataLabel="What Changed">@DescribeChange(context)</MudTd>
             <MudTd DataLabel="From" Class="admin-num">@FormatValue(context, context.OldValue)</MudTd>

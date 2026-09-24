@@ -71,7 +71,7 @@
                     <div class="receipt-details">
                         <div>
                             <span class="receipt-label">Date</span>
-                            <span class="receipt-value">@_order.CreatedAt.ToLocalTime().ToString("MMM dd, yyyy")</span>
+                            <span class="receipt-value">@Extension.ToDisplayTime(_order.CreatedAt).ToString("MMM dd, yyyy")</span>
                         </div>
                         <div>
                             <span class="receipt-label">Order Type</span>
@@ -190,7 +190,7 @@
                                     <MudPaper Elevation="0" Class="pa-3" Style="@msgStyle">
                                         <MudText Typo="Typo.body2">@msg.Content</MudText>
                                         <MudText Typo="Typo.caption" Style="@timeStyle">
-                                            @(isMyMessage ? "You" : "Support") • @msg.CreatedAt.ToLocalTime().ToString("hh:mm tt")
+                                            @(isMyMessage ? "You" : "Support") • @Extension.ToDisplayTime(msg.CreatedAt).ToString("hh:mm tt")
                                         </MudText>
                                     </MudPaper>
                                 </div>

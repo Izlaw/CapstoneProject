@@ -22,4 +22,9 @@ public static class Extension
 
         return true;
     }
+
+    public static DateTime ToDisplayTime(DateTime value)
+    {
+        return DateTime.SpecifyKind(value, DateTimeKind.Local);
+    }
 }
