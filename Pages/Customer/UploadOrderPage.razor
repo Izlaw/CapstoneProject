@@ -141,8 +141,7 @@
             }
 
             orderPlaced = true;
-            Extension.ShowAlert("Your order has been placed.", Variant.Filled, Snackbar, Severity.Success);
-            NavManager.NavigateTo("/dashboard");
+            NavManager.NavigateTo($"/order-preview/{result.Value}?placed=true");
         }
         catch (Exception ex)
         {

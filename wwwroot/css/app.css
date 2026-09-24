@@ -55,45 +55,64 @@ html, body {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* -- Nav Brand --------------------------------------- */
-.nav-brand { display: flex; align-items: center; gap: 0.75rem; text-decoration: none !important; color: var(--text-primary) !important; }
-.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background-color: var(--brand); font-size: 0.95rem; font-weight: 800; letter-spacing: -0.02em; }
-.brand-text { display: flex; flex-direction: column; line-height: 1.1; }
-.brand-name { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
+.nav-brand { display: flex; align-items: center; gap: 0.65rem; text-decoration: none !important; color: var(--text-primary) !important; }
+.brand-mark { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 9px; background-color: var(--brand); font-size: 0.9rem; font-weight: 800; letter-spacing: -0.02em; }
+.brand-name { font-size: 1.1rem; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
 .brand-accent { color: var(--accent); font-weight: 600; }
-.brand-tagline { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
 
 h1:focus { outline: none; }
 
 /* ============================================================
-   APP SHELL (app bar and main content)
+   APP SHELL (app bar, drawer and main content)
    ============================================================ */
 .site-appbar {
-    background: var(--mud-palette-appbar-background) !important;
+    background-color: rgba(14, 15, 19, 0.82) !important;
     border-bottom: 1px solid var(--border);
+    backdrop-filter: blur(12px);
 }
 
 .site-appbar .mud-toolbar {
-    padding: 0 2rem;
+    padding: 0;
 }
 
-.site-appbar .nav-brand {
-    margin-right: 2.5rem;
-}
-
-.nav-links {
+.nav-inner {
     display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    width: 100%;
+    max-width: 1200px;
+    height: 64px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+}
+
+.nav-inner .nav-brand {
+    margin-right: 1.5rem;
+}
+
+.nav-links,
+.nav-actions {
+    display: flex;
+    align-items: center;
     gap: 0.25rem;
+    height: 100%;
+}
+
+.nav-actions {
+    gap: 0.5rem;
 }
 
 .nav-link {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    min-height: 44px;
-    padding: 0 0.9rem;
+    height: 40px;
+    padding: 0 0.85rem;
     border-radius: 10px;
     font-size: 0.95rem;
     font-weight: 500;
     text-decoration: none;
+    white-space: nowrap;
     color: var(--text-secondary);
     transition: color 0.15s ease, background-color 0.15s ease;
 }
@@ -103,51 +122,65 @@ h1:focus { outline: none; }
     background-color: rgba(255, 255, 255, 0.05);
 }
 
+.nav-link:focus-visible,
+.nav-menu-toggle:focus-visible,
+.nav-drawer-link:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
 .nav-link-active {
     color: var(--text-primary);
 }
 
-.nav-cta {
+.nav-link-active::after {
+    content: "";
+    position: absolute;
+    right: 0.85rem;
+    bottom: -12px;
+    left: 0.85rem;
+    height: 2px;
+    border-radius: 2px;
+    background-color: var(--primary);
+}
+
+.nav-cta.mud-button-root {
+    height: 40px;
+    padding: 0 1.1rem;
     border-radius: 10px;
+    font-size: 0.95rem;
     font-weight: 600;
     text-transform: none;
-    min-height: 44px;
-    padding: 0 1.25rem !important;
-    margin-left: 0.5rem;
-}
-
-.nav-btn {
     white-space: nowrap;
-    font-weight: 600;
-    font-size: 0.9rem;
-    text-transform: none;
-    border-radius: 100px;
-    padding: 0.35rem 0.9rem;
-    margin-left: 0.25rem;
-    color: var(--text-secondary) !important;
-    transition: color 0.15s ease, background-color 0.15s ease;
 }
 
-.nav-btn:hover {
-    color: var(--text-primary) !important;
+.nav-menu-toggle {
+    display: none;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    background-color: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 10px;
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.nav-menu-toggle:hover {
     background-color: rgba(255, 255, 255, 0.05);
 }
 
-.nav-btn-active {
-    color: var(--text-primary) !important;
-    background-color: var(--primary-soft);
-}
-
 .account-menu {
-    margin-left: 0.75rem;
+    margin-left: 0.25rem;
 }
 
 .account-chip {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    min-height: 44px;
-    padding: 0.25rem 0.5rem 0.25rem 0.3rem;
+    height: 40px;
+    padding: 0 0.5rem 0 0.25rem;
     background-color: transparent;
     border: 1px solid var(--border-strong);
     border-radius: 100px;
@@ -167,11 +200,16 @@ h1:focus { outline: none; }
     outline-offset: 2px;
 }
 
+.account-chip .mud-avatar {
+    width: 30px;
+    height: 30px;
+}
+
 .account-chip-name {
     max-width: 140px;
     overflow: hidden;
-    font-size: 0.9rem;
-    font-weight: 600;
+    font-size: 0.95rem;
+    font-weight: 500;
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -224,23 +262,95 @@ h1:focus { outline: none; }
     color: var(--accent);
 }
 
-.nav-new-order {
-    min-height: 44px;
-    padding: 0 1.1rem !important;
-    border-radius: 10px;
+.nav-drawer.mud-drawer {
+    background-color: var(--bg-card);
+    border-left: 1px solid var(--border);
+}
+
+.nav-drawer .mud-drawer-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    padding: 0 1rem 0 1.25rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.nav-drawer-title {
+    font-size: 0.8rem;
     font-weight: 600;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+}
+
+.nav-drawer .nav-drawer-close {
+    display: grid;
+}
+
+.nav-drawer-account {
+    min-width: 0;
+    padding: 1.25rem;
+    border-bottom: 1px solid var(--border);
+}
+
+.nav-drawer-links {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    padding: 0.75rem;
+}
+
+.nav-drawer-link {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    min-height: 48px;
+    padding: 0 0.85rem;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--text-secondary);
+}
+
+.nav-drawer-link:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-drawer-link-active {
+    color: var(--text-primary);
+    background-color: var(--primary-soft);
+}
+
+.nav-drawer-footer {
+    margin-top: auto;
+    padding: 1rem;
+    border-top: 1px solid var(--border);
+}
+
+.nav-drawer-logout.mud-button-root {
+    height: 44px;
+    border-color: var(--border-strong);
+    border-radius: 10px;
     text-transform: none;
+    font-weight: 600;
 }
 
 @media (max-width: 860px) {
-    .site-appbar .mud-toolbar { padding: 0 1rem; }
+    .nav-inner { padding: 0 1rem; }
     .nav-links { display: none; }
-    .brand-tagline { display: none; }
-    .nav-cta { display: none; }
+    .nav-desktop-only { display: none !important; }
+    .nav-menu-toggle { display: grid; }
     .nav-new-order-label { display: none; }
-    .nav-new-order { min-width: 44px; padding: 0 !important; }
+    .nav-new-order.mud-button-root { width: 40px; min-width: 40px; padding: 0; }
     .nav-new-order .mud-button-icon-start { margin: 0; }
-    .account-chip-name { display: none; }
 }
 
 .main-content {

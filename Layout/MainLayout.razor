@@ -9,100 +9,157 @@
 
 <MudLayout>
     <MudAppBar Elevation="0" Class="site-appbar">
-        <a href="/" class="nav-brand">
-            <span class="brand-mark">7G</span>
-            <span class="brand-text">
+        <div class="nav-inner">
+            <a href="/" class="nav-brand" aria-label="7 Guys House of Fashion home">
+                <span class="brand-mark">7G</span>
                 <span class="brand-name">7 Guys</span>
-                <span class="brand-tagline">House of Fashion</span>
-            </span>
-        </a>
+            </a>
 
-        <AuthorizeView>
-            <NotAuthorized>
-                <nav class="nav-links">
-                    <a href="/collections" class="@GetNavLinkClass("collections")">Collections</a>
-                    <a href="/login" class="nav-link">Track Order</a>
-                </nav>
-            </NotAuthorized>
-            <Authorized>
-                <nav class="nav-links">
-                    @if (IsStaff(context.User))
-                    {
-                        <a href="/employee/dashboard" class="@GetNavLinkClass("employee/dashboard")">Orders</a>
-                        @if (context.User.IsInRole("admin"))
-                        {
-                            <a href="/admin/catalog" class="@GetNavLinkClass("admin/catalog")">Catalog</a>
-                        }
-                    }
-                    else
-                    {
+            <nav class="nav-links" aria-label="Main">
+                <AuthorizeView>
+                    <NotAuthorized>
                         <a href="/collections" class="@GetNavLinkClass("collections")">Collections</a>
-                        <a href="/dashboard" class="@GetNavLinkClass("dashboard")">My Orders</a>
-                    }
-                </nav>
-            </Authorized>
-        </AuthorizeView>
-
-        <MudSpacer />
-
-        <AuthorizeView>
-            <NotAuthorized>
-                <MudButton Href="/login" Variant="Variant.Text" Class="@GetNavClass("login")">
-                    Log In
-                </MudButton>
-                <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" Class="nav-cta">
-                    Start Designing
-                </MudButton>
-            </NotAuthorized>
-            <Authorized>
-                @if (!IsStaff(context.User))
-                {
-                    <MudButton Href="/add-order" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
-                               StartIcon="@Icons.Material.Filled.Add" Class="nav-new-order">
-                        <span class="nav-new-order-label">New Order</span>
-                    </MudButton>
-                }
-
-                <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="account-menu">
-                    <ActivatorContent>
-                        <button type="button" class="account-chip" aria-label="Open account menu">
-                            <MudAvatar Size="Size.Small" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
-                            <span class="account-chip-name">@GetFirstName(context.User.Identity?.Name)</span>
-                            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" Class="account-chip-arrow" />
-                        </button>
-                    </ActivatorContent>
-                    <ChildContent>
-                        <div class="account-menu-header">
-                            <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
-                            <div class="account-menu-details">
-                                <span class="account-menu-name">@(context.User.Identity?.Name ?? "-")</span>
-                                <span class="account-menu-email">@GetEmail(context.User)</span>
-                                <span class="account-menu-role">@GetRoleLabel(context.User)</span>
-                            </div>
-                        </div>
-                        <MudDivider />
+                    </NotAuthorized>
+                    <Authorized>
                         @if (IsStaff(context.User))
                         {
-                            <MudMenuItem Href="/employee/dashboard" Icon="@Icons.Material.Filled.ListAlt">Orders</MudMenuItem>
+                            <a href="/employee/dashboard" class="@GetNavLinkClass("employee/dashboard", "order-preview")">Orders</a>
                             @if (context.User.IsInRole("admin"))
                             {
-                                <MudMenuItem Href="/admin/catalog" Icon="@Icons.Material.Filled.Tune">Catalog</MudMenuItem>
+                                <a href="/admin/catalog" class="@GetNavLinkClass("admin/catalog")">Catalog</a>
                             }
                         }
                         else
                         {
-                            <MudMenuItem Href="/dashboard" Icon="@Icons.Material.Filled.ReceiptLong">My Orders</MudMenuItem>
-                            <MudMenuItem Href="/add-order" Icon="@Icons.Material.Filled.Add">New Order</MudMenuItem>
-                            <MudMenuItem Href="/collections" Icon="@Icons.Material.Filled.Checkroom">Collections</MudMenuItem>
+                            <a href="/collections" class="@GetNavLinkClass("collections")">Collections</a>
+                            <a href="/dashboard" class="@GetNavLinkClass("dashboard", "order-preview")">My Orders</a>
                         }
-                        <MudDivider />
-                        <MudMenuItem Href="/profile" Icon="@Icons.Material.Filled.Person">My Profile</MudMenuItem>
-                        <MudMenuItem OnClick="Logout" Icon="@Icons.Material.Filled.Logout">Log Out</MudMenuItem>
-                    </ChildContent>
-                </MudMenu>
+                    </Authorized>
+                </AuthorizeView>
+            </nav>
+
+            <MudSpacer />
+
+            <div class="nav-actions">
+                <AuthorizeView>
+                    <NotAuthorized>
+                        <a href="@GetLoginHref()" class="@GetNavLinkClass("login") nav-desktop-only">Log In</a>
+                        <MudButton Href="@GetRegisterHref()" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                                   Class="nav-cta nav-desktop-only">
+                            Sign Up
+                        </MudButton>
+                    </NotAuthorized>
+                    <Authorized>
+                        @if (!IsStaff(context.User))
+                        {
+                            <MudButton Href="/add-order" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                                       StartIcon="@Icons.Material.Filled.Add" Class="nav-cta nav-new-order">
+                                <span class="nav-new-order-label">New Order</span>
+                            </MudButton>
+                        }
+
+                        <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="account-menu nav-desktop-only">
+                            <ActivatorContent>
+                                <button type="button" class="account-chip" aria-label="Open account menu">
+                                    <MudAvatar Size="Size.Small" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                                    <span class="account-chip-name">@GetFirstName(context.User.Identity?.Name)</span>
+                                    <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" Class="account-chip-arrow" />
+                                </button>
+                            </ActivatorContent>
+                            <ChildContent>
+                                <div class="account-menu-header">
+                                    <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                                    <div class="account-menu-details">
+                                        <span class="account-menu-name">@(context.User.Identity?.Name ?? "-")</span>
+                                        <span class="account-menu-email">@GetEmail(context.User)</span>
+                                        <span class="account-menu-role">@GetRoleLabel(context.User)</span>
+                                    </div>
+                                </div>
+                                <MudDivider />
+                                <MudMenuItem Href="/profile" Icon="@Icons.Material.Filled.Person">My Profile</MudMenuItem>
+                                <MudMenuItem OnClick="Logout" Icon="@Icons.Material.Filled.Logout">Log Out</MudMenuItem>
+                            </ChildContent>
+                        </MudMenu>
+                    </Authorized>
+                </AuthorizeView>
+
+                <button type="button" class="nav-menu-toggle" aria-label="Open menu" @onclick="OpenDrawer">
+                    <MudIcon Icon="@Icons.Material.Filled.Menu" />
+                </button>
+            </div>
+        </div>
+    </MudAppBar>
+
+    <MudDrawer @bind-Open="_isDrawerOpen" Variant="DrawerVariant.Temporary" Anchor="Anchor.End"
+               Elevation="0" Width="300px" Class="nav-drawer">
+        <div class="nav-drawer-header">
+            <span class="nav-drawer-title">Menu</span>
+            <button type="button" class="nav-menu-toggle nav-drawer-close" aria-label="Close menu" @onclick="CloseDrawer">
+                <MudIcon Icon="@Icons.Material.Filled.Close" />
+            </button>
+        </div>
+
+        <AuthorizeView>
+            <NotAuthorized>
+                <nav class="nav-drawer-links" aria-label="Mobile">
+                    <a href="/collections" class="@GetDrawerLinkClass("collections")">
+                        <MudIcon Icon="@Icons.Material.Filled.Checkroom" Size="Size.Small" /> Collections
+                    </a>
+                    <a href="@GetLoginHref()" class="@GetDrawerLinkClass("login")">
+                        <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" /> Log In
+                    </a>
+                </nav>
+                <div class="nav-drawer-footer">
+                    <MudButton Href="@GetRegisterHref()" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                               FullWidth="true" Class="nav-cta">
+                        Sign Up
+                    </MudButton>
+                </div>
+            </NotAuthorized>
+            <Authorized>
+                <div class="account-menu-header nav-drawer-account">
+                    <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                    <div class="account-menu-details">
+                        <span class="account-menu-name">@(context.User.Identity?.Name ?? "-")</span>
+                        <span class="account-menu-email">@GetEmail(context.User)</span>
+                        <span class="account-menu-role">@GetRoleLabel(context.User)</span>
+                    </div>
+                </div>
+                <nav class="nav-drawer-links" aria-label="Mobile">
+                    @if (IsStaff(context.User))
+                    {
+                        <a href="/employee/dashboard" class="@GetDrawerLinkClass("employee/dashboard", "order-preview")">
+                            <MudIcon Icon="@Icons.Material.Filled.ListAlt" Size="Size.Small" /> Orders
+                        </a>
+                        @if (context.User.IsInRole("admin"))
+                        {
+                            <a href="/admin/catalog" class="@GetDrawerLinkClass("admin/catalog")">
+                                <MudIcon Icon="@Icons.Material.Filled.Tune" Size="Size.Small" /> Catalog
+                            </a>
+                        }
+                    }
+                    else
+                    {
+                        <a href="/collections" class="@GetDrawerLinkClass("collections")">
+                            <MudIcon Icon="@Icons.Material.Filled.Checkroom" Size="Size.Small" /> Collections
+                        </a>
+                        <a href="/dashboard" class="@GetDrawerLinkClass("dashboard", "order-preview")">
+                            <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" /> My Orders
+                        </a>
+                    }
+                    <a href="/profile" class="@GetDrawerLinkClass("profile")">
+                        <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" /> My Profile
+                    </a>
+                </nav>
+                <div class="nav-drawer-footer">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" FullWidth="true"
+                               StartIcon="@Icons.Material.Filled.Logout" OnClick="Logout" Class="nav-drawer-logout">
+                        Log Out
+                    </MudButton>
+                </div>
             </Authorized>
         </AuthorizeView>
-    </MudAppBar>
+    </MudDrawer>
 
     <MudMainContent Class="main-content">
         @Body
@@ -150,6 +207,7 @@
     [Inject] private ISnackbar Snackbar { get; set; } = default!;
 
     private string _currentPath = string.Empty;
+    private bool _isDrawerOpen;
     #endregion
 
     #region Lifecycle
@@ -169,6 +227,7 @@
     private void OnLocationChanged(object? sender, Microsoft.AspNetCore.Components.Routing.LocationChangedEventArgs e)
     {
         _currentPath = GetCurrentPath();
+        _isDrawerOpen = false;
         StateHasChanged();
     }
 
@@ -177,16 +236,56 @@
         return NavManager.ToBaseRelativePath(NavManager.Uri).Split('?', '#')[0].Trim('/');
     }
 
-    private string GetNavClass(string path, string extraClass = "")
+    private bool IsActivePath(string[] paths)
     {
-        var isActive = string.Equals(_currentPath, path, StringComparison.OrdinalIgnoreCase);
-        return $"nav-btn {extraClass} {(isActive ? "nav-btn-active" : string.Empty)}".Trim();
+        foreach (var path in paths)
+        {
+            var isExactMatch = string.Equals(_currentPath, path, StringComparison.OrdinalIgnoreCase);
+            var isChildPage = _currentPath.StartsWith(path + "/", StringComparison.OrdinalIgnoreCase);
+
+            if (isExactMatch || isChildPage) return true;
+        }
+
+        return false;
     }
 
-    private string GetNavLinkClass(string path)
+    private string GetNavLinkClass(params string[] paths)
     {
-        var isActive = string.Equals(_currentPath, path, StringComparison.OrdinalIgnoreCase);
-        return isActive ? "nav-link nav-link-active" : "nav-link";
+        return IsActivePath(paths) ? "nav-link nav-link-active" : "nav-link";
+    }
+
+    private string GetDrawerLinkClass(params string[] paths)
+    {
+        return IsActivePath(paths) ? "nav-drawer-link nav-drawer-link-active" : "nav-drawer-link";
+    }
+
+    private string GetLoginHref()
+    {
+        return BuildAuthHref("/login");
+    }
+
+    private string GetRegisterHref()
+    {
+        return BuildAuthHref("/register");
+    }
+
+    private string BuildAuthHref(string authPage)
+    {
+        var isOnAuthPage = _currentPath == "login" || _currentPath == "register";
+        if (isOnAuthPage || _currentPath.Length == 0) return authPage;
+
+        var returnUrl = "/" + NavManager.ToBaseRelativePath(NavManager.Uri);
+        return $"{authPage}?returnUrl={Uri.EscapeDataString(returnUrl)}";
+    }
+
+    private void OpenDrawer()
+    {
+        _isDrawerOpen = true;
+    }
+
+    private void CloseDrawer()
+    {
+        _isDrawerOpen = false;
     }
 
     private static bool IsStaff(System.Security.Claims.ClaimsPrincipal user)

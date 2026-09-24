@@ -11,6 +11,8 @@
 
 <PageTitle>Designer - 7 Guys House of Fashion</PageTitle>
 
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveDesigner" ConfirmExternalNavigation="@_hasUnsavedDesign" />
+
 <div class="designer-layout">
     <div class="designer-canvas-area">
         <div class="designer-back"><BackButtonComponent Href="/add-order" Text="Back to New Order" /></div>
@@ -46,6 +48,7 @@
     private ShirtCanvasComponent _shirtCanvas = default!;
     private DesignToolbarComponent _toolbar = default!;
     private bool _isSaving;
+    private bool _hasUnsavedDesign;
     #endregion
 
     #region Lifecycle
@@ -78,6 +81,7 @@
             DesignSvc.SetColor(args.Hex);
         }
         await _shirtCanvas.SetColorAsync(args.Hex, args.Target);
+        _hasUnsavedDesign = true;
     }
 
     private async Task ChangeBackgroundColor(string hex)
@@ -89,17 +93,20 @@
     {
         DesignSvc.SetTextOverlay(args.text, args.size, args.color, args.font);
         await _shirtCanvas.AddTextAsync(args.text, args.size, args.color, args.font);
+        _hasUnsavedDesign = true;
     }
 
     private async Task UpdateText((string text, int size, string color, string font) args)
     {
         await _shirtCanvas.UpdateSelectedTextAsync(args.text, args.size, args.color, args.font);
+        _hasUnsavedDesign = true;
     }
 
     private async Task AddLogo(string dataUrl)
     {
         DesignSvc.SetLogo(dataUrl);
         await _shirtCanvas.AddImageAsync(dataUrl);
+        _hasUnsavedDesign = true;
     }
 
     private async Task ClearDesign()
@@ -107,11 +114,13 @@
         DesignSvc.ClearDesign();
         await _shirtCanvas.ClearDesignAsync();
         await _shirtCanvas.SetColorAsync("#ffffff");
+        _hasUnsavedDesign = false;
     }
 
     private async Task DeleteSelected()
     {
         await _shirtCanvas.DeleteSelectedAsync();
+        _hasUnsavedDesign = true;
     }
 
     private async Task DeselectObject()
@@ -123,6 +132,22 @@
     {
         if (_shirtCanvas.Module is null) return;
         await ExportSvc.DownloadPngAsync(_shirtCanvas.Module);
+    }
+
+    private async Task ConfirmLeaveDesigner(LocationChangingContext context)
+    {
+        if (!_hasUnsavedDesign) return;
+
+        var isLeaving = await DialogService.ShowMessageBox(
+            "Leave the Designer?",
+            "Your design has not been ordered yet. If you leave now, it will be lost.",
+            yesText: "Leave",
+            cancelText: "Stay");
+
+        if (isLeaving != true)
+        {
+            context.PreventNavigation();
+        }
     }
     #endregion
 
@@ -163,8 +188,9 @@
             }
 
             orderPlaced = true;
+            _hasUnsavedDesign = false;
             await ShowOrderPlacedDialog(result.Value!);
-            NavManager.NavigateTo("/dashboard");
+            NavManager.NavigateTo($"/order-preview/{result.Value}?placed=true");
         }
         catch (Exception ex)
         {

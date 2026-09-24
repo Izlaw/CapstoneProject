@@ -12,7 +12,14 @@
 <PageTitle>Order Receipt - 7 Guys House of Fashion</PageTitle>
 
 <div class="customer-page">
-    <div class="page-back"><BackButtonComponent Href="@_backHref" Text="@_backText" /></div>
+    <div class="page-back"><BackButtonComponent Href="@_parentHref" Text="@($"Back to {_parentText}")" /></div>
+
+    @if (Placed && _order != null)
+    {
+        <MudAlert Severity="Severity.Success" Variant="Variant.Outlined" Class="mb-4">
+            Your order has been placed. We will review it and keep this page updated.
+        </MudAlert>
+    }
 
     @if (_isLoading)
     {
@@ -207,13 +214,14 @@
 @code {
     #region Properties
     [Parameter] public string Id { get; set; } = string.Empty;
+    [SupplyParameterFromQuery] public bool Placed { get; set; }
 
     private const string ViewerBackgroundColor = "#0E0F13";
 
     private AppOrderModel? _order;
     private ShirtViewerComponent? _shirtViewer;
-    private string _backHref = "/dashboard";
-    private string _backText = "Back to My Orders";
+    private string _parentHref = "/dashboard";
+    private string _parentText = "My Orders";
     private string? _imageUrl;
     private string? _loadMessage;
     private List<ChatMessageModel>? _messages;
@@ -236,8 +244,8 @@
 
             if (authState.User.IsInRole("employee") || authState.User.IsInRole("admin"))
             {
-                _backHref = "/employee/dashboard";
-                _backText = "Back to Order Management";
+                _parentHref = "/employee/dashboard";
+                _parentText = "Orders";
             }
 
             var result = await OrderSvc.GetOrderDetailsAsync(Id);

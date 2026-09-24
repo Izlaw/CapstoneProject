@@ -9,7 +9,10 @@
 <PageTitle>Collections - 7 Guys House of Fashion</PageTitle>
 
 <div class="customer-page">
-    <div class="page-back"><BackButtonComponent Href="/add-order" Text="Back to New Order" /></div>
+    @if (IsFromNewOrder)
+    {
+        <div class="page-back"><BackButtonComponent Href="/add-order" Text="Back to New Order" /></div>
+    }
 
     <div class="customer-header">
         <h1 class="customer-title">Collections</h1>
@@ -67,6 +70,9 @@
 
 @code {
     #region Properties
+    [SupplyParameterFromQuery(Name = "from")] public string? From { get; set; }
+
+    private bool IsFromNewOrder => From == "new-order";
     private List<CollectionItemModel> _collections = new();
     private bool _isLoading;
     private bool _loadFailed;
@@ -100,7 +106,7 @@
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
         if (authState.User.Identity?.IsAuthenticated != true)
         {
-            NavManager.NavigateTo("/login");
+            NavManager.NavigateTo("/login?returnUrl=%2Fcollections");
             return;
         }
 
@@ -113,11 +119,16 @@
         var dialog = await DialogService.ShowAsync<CollectionOrderDialog>($"Order: {collection.Name}", parameters, options);
         var result = await dialog.Result;
 
-        if (result?.Canceled == false)
+        if (result == null || result.Canceled) return;
+
+        if (result.Data is string orderId && !string.IsNullOrWhiteSpace(orderId))
         {
-            Extension.ShowAlert("Your order has been placed.", Variant.Filled, Snackbar, Severity.Success);
-            NavManager.NavigateTo("/dashboard");
+            NavManager.NavigateTo($"/order-preview/{orderId}?placed=true");
+            return;
         }
+
+        Extension.ShowAlert("Your order has been placed.", Variant.Filled, Snackbar, Severity.Success);
+        NavManager.NavigateTo("/dashboard");
     }
     #endregion
 }

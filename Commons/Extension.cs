@@ -13,4 +13,13 @@ public static class Extension
         snackbarService.Configuration.VisibleStateDuration = 2000;
         snackbarService.Add($"{message}", severityType);
     }
+
+    public static bool IsLocalUrl(string? url)
+    {
+        if (string.IsNullOrWhiteSpace(url)) return false;
+        if (!url.StartsWith('/')) return false;
+        if (url.StartsWith("//") || url.StartsWith("/\\")) return false;
+
+        return true;
+    }
 }

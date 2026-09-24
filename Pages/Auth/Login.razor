@@ -28,17 +28,23 @@
         
         <div class="d-flex justify-center mt-4">
             <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">
-                Don't have an account? <MudLink Href="/register" Color="Color.Secondary">Sign up!</MudLink>
+                Don't have an account? <MudLink Href="@RegisterHref" Color="Color.Secondary">Sign up!</MudLink>
             </MudText>
         </div>
     </MudPaper>
 </div>
 
 @code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
     public string Email { get; set; } = "";
     public string Password { get; set; } = "";
     
     private bool _isLoading = false;
+
+    private string RegisterHref => Extension.IsLocalUrl(ReturnUrl)
+        ? $"/register?returnUrl={Uri.EscapeDataString(ReturnUrl!)}"
+        : "/register";
 
     private async Task HandleLogin()
     {
@@ -53,14 +59,10 @@
                 // Fetch profile to check role for RBAC
                 var profile = await SupabaseSvc.GetUserProfileAsync(session.User.Id);
 
-                if (profile != null && (profile.Role == "employee" || profile.Role == "admin"))
-                {
-                    NavManager.NavigateTo("/employee/dashboard");
-                }
-                else
-                {
-                    NavManager.NavigateTo("/dashboard");
-                }
+                var isStaff = profile != null && (profile.Role == "employee" || profile.Role == "admin");
+                var defaultPage = isStaff ? "/employee/dashboard" : "/dashboard";
+
+                NavManager.NavigateTo(Extension.IsLocalUrl(ReturnUrl) ? ReturnUrl! : defaultPage);
             }
             else
             {

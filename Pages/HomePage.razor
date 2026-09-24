@@ -110,12 +110,12 @@
 
     private async Task StartCustomizing()
     {
-        NavManager.NavigateTo(await IsSignedInAsync() ? "/add-order" : "/login");
+        NavManager.NavigateTo(await IsSignedInAsync() ? "/add-order" : "/register?returnUrl=%2Fadd-order");
     }
 
     private async Task TrackOrder()
     {
-        NavManager.NavigateTo(await IsSignedInAsync() ? "/dashboard" : "/login");
+        NavManager.NavigateTo(await IsSignedInAsync() ? "/dashboard" : "/login?returnUrl=%2Fdashboard");
     }
     #endregion
 

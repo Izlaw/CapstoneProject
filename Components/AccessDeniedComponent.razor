@@ -14,7 +14,7 @@
     }
     else
     {
-        <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" Class="access-denied-btn">
+        <MudButton Href="@LoginHref" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" Class="access-denied-btn">
             Go to Login
         </MudButton>
     }
@@ -22,6 +22,10 @@
 
 @code {
     #region Properties
+    [Inject] private NavigationManager NavManager { get; set; } = default!;
+
     [Parameter] public bool IsSignedIn { get; set; }
+
+    private string LoginHref => $"/login?returnUrl={Uri.EscapeDataString("/" + NavManager.ToBaseRelativePath(NavManager.Uri))}";
     #endregion
 }

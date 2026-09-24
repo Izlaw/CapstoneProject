@@ -10,19 +10,10 @@
 <PageTitle>Employee Dashboard - 7 Guys House of Fashion</PageTitle>
 
 <div class="pa-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
-    <div class="page-back"><BackButtonComponent Href="/" Text="Back to Home" /></div>
-
     <div class="d-flex justify-space-between align-center mb-6">
         <MudText Typo="Typo.h4" Style="font-weight: 600; color: var(--text-primary);">Order Management</MudText>
 
         <div class="d-flex" style="gap: 0.75rem;">
-            <AuthorizeView Roles="admin" Context="adminContext">
-                <Authorized>
-                    <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Tune" Href="/admin/catalog">
-                        Catalog Settings
-                    </MudButton>
-                </Authorized>
-            </AuthorizeView>
             <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadOrders">
                 Refresh
             </MudButton>

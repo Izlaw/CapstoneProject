@@ -48,12 +48,14 @@
                     <MudText>Register</MudText>
                 }
             </MudButton>
-            <MudButton Disabled="@_isLoading" Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;" Href="/login">Already registered?</MudButton>
+            <MudButton Disabled="@_isLoading" Variant="Variant.Outlined" Color="Color.Inherit" Size="Size.Large" Style="border-radius: 100px; padding: 0.5rem 2rem;" Href="@LoginHref">Already registered?</MudButton>
         </div>
     </MudPaper>
 </div>
 
 @code {
+    [SupplyParameterFromQuery] public string? ReturnUrl { get; set; }
+
     public string FirstName { get; set; } = "";
     public string LastName { get; set; } = "";
     public string Email { get; set; } = "";
@@ -63,6 +65,10 @@
     public string Address { get; set; } = "";
     
     private bool _isLoading = false;
+
+    private string LoginHref => Extension.IsLocalUrl(ReturnUrl)
+        ? $"/login?returnUrl={Uri.EscapeDataString(ReturnUrl!)}"
+        : "/login";
 
     private static string? ToNullIfEmpty(string value)
     {
@@ -95,7 +101,7 @@
                     Console.WriteLine(profileResult.Message);
                 }
 
-                NavManager.NavigateTo("/dashboard", forceLoad: true);
+                NavManager.NavigateTo(Extension.IsLocalUrl(ReturnUrl) ? ReturnUrl! : "/dashboard", forceLoad: true);
             }
             else
             {
