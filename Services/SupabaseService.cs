@@ -181,6 +181,53 @@ public class SupabaseService
         }
     }
 
+    public async Task<OperationResult> UpdateProfileAsync(string userId, string fullName, string? phone, string? address)
+    {
+        try
+        {
+            var response = await _supabase.From<UserProfileModel>()
+                .Where(x => x.Id == userId)
+                .Set(x => x.FullName!, fullName)
+                .Set(x => x.Phone!, phone)
+                .Set(x => x.Address!, address)
+                .Update();
+
+            if (response.Models.Count == 0)
+            {
+                return OperationResult.Failure("Your profile was not saved. Please log in again and try once more.");
+            }
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return OperationResult.Failure("Your profile could not be saved. Please try again.");
+        }
+    }
+
+    public async Task<OperationResult> UpdateDisplayNameAsync(string fullName)
+    {
+        try
+        {
+            var attributes = new UserAttributes
+            {
+                Data = new Dictionary<string, object>
+                {
+                    { "full_name", fullName }
+                }
+            };
+            await _supabase.Auth.Update(attributes);
+
+            return OperationResult.Success();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return OperationResult.Failure("Your name was saved, but the menu will show the old name until you log in again.");
+        }
+    }
+
     public async Task LogoutAsync()
     {
         await _supabase.Auth.SignOut();

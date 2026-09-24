@@ -30,7 +30,7 @@ const decalMaterial = new THREE.MeshStandardMaterial({
     metalness: 0.1,
 });
 
-export function init(containerId, dummyCanvasId, dotnetHelper) {
+export function init(containerId, dummyCanvasId, dotnetHelper, backgroundColor = '#f5f5f5') {
     blazorRef = dotnetHelper;
     
     // ── Reset Global State for component re-use ──────────
@@ -48,7 +48,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
 
     // ── Scene Setup ────────────────────────────────────────
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5);
+    scene.background = new THREE.Color(backgroundColor);
     scene.add(dragPreviewMesh);
 
     camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);

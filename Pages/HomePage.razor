@@ -2,6 +2,7 @@
 @implements IAsyncDisposable
 @inject NavigationManager NavManager
 @inject AuthenticationStateProvider AuthStateProvider
+@inject CatalogService CatalogSvc
 
 <PageTitle>Home - 7 Guys House of Fashion</PageTitle>
 
@@ -9,80 +10,72 @@
     <div class="home-copy">
         <span class="home-eyebrow">Custom Apparel Studio</span>
         <h1 class="home-title">
-            <strong>YOU</strong> design.<br />
-            <strong class="home-title-accent">WE</strong> create.
+            <strong>You</strong> design.<br />
+            <strong class="home-title-accent">We</strong> create.
         </h1>
-        <p class="home-lead">What you design, we bring to reality.</p>
+        <p class="home-lead">Design your shirt in 3D, pick your sizes, and we print it for you.</p>
 
         <div class="home-actions">
             <MudButton Variant="Variant.Filled" Color="Color.Primary" Size="Size.Large" DropShadow="false"
-                       OnClick="StartCustomizing" Class="home-btn">
-                Start Customizing
+                       EndIcon="@Icons.Material.Filled.ArrowForward" OnClick="StartCustomizing" Class="home-btn">
+                Start Designing
             </MudButton>
             <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Large"
-                       OnClick="TrackOrder" Class="home-btn home-btn-outline">
-                Track Order
-            </MudButton>
-            <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Large"
-                       Href="/collections" Class="home-btn home-btn-text">
+                       Href="/collections" Class="home-btn home-btn-outline">
                 Browse Collections
             </MudButton>
         </div>
 
-        <ol class="home-steps">
-            <li>Design</li>
-            <li>Order</li>
-            <li>Delivered</li>
-        </ol>
-    </div>
+        <p class="home-track">
+            Already ordered? <a href="" @onclick="TrackOrder" @onclick:preventDefault="true">Track Your Order</a>
+        </p>
+    </div> 
 
     <div class="home-stage">
         <div class="home-viewer">
-            <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="OnShirtReady" ShowControls="false" />
+            @if (_isLoading)
+            {
+                <div class="home-viewer-loading">
+                    <MudProgressCircular Color="Color.Primary" Indeterminate="true" />
+                </div>
+            }
+            else
+            {
+                <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="OnShirtReady" ShowControls="false"
+                                      BackgroundColor="@StageBackgroundColor" />
+            }
         </div>
 
         <div class="home-stage-bar">
-            <span class="home-swatch" style="background-color: @_currentColor;"></span>
-            <span class="home-stage-label">Live Preview @_currentColor</span>
-            <button type="button" class="home-stage-toggle" aria-pressed="@(_isPaused ? "true" : "false")" @onclick="TogglePlayback">
-                @(_isPaused ? "Resume" : "Pause")
-            </button>
+            <div class="home-stage-info">
+                <span class="home-stage-label">Featured Design</span>
+                <span class="home-stage-name">@CurrentDesignName</span>
+            </div>
+
+            <div class="home-stage-controls">
+                <MudButton Variant="Variant.Outlined" Color="Color.Default" Size="Size.Medium"
+                           StartIcon="@(_isPaused ? Icons.Material.Filled.PlayArrow : Icons.Material.Filled.Pause)"
+                           OnClick="TogglePlayback" Class="home-stage-toggle">
+                    @(_isPaused ? "Resume" : "Pause")
+                </MudButton>
+            </div>
         </div>
     </div>
 </section>
 
 @code {
     #region Properties
+    private const string StageBackgroundColor = "#17181E";
+    private const int RotationDelayMs = 5000;
+
     private ShirtViewerComponent? _shirtViewer;
     private readonly CancellationTokenSource _cts = new();
-    private readonly Random _random = new();
-    private const string PageBackgroundColor = "#10121F";
-    private string _currentColor = "#B4182D";
+    private List<CollectionItemModel> _designs = new();
+    private int _currentIndex;
+    private bool _isLoading;
     private bool _isPaused;
 
-    private static readonly string[] Prefixes = { "THE", "URBAN", "PROJECT", "NEO", "VINTAGE", "STUDIO", "RAW", "7G", "AURA", "STREET" };
-    private static readonly string[] Suffixes = { "CULTURE", "SOCIETY", "WEAR", "COLLECTION", "EST 2026", "VISION", "THREADS", "MINDSET", "CORE" };
-    private static readonly string[] Fonts = { "Outfit", "Arial", "Impact", "Courier New", "Georgia", "Verdana", "Trebuchet MS", "Tahoma" };
-
-    private record ZoneAnchor(string Name, float BaseAngle, float Radius, float BaseOriginY, float OriginYJitter);
-
-    private const float ZoneAngleJitter = 0.3f;
-
-    private static readonly ZoneAnchor[] Zones =
-    {
-        new("front", 0f, 2.0f, 0.15f, 0.35f),
-        new("back", (float)Math.PI, 2.0f, 0.15f, 0.35f),
-        new("leftSleeve", (float)(-Math.PI / 2), 1.8f, 0.1f, 0.25f),
-        new("rightSleeve", (float)(Math.PI / 2), 1.8f, 0.1f, 0.25f),
-        new("collar", 0f, 1.2f, 0.55f, 0.1f)
-    };
-
-    private const double MinSaturation = 45.0;
-    private const double MaxSaturation = 85.0;
-    private const double MinLightness = 35.0;
-    private const double MaxLightness = 65.0;
-    private const double SleeveHueOffset = 25.0;
-    private const double CollarHueOffset = 180.0;
+    private string CurrentDesignName => _designs.Count > 0 ? _designs[_currentIndex].Name : "-";
     #endregion
 
     #region Lifecycle
@@ -94,7 +87,10 @@
         if (user.IsInRole("admin") || user.IsInRole("employee"))
         {
             NavManager.NavigateTo("/employee/dashboard", replace: true);
+            return;
         }
+
+        await GetFeaturedDesigns();
     }
 
     public async ValueTask DisposeAsync()
@@ -123,14 +119,75 @@
     }
     #endregion
 
-    #region Shirt Preview
+    #region Featured Designs
+    private async Task GetFeaturedDesigns()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var collections = await CatalogSvc.GetCollectionsAsync();
+            _designs = collections
+                .Where(collection => collection.IsActive && collection.DesignData?.Parts != null)
+                .ToList();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+        }
+        finally
+        {
+            if (_designs.Count == 0)
+            {
+                _designs.Add(BuildHouseDesign());
+            }
+
+            _isLoading = false;
+        }
+    }
+
+    private static CollectionItemModel BuildHouseDesign()
+    {
+        return new CollectionItemModel
+        {
+            Name = "7 Guys Original",
+            IsActive = true,
+            DesignData = new DesignDataModel
+            {
+                Parts = new DesignPartsModel
+                {
+                    Body = "#1C1C22",
+                    Sleeves = "#C8243B",
+                    Collar = "#F4F1EC"
+                },
+                Elements = new List<DesignElementModel>
+                {
+                    new DesignElementModel
+                    {
+                        Type = "text",
+                        Text = "7 GUYS",
+                        Font = "Outfit",
+                        FontSize = 60,
+                        Color = "#F4F1EC",
+                        OriginX = 0,
+                        OriginY = 0.2m,
+                        OriginZ = 2,
+                        DirX = 0,
+                        DirY = 0,
+                        DirZ = -1
+                    }
+                }
+            }
+        };
+    }
+
     private async Task OnShirtReady()
     {
         if (_shirtViewer == null) return;
 
-        await _shirtViewer.SetBackgroundColorAsync(PageBackgroundColor);
         await _shirtViewer.SetAutoSpinAsync(true);
-        _ = RunRandomizerLoopAsync();
+        await ShowCurrentDesign();
+        _ = RunRotationLoopAsync();
     }
 
     private async Task TogglePlayback()
@@ -143,18 +200,22 @@
         }
     }
 
-    private async Task RunRandomizerLoopAsync()
+    private async Task RunRotationLoopAsync()
     {
+        if (_designs.Count < 2) return;
+
         try
         {
             while (!_cts.Token.IsCancellationRequested && _shirtViewer != null)
             {
+                await Task.Delay(RotationDelayMs, _cts.Token);
+
                 if (!_isPaused)
                 {
-                    await ApplyRandomDesignAsync();
+                    _currentIndex = (_currentIndex + 1) % _designs.Count;
+                    await ShowCurrentDesign();
+                    await InvokeAsync(StateHasChanged);
                 }
-
-                await Task.Delay(_random.Next(1500, 3000), _cts.Token);
             }
         }
         catch (TaskCanceledException)
@@ -166,148 +227,37 @@
         }
     }
 
-    private async Task ApplyRandomDesignAsync()
+    private async Task ShowCurrentDesign()
     {
-        double baseHue = _random.NextDouble() * 360;
-        double saturation = MinSaturation + _random.NextDouble() * (MaxSaturation - MinSaturation);
-        double lightness = MinLightness + _random.NextDouble() * (MaxLightness - MinLightness);
+        var designData = _designs[_currentIndex].DesignData;
+        if (_shirtViewer == null || designData?.Parts == null) return;
 
-        var bodyRgb = HslToRgb(baseHue, saturation, lightness);
-        var sleeveRgb = HslToRgb((baseHue + SleeveHueOffset) % 360, saturation, lightness);
-        var collarRgb = HslToRgb((baseHue + CollarHueOffset) % 360, saturation, lightness);
-
-        string bodyColor = RgbToHex(bodyRgb);
-        string sleeveColor = RgbToHex(sleeveRgb);
-        string collarColor = RgbToHex(collarRgb);
-
-        var zoneColors = new Dictionary<string, (int R, int G, int B)>
-        {
-            ["front"] = bodyRgb,
-            ["back"] = bodyRgb,
-            ["leftSleeve"] = sleeveRgb,
-            ["rightSleeve"] = sleeveRgb,
-            ["collar"] = collarRgb
-        };
-
-        var batchConfig = new
-        {
-            color = bodyColor,
-            parts = new
-            {
-                front = bodyColor,
-                back = bodyColor,
-                leftSleeve = sleeveColor,
-                rightSleeve = sleeveColor,
-                collar = collarColor
-            },
-            items = BuildRandomItems(zoneColors)
-        };
-
-        await _shirtViewer!.ApplyDesignBatchAsync(batchConfig);
-
-        _currentColor = batchConfig.color;
-        await InvokeAsync(StateHasChanged);
-    }
-
-    private (int R, int G, int B) HslToRgb(double hue, double saturation, double lightness)
-    {
-        double s = saturation / 100.0;
-        double l = lightness / 100.0;
-        double chroma = (1 - Math.Abs(2 * l - 1)) * s;
-        double huePrime = hue / 60.0;
-        double secondLargest = chroma * (1 - Math.Abs(huePrime % 2 - 1));
-        double lightnessMatch = l - chroma / 2;
-
-        double r1, g1, b1;
-        if (huePrime < 1) { r1 = chroma; g1 = secondLargest; b1 = 0; }
-        else if (huePrime < 2) { r1 = secondLargest; g1 = chroma; b1 = 0; }
-        else if (huePrime < 3) { r1 = 0; g1 = chroma; b1 = secondLargest; }
-        else if (huePrime < 4) { r1 = 0; g1 = secondLargest; b1 = chroma; }
-        else if (huePrime < 5) { r1 = secondLargest; g1 = 0; b1 = chroma; }
-        else { r1 = chroma; g1 = 0; b1 = secondLargest; }
-
-        int r = (int)Math.Round((r1 + lightnessMatch) * 255);
-        int g = (int)Math.Round((g1 + lightnessMatch) * 255);
-        int b = (int)Math.Round((b1 + lightnessMatch) * 255);
-        return (r, g, b);
-    }
-
-    private string RgbToHex(int r, int g, int b) => $"#{r:X2}{g:X2}{b:X2}";
-
-    private string RgbToHex((int R, int G, int B) rgb) => RgbToHex(rgb.R, rgb.G, rgb.B);
-
-    private string GetContrastingTextColor((int R, int G, int B) zoneRgb)
-    {
-        double luminance = (0.299 * zoneRgb.R + 0.587 * zoneRgb.G + 0.114 * zoneRgb.B) / 255;
-        return luminance > 0.5 ? "#111111" : "#FFFFFF";
-    }
-
-    private List<object> BuildRandomItems(Dictionary<string, (int R, int G, int B)> zoneColors)
-    {
         var items = new List<object>();
-        int itemCount = _random.Next(1, 4);
-        var chosenZones = Zones.OrderBy(_ => _random.Next()).Take(itemCount);
-
-        foreach (var zone in chosenZones)
+        foreach (var element in designData.Elements)
         {
-            double angle = zone.BaseAngle + (_random.NextDouble() * 2 - 1) * ZoneAngleJitter;
-            float originX = (float)(Math.Cos(angle) * zone.Radius);
-            float originZ = (float)(Math.Sin(angle) * zone.Radius);
-            float originY = zone.BaseOriginY + (float)(_random.NextDouble() * 2 - 1) * zone.OriginYJitter;
-            string textColor = GetContrastingTextColor(zoneColors[zone.Name]);
-
-            items.Add(_random.NextDouble() < 0.7
-                ? BuildTextItem(textColor, originX, originY, originZ)
-                : BuildImageItem(textColor, originX, originY, originZ));
+            items.Add(BuildViewerItem(element));
         }
 
-        return items;
+        await _shirtViewer.ApplyDesignBatchAsync(new { parts = designData.Parts, items });
     }
 
-    private object BuildTextItem(string textColor, float originX, float originY, float originZ)
-    {
-        string text = _random.Next(3) switch
-        {
-            0 => Prefixes[_random.Next(Prefixes.Length)],
-            1 => Prefixes[_random.Next(Prefixes.Length)] + "\n" + Suffixes[_random.Next(Suffixes.Length)],
-            _ => _random.Next(1000, 9999).ToString()
-        };
-
-        return new
-        {
-            type = "text",
-            text,
-            fontSize = _random.Next(35, 70),
-            color = textColor,
-            font = Fonts[_random.Next(Fonts.Length)],
-            originX, originY, originZ,
-            dirX = -originX, dirY = 0f, dirZ = -originZ
-        };
-    }
-
-    private object BuildImageItem(string textColor, float originX, float originY, float originZ)
+    private static object BuildViewerItem(DesignElementModel element)
     {
         return new
         {
-            type = "image",
-            dataUrl = BuildRandomShapeDataUrl(textColor),
-            size = (float)(_random.NextDouble() * 0.4 + 0.3),
-            originX, originY, originZ,
-            dirX = -originX, dirY = 0f, dirZ = -originZ
+            type = element.Type,
+            text = element.Text,
+            fontSize = element.FontSize,
+            color = element.Color,
+            font = element.Font,
+            size = element.Size,
+            originX = element.OriginX,
+            originY = element.OriginY,
+            originZ = element.OriginZ,
+            dirX = element.DirX,
+            dirY = element.DirY,
+            dirZ = element.DirZ
         };
-    }
-
-    private string BuildRandomShapeDataUrl(string color)
-    {
-        string svg = _random.Next(4) switch
-        {
-            0 => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><circle cx='100' cy='100' r='90' fill='{color}' /></svg>",
-            1 => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><polygon points='100,10 190,190 10,190' fill='{color}' /></svg>",
-            2 => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect x='75' y='10' width='50' height='180' fill='{color}' /><rect x='10' y='75' width='180' height='50' fill='{color}' /></svg>",
-            _ => $"<svg width='200' height='200' xmlns='http://www.w3.org/2000/svg'><rect x='20' y='20' width='160' height='160' fill='none' stroke='{color}' stroke-width='20' /></svg>"
-        };
-
-        return "data:image/svg+xml;base64," + Convert.ToBase64String(System.Text.Encoding.UTF8.GetBytes(svg));
     }
     #endregion
 }

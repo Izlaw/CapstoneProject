@@ -34,6 +34,7 @@
     private string _canvasId = "fabric-canvas-viewer-" + Guid.NewGuid().ToString("N");
     [Parameter] public bool ShowControls { get; set; } = true;
     [Parameter] public EventCallback OnModuleReady { get; set; }
+    [Parameter] public string BackgroundColor { get; set; } = "#f5f5f5";
 
     public IJSObjectReference? Module { get; private set; }
     private bool _isReady = false;
@@ -45,7 +46,7 @@
 
         _objRef = DotNetObjectReference.Create(this);
         Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shirt-viewer.js");
-        await Module.InvokeVoidAsync("init", _containerId, _canvasId, _objRef);
+        await Module.InvokeVoidAsync("init", _containerId, _canvasId, _objRef, BackgroundColor);
 
         await Task.Delay(600); // allow model to begin loading
         _isReady = true;

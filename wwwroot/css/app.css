@@ -1,28 +1,29 @@
 /* =============================================================
    7Guys House of Fashion – Design System v2 (Phase 5 UI Finalization)
-   Color Palette: Deep Navy + Crimson + Warm Coral
+   Color Palette: Ink + Crimson + Legacy Maroon + Peach
    ============================================================= */
 
 :root {
-  --primary:        #541b2e;
-  --primary-hover:  #b2192b;
-  --primary-dark:   #3a1220;
-  --primary-light:  #d94a5c;
-  --primary-soft:   rgba(84,27,46,0.16);
-  --accent:         #faa183;
-  --accent-soft:    rgba(250,161,131,0.14);
-  --accent-glow:    rgba(250,161,131,0.18);
-  --bg-base:        #171c2f;
-  --bg-card:        #232f49;
-  --bg-surface:     #232f49;
-  --bg-elevated:    #374256;
+  --primary:        #C8243B;
+  --primary-hover:  #D93A50;
+  --primary-dark:   #541B2E;
+  --primary-light:  #E0566A;
+  --primary-soft:   rgba(200,36,59,0.16);
+  --brand:          #541B2E;
+  --accent:         #F4A58A;
+  --accent-soft:    rgba(244,165,138,0.14);
+  --accent-glow:    rgba(244,165,138,0.18);
+  --bg-base:        #0E0F13;
+  --bg-card:        #17181E;
+  --bg-surface:     #17181E;
+  --bg-elevated:    #1F2027;
   --border:         rgba(255,255,255,0.08);
   --border-color:   rgba(255,255,255,0.08);
-  --border-strong:  rgba(255,255,255,0.18);
-  --text-primary:   #f1f0ff;
-  --text-secondary: #b8b7d0;
-  --text-muted:     #8f8eaa;
-  --secondary:      #FDA481;
+  --border-strong:  rgba(255,255,255,0.16);
+  --text-primary:   #F4F1EC;
+  --text-secondary: #A9A6A0;
+  --text-muted:     #8A8680;
+  --secondary:      #F4A58A;
 }
 
 /* -- Reset & Base -------------------------------------------- */
@@ -47,15 +48,21 @@ html, body {
   background: var(--bg-base);
   gap: 1.5rem;
 }
-.loading-logo { font-size: 2.8rem; font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
-.loading-logo .accent { color: var(--primary); }
+.loading-logo { padding: 0 1rem; text-align: center; font-size: clamp(1.8rem, 7vw, 2.8rem); font-weight: 800; color: var(--text-primary); letter-spacing: -0.02em; }
+.loading-logo .accent { color: var(--accent); }
 .loading-spinner { width: 36px; height: 36px; border: 3px solid rgba(255,255,255,0.08); border-top-color: var(--primary); border-radius: 50%; animation: spin 0.8s linear infinite; }
 .loading-text { font-size: 0.78rem; color: var(--text-muted); letter-spacing: 0.08em; text-transform: uppercase; }
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* -- Nav Brand --------------------------------------- */
-.nav-brand { font-size: 1.25rem; font-weight: 800; text-decoration: none !important; color: var(--text-primary) !important; letter-spacing: -0.02em; }
+.nav-brand { display: flex; align-items: center; gap: 0.75rem; text-decoration: none !important; color: var(--text-primary) !important; }
+.brand-mark { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 9px; background-color: var(--brand); font-size: 0.95rem; font-weight: 800; letter-spacing: -0.02em; }
+.brand-text { display: flex; flex-direction: column; line-height: 1.1; }
+.brand-name { font-size: 1.05rem; font-weight: 700; letter-spacing: -0.01em; white-space: nowrap; }
 .brand-accent { color: var(--accent); font-weight: 600; }
+.brand-tagline { font-size: 0.68rem; font-weight: 500; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-secondary); }
+
+h1:focus { outline: none; }
 
 /* ============================================================
    APP SHELL (app bar and main content)
@@ -65,11 +72,52 @@ html, body {
     border-bottom: 1px solid var(--border);
 }
 
+.site-appbar .mud-toolbar {
+    padding: 0 2rem;
+}
+
 .site-appbar .nav-brand {
-    margin-right: auto;
+    margin-right: 2.5rem;
+}
+
+.nav-links {
+    display: flex;
+    gap: 0.25rem;
+}
+
+.nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 0.9rem;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    text-decoration: none;
+    color: var(--text-secondary);
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+.nav-link:hover {
+    color: var(--text-primary);
+    background-color: rgba(255, 255, 255, 0.05);
+}
+
+.nav-link-active {
+    color: var(--text-primary);
+}
+
+.nav-cta {
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: none;
+    min-height: 44px;
+    padding: 0 1.25rem !important;
+    margin-left: 0.5rem;
 }
 
 .nav-btn {
+    white-space: nowrap;
     font-weight: 600;
     font-size: 0.9rem;
     text-transform: none;
@@ -90,78 +138,113 @@ html, body {
     background-color: var(--primary-soft);
 }
 
-.primary-action-btn {
-    border-radius: 100px;
-    font-weight: 700;
-    text-transform: none;
-    padding: 0.4rem 1.25rem !important;
-    margin-left: 0.5rem;
-}
-
 .account-menu {
     margin-left: 0.75rem;
 }
 
-.account-trigger {
+.account-chip {
     display: flex;
     align-items: center;
     gap: 0.5rem;
+    min-height: 44px;
+    padding: 0.25rem 0.5rem 0.25rem 0.3rem;
+    background-color: transparent;
+    border: 1px solid var(--border-strong);
+    border-radius: 100px;
+    color: var(--text-primary);
+    font-family: inherit;
     cursor: pointer;
+    transition: border-color 0.15s ease, background-color 0.15s ease;
 }
 
-.account-trigger-name {
-    font-size: 0.85rem;
+.account-chip:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+.account-chip:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+}
+
+.account-chip-name {
+    max-width: 140px;
+    overflow: hidden;
+    font-size: 0.9rem;
     font-weight: 600;
-    color: var(--text-primary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.account-chip-arrow {
+    color: var(--text-secondary);
 }
 
 .account-avatar {
-    background-color: var(--bg-elevated);
-    border: 1px solid var(--border-strong);
-    color: var(--accent);
-    font-size: 0.85rem;
+    background-color: var(--brand);
+    color: var(--text-primary);
+    font-size: 0.8rem;
     font-weight: 700;
-    cursor: pointer;
-    transition: border-color 0.15s ease;
-}
-
-.account-avatar:hover {
-    border-color: var(--accent);
 }
 
 .account-menu-header {
     display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 260px;
+    padding: 1rem;
+}
+
+.account-menu-details {
+    display: flex;
     flex-direction: column;
-    padding: 0.75rem 1rem;
-    min-width: 200px;
+    min-width: 0;
 }
 
 .account-menu-name {
-    font-size: 0.9rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: var(--text-primary);
 }
 
+.account-menu-email {
+    overflow: hidden;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .account-menu-role {
-    font-size: 0.75rem;
-    color: var(--text-muted);
+    margin-top: 0.2rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+}
+
+.nav-new-order {
+    min-height: 44px;
+    padding: 0 1.1rem !important;
+    border-radius: 10px;
+    font-weight: 600;
+    text-transform: none;
+}
+
+@media (max-width: 860px) {
+    .site-appbar .mud-toolbar { padding: 0 1rem; }
+    .nav-links { display: none; }
+    .brand-tagline { display: none; }
+    .nav-cta { display: none; }
+    .nav-new-order-label { display: none; }
+    .nav-new-order { min-width: 44px; padding: 0 !important; }
+    .nav-new-order .mud-button-icon-start { margin: 0; }
+    .account-chip-name { display: none; }
 }
 
 .main-content {
-    padding: 0;
-    margin-top: 64px;
-}
-
-@media (max-width: 720px) {
-    .nav-secondary {
-        display: none;
-    }
-}
-
-@media (max-width: 480px) {
-    .site-appbar .nav-brand .brand-accent {
-        display: none;
-    }
+    padding: 64px 0 0;
 }
 
 /* ============================================================
@@ -174,7 +257,7 @@ html, body {
   border-radius: 16px; padding: 1.5rem 1.75rem;
   transition: border-color 0.2s, transform 0.2s;
 }
-.dash-stat-card:hover { transform: translateY(-3px); border-color: rgba(84,27,46,0.25); }
+.dash-stat-card:hover { transform: translateY(-3px); border-color: rgba(200,36,59,0.35); }
 .dash-stat-icon { font-size: 1.5rem; margin-bottom: 0.75rem; opacity: 0.85; }
 .dash-stat-value { font-size: 2rem; font-weight: 900; letter-spacing: -0.02em; }
 .dash-stat-label { font-size: 0.78rem; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; margin-top: 0.2rem; }
@@ -230,7 +313,7 @@ html, body {
 .piece-chips { display: flex; flex-wrap: wrap; gap: 0.5rem; }
 .piece-chip { display: inline-flex; align-items: center; gap: 0.5rem; min-height: 36px; padding: 0 0.875rem; border: 1px solid rgba(255,255,255,0.12); border-radius: 999px; background: transparent; color: var(--text-secondary); font: inherit; font-size: 0.85rem; cursor: pointer; }
 .piece-chip:hover { color: var(--text-primary); border-color: rgba(255,255,255,0.3); }
-.piece-chip.active { color: var(--text-primary); border-color: var(--primary); background: rgba(84,27,46,0.18); }
+.piece-chip.active { color: var(--text-primary); border-color: var(--primary); background: rgba(200,36,59,0.18); }
 .piece-chip:focus-visible, .piece-toggle:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .piece-dot { flex: none; width: 14px; height: 14px; border: 1px solid rgba(255,255,255,0.35); border-radius: 50%; }
 .piece-dot.mixed { border: 2px dashed var(--text-muted); background: transparent; }
@@ -415,6 +498,28 @@ html, body {
 .order-tip { display: block; margin-top: 0.75rem; text-align: center; color: var(--text-muted); }
 
 .upload-layout { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 1.5rem; align-items: start; }
+/* -- Profile ------------------------------------------------ */
+.profile-page { max-width: 1040px; }
+.profile-layout { display: grid; grid-template-columns: 320px 1fr; gap: 1.25rem; align-items: start; }
+.profile-summary, .profile-form { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.5rem; }
+.profile-summary { display: flex; flex-direction: column; align-items: center; text-align: center; }
+.profile-avatar.mud-avatar { width: 88px; height: 88px; background-color: var(--brand); color: var(--text-primary); font-size: 1.75rem; font-weight: 700; }
+.profile-summary-name { margin: 1rem 0 0; font-size: 1.25rem; font-weight: 700; color: var(--text-primary); }
+.profile-summary-email { margin: 0.2rem 0 0; font-size: 0.9rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.profile-role { margin-top: 0.75rem; padding: 0.2rem 0.7rem; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-size: 0.72rem; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.profile-facts { width: 100%; margin: 1.5rem 0 0; padding: 1.25rem 0 0; border-top: 1px solid var(--border); display: flex; flex-direction: column; gap: 0.9rem; text-align: left; }
+.profile-facts dt { font-size: 0.72rem; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+.profile-facts dd { margin: 0.15rem 0 0; font-size: 0.92rem; color: var(--text-primary); white-space: pre-line; overflow-wrap: anywhere; }
+.profile-form { display: flex; flex-direction: column; gap: 0.75rem; }
+.profile-field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; }
+.profile-actions { display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 0.75rem; }
+.profile-actions .mud-button-root { min-height: 44px; border-radius: 10px; text-transform: none; font-weight: 600; }
+@media (max-width: 860px) {
+  .profile-layout { grid-template-columns: 1fr; }
+  .profile-field-row { grid-template-columns: 1fr; }
+  .profile-actions { flex-direction: column-reverse; }
+}
+
 .upload-image-panel, .upload-form-panel { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 1.25rem; }
 .upload-preview { width: 100%; max-height: 360px; object-fit: contain; border-radius: 12px; background: var(--bg-base); margin-bottom: 0.5rem; display: block; }
 .upload-empty { display: grid; place-items: center; height: 220px; margin-bottom: 0.75rem; border: 1px dashed var(--border-strong); border-radius: 12px; color: var(--text-muted); }

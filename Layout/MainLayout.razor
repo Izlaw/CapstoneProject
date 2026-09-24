@@ -10,36 +10,94 @@
 <MudLayout>
     <MudAppBar Elevation="0" Class="site-appbar">
         <a href="/" class="nav-brand">
-            7 Guys <span class="brand-accent">House of Fashion</span>
+            <span class="brand-mark">7G</span>
+            <span class="brand-text">
+                <span class="brand-name">7 Guys</span>
+                <span class="brand-tagline">House of Fashion</span>
+            </span>
         </a>
+
+        <AuthorizeView>
+            <NotAuthorized>
+                <nav class="nav-links">
+                    <a href="/collections" class="@GetNavLinkClass("collections")">Collections</a>
+                    <a href="/login" class="nav-link">Track Order</a>
+                </nav>
+            </NotAuthorized>
+            <Authorized>
+                <nav class="nav-links">
+                    @if (IsStaff(context.User))
+                    {
+                        <a href="/employee/dashboard" class="@GetNavLinkClass("employee/dashboard")">Orders</a>
+                        @if (context.User.IsInRole("admin"))
+                        {
+                            <a href="/admin/catalog" class="@GetNavLinkClass("admin/catalog")">Catalog</a>
+                        }
+                    }
+                    else
+                    {
+                        <a href="/collections" class="@GetNavLinkClass("collections")">Collections</a>
+                        <a href="/dashboard" class="@GetNavLinkClass("dashboard")">My Orders</a>
+                    }
+                </nav>
+            </Authorized>
+        </AuthorizeView>
+
         <MudSpacer />
 
         <AuthorizeView>
             <NotAuthorized>
                 <MudButton Href="/login" Variant="Variant.Text" Class="@GetNavClass("login")">
-                    Login
+                    Log In
+                </MudButton>
+                <MudButton Href="/login" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" Class="nav-cta">
+                    Start Designing
                 </MudButton>
             </NotAuthorized>
-        </AuthorizeView>
-
-        <AuthorizeView>
             <Authorized>
-                <MudIconButton Icon="@Icons.Material.Filled.Notifications" Color="Color.Inherit" Size="Size.Medium" />
-                <MudIconButton Icon="@Icons.Material.Filled.SupportAgent" Color="Color.Inherit" Size="Size.Medium" />
+                @if (!IsStaff(context.User))
+                {
+                    <MudButton Href="/add-order" Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                               StartIcon="@Icons.Material.Filled.Add" Class="nav-new-order">
+                        <span class="nav-new-order-label">New Order</span>
+                    </MudButton>
+                }
+
                 <MudMenu AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight" Class="account-menu">
                     <ActivatorContent>
-                        <div class="account-trigger">
-                            <span class="account-trigger-name">@(context.User.Identity?.Name ?? "-")</span>
-                            <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
-                        </div>
+                        <button type="button" class="account-chip" aria-label="Open account menu">
+                            <MudAvatar Size="Size.Small" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                            <span class="account-chip-name">@GetFirstName(context.User.Identity?.Name)</span>
+                            <MudIcon Icon="@Icons.Material.Filled.KeyboardArrowDown" Size="Size.Small" Class="account-chip-arrow" />
+                        </button>
                     </ActivatorContent>
                     <ChildContent>
                         <div class="account-menu-header">
-                            <span class="account-menu-name">@(context.User.Identity?.Name ?? "-")</span>
-                            <span class="account-menu-role">Signed in</span>
+                            <MudAvatar Size="Size.Medium" Class="account-avatar">@GetInitials(context.User.Identity?.Name)</MudAvatar>
+                            <div class="account-menu-details">
+                                <span class="account-menu-name">@(context.User.Identity?.Name ?? "-")</span>
+                                <span class="account-menu-email">@GetEmail(context.User)</span>
+                                <span class="account-menu-role">@GetRoleLabel(context.User)</span>
+                            </div>
                         </div>
                         <MudDivider />
-                        <MudMenuItem OnClick="Logout">Logout</MudMenuItem>
+                        @if (IsStaff(context.User))
+                        {
+                            <MudMenuItem Href="/employee/dashboard" Icon="@Icons.Material.Filled.ListAlt">Orders</MudMenuItem>
+                            @if (context.User.IsInRole("admin"))
+                            {
+                                <MudMenuItem Href="/admin/catalog" Icon="@Icons.Material.Filled.Tune">Catalog</MudMenuItem>
+                            }
+                        }
+                        else
+                        {
+                            <MudMenuItem Href="/dashboard" Icon="@Icons.Material.Filled.ReceiptLong">My Orders</MudMenuItem>
+                            <MudMenuItem Href="/add-order" Icon="@Icons.Material.Filled.Add">New Order</MudMenuItem>
+                            <MudMenuItem Href="/collections" Icon="@Icons.Material.Filled.Checkroom">Collections</MudMenuItem>
+                        }
+                        <MudDivider />
+                        <MudMenuItem Href="/profile" Icon="@Icons.Material.Filled.Person">My Profile</MudMenuItem>
+                        <MudMenuItem OnClick="Logout" Icon="@Icons.Material.Filled.Logout">Log Out</MudMenuItem>
                     </ChildContent>
                 </MudMenu>
             </Authorized>
@@ -57,21 +115,21 @@
     {
         PaletteDark = new PaletteDark
         {
-            Primary            = "#541b2e",
-            PrimaryDarken      = "#3a1220",
-            PrimaryLighten     = "#b2192b",
+            Primary            = "#C8243B",
+            PrimaryDarken      = "#A51D31",
+            PrimaryLighten     = "#E0566A",
             PrimaryContrastText = "#FFFFFF",
-            Secondary          = "#faa183",
-            SecondaryContrastText = "#171c2f",
-            Background         = "#171c2f",
-            BackgroundGray     = "#232f49",
-            Surface            = "#374256",
-            DrawerBackground   = "#232f49",
-            AppbarBackground   = "#541b2e",
-            AppbarText         = "#F1F0FF",
-            TextPrimary        = "#F1F0FF",
-            TextSecondary      = "#B8B7D0",
-            ActionDefault      = "#B8B7D0",
+            Secondary          = "#F4A58A",
+            SecondaryContrastText = "#0E0F13",
+            Background         = "#0E0F13",
+            BackgroundGray     = "#17181E",
+            Surface            = "#17181E",
+            DrawerBackground   = "#17181E",
+            AppbarBackground   = "#0E0F13",
+            AppbarText         = "#F4F1EC",
+            TextPrimary        = "#F4F1EC",
+            TextSecondary      = "#A9A6A0",
+            ActionDefault      = "#A9A6A0",
             Divider            = "rgba(255,255,255,0.08)",
             DividerLight       = "rgba(255,255,255,0.08)",
             LinesDefault       = "rgba(255,255,255,0.08)",
@@ -123,6 +181,37 @@
     {
         var isActive = string.Equals(_currentPath, path, StringComparison.OrdinalIgnoreCase);
         return $"nav-btn {extraClass} {(isActive ? "nav-btn-active" : string.Empty)}".Trim();
+    }
+
+    private string GetNavLinkClass(string path)
+    {
+        var isActive = string.Equals(_currentPath, path, StringComparison.OrdinalIgnoreCase);
+        return isActive ? "nav-link nav-link-active" : "nav-link";
+    }
+
+    private static bool IsStaff(System.Security.Claims.ClaimsPrincipal user)
+    {
+        return user.IsInRole("admin") || user.IsInRole("employee");
+    }
+
+    private static string GetFirstName(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName)) return "-";
+
+        return fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries)[0];
+    }
+
+    private static string GetEmail(System.Security.Claims.ClaimsPrincipal user)
+    {
+        var email = user.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+        return string.IsNullOrWhiteSpace(email) ? "-" : email;
+    }
+
+    private static string GetRoleLabel(System.Security.Claims.ClaimsPrincipal user)
+    {
+        if (user.IsInRole("admin")) return "Admin";
+        if (user.IsInRole("employee")) return "Employee";
+        return "Customer";
     }
 
     private string GetInitials(string? fullName)

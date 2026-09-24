@@ -4,7 +4,7 @@
 @inject NavigationManager NavManager
 @inject ISnackbar Snackbar
 
-<PageTitle>Register - 7Guys House of Fashion</PageTitle>
+<PageTitle>Register - 7 Guys House of Fashion</PageTitle>
 
 <div class="auth-page">
     <div class="auth-back auth-back-wide"><BackButtonComponent Href="/" Text="Back to Home" /></div>
@@ -64,6 +64,12 @@
     
     private bool _isLoading = false;
 
+    private static string? ToNullIfEmpty(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
+
     private async Task HandleRegister()
     {
         if (_isLoading) return;
@@ -83,9 +89,12 @@
 
             if (session != null && session.User != null)
             {
-                // After registration, update their profile with Address/Phone
-                // The trigger already created the profile, so we just update it.
-                // We'll add an UpdateProfile method to SupabaseService later, but for now they are registered!
+                var profileResult = await SupabaseSvc.UpdateProfileAsync(session.User.Id!, fullName, ToNullIfEmpty(Contact), ToNullIfEmpty(Address));
+                if (!profileResult.IsSuccess)
+                {
+                    Console.WriteLine(profileResult.Message);
+                }
+
                 NavManager.NavigateTo("/dashboard", forceLoad: true);
             }
             else

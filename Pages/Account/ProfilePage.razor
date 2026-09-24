@@ -1,0 +1,260 @@
+@page "/profile"
+@using CapstoneProject.Commons
+@using Microsoft.AspNetCore.Authorization
+@attribute [Authorize]
+@inject CapstoneProject.Services.SupabaseService SupabaseSvc
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
+
+<PageTitle>My Profile - 7 Guys House of Fashion</PageTitle>
+
+<div class="customer-page profile-page">
+    <div class="page-back"><BackButtonComponent Href="/" Text="Back to Home" /></div>
+
+    <div class="customer-header">
+        <h1 class="customer-title">My Profile</h1>
+        <p class="customer-subtitle">Keep your contact details up to date so we can reach you about your orders.</p>
+    </div>
+
+    @if (_isLoading)
+    {
+        <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+    }
+    else if (_profile == null)
+    {
+        <MudAlert Severity="Severity.Error" Variant="Variant.Outlined" Dense="true">
+            Your profile could not be loaded. Please refresh the page or log in again.
+        </MudAlert>
+    }
+    else
+    {
+        <div class="profile-layout">
+            <section class="profile-summary">
+                <MudAvatar Class="profile-avatar">@GetInitials(_profile.FullName)</MudAvatar>
+                <h2 class="profile-summary-name">@DisplayText(_profile.FullName)</h2>
+                <p class="profile-summary-email">@_email</p>
+                <span class="profile-role">@GetRoleLabel(_profile.Role)</span>
+
+                <dl class="profile-facts">
+                    <div>
+                        <dt>Member Since</dt>
+                        <dd>@_profile.CreatedAt.ToLocalTime().ToString("MMMM d, yyyy")</dd>
+                    </div>
+                    <div>
+                        <dt>Contact Number</dt>
+                        <dd>@DisplayText(_profile.Phone)</dd>
+                    </div>
+                    <div>
+                        <dt>Address</dt>
+                        <dd>@DisplayText(_profile.Address)</dd>
+                    </div>
+                </dl>
+            </section>
+
+            <section class="profile-form">
+                <h2 class="order-form-title">Personal Details</h2>
+                <MudTextField @bind-Value="FullName" Immediate="true" Label="Full Name" Variant="Variant.Outlined"
+                              Required="true" MaxLength="100" Disabled="@_isSubmitting" />
+
+                <h2 class="order-form-title">Contact</h2>
+                <div class="profile-field-row">
+                    <MudTextField @bind-Value="Phone" Immediate="true" Label="Contact Number" Variant="Variant.Outlined"
+                                  InputType="InputType.Telephone" MaxLength="20" Disabled="@_isSubmitting"
+                                  HelperText="Example: 0917 123 4567" />
+                    <MudTextField Value="@_email" Label="Email" Variant="Variant.Outlined" ReadOnly="true" Disabled="true"
+                                  HelperText="Your email is used to log in and can't be changed here." />
+                </div>
+                <MudTextField @bind-Value="Address" Immediate="true" Label="Delivery Address" Variant="Variant.Outlined"
+                              Lines="3" MaxLength="300" Disabled="@_isSubmitting" />
+
+                <div class="profile-actions">
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Undo"
+                               OnClick="DiscardChanges" Disabled="@(_isSubmitting || !HasChanges)">
+                        Discard Changes
+                    </MudButton>
+                    <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                               StartIcon="@Icons.Material.Filled.Save" OnClick="SaveProfile"
+                               Disabled="@(_isSubmitting || !HasChanges)">
+                        @(_isSubmitting ? "Saving..." : "Save Changes")
+                    </MudButton>
+                </div>
+            </section>
+        </div>
+    }
+</div>
+
+@code {
+    #region Properties
+    private UserProfileModel? _profile;
+    private string _email = "-";
+    private bool _isLoading;
+    private bool _isSubmitting;
+
+    public string FullName { get; set; } = string.Empty;
+    public string Phone { get; set; } = string.Empty;
+    public string Address { get; set; } = string.Empty;
+
+    private bool HasChanges =>
+        _profile != null &&
+        (FullName.Trim() != (_profile.FullName ?? string.Empty) ||
+         Phone.Trim() != (_profile.Phone ?? string.Empty) ||
+         Address.Trim() != (_profile.Address ?? string.Empty));
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await GetProfile();
+    }
+    #endregion
+
+    #region Methods
+    private async Task GetProfile()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+            var userId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var email = authState.User.FindFirst(System.Security.Claims.ClaimTypes.Email)?.Value;
+
+            _email = string.IsNullOrWhiteSpace(email) ? "-" : email;
+
+            if (string.IsNullOrWhiteSpace(userId)) return;
+
+            _profile = await SupabaseSvc.GetUserProfileAsync(userId);
+            FillForm();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Your profile could not be loaded.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private void FillForm()
+    {
+        if (_profile == null) return;
+
+        FullName = _profile.FullName ?? string.Empty;
+        Phone = _profile.Phone ?? string.Empty;
+        Address = _profile.Address ?? string.Empty;
+    }
+
+    private void DiscardChanges()
+    {
+        FillForm();
+    }
+
+    private string? GetValidationMessage()
+    {
+        if (string.IsNullOrWhiteSpace(FullName))
+        {
+            return "Please enter your full name.";
+        }
+
+        var phone = Phone.Trim();
+        if (phone.Length > 0 && !phone.All(c => char.IsDigit(c) || c == ' ' || c == '+' || c == '-'))
+        {
+            return "The contact number can only have numbers, spaces, + and -.";
+        }
+
+        var digitCount = phone.Count(char.IsDigit);
+        if (phone.Length > 0 && (digitCount < 7 || digitCount > 15))
+        {
+            return "Please enter a complete contact number.";
+        }
+
+        return null;
+    }
+
+    private async Task SaveProfile()
+    {
+        if (_isSubmitting || _profile == null) return;
+
+        var message = GetValidationMessage();
+        if (message != null)
+        {
+            Extension.ShowAlert(message, Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            var fullName = FullName.Trim();
+            var phone = ToNullIfEmpty(Phone);
+            var address = ToNullIfEmpty(Address);
+            var isNameChanged = fullName != (_profile.FullName ?? string.Empty);
+
+            var result = await SupabaseSvc.UpdateProfileAsync(_profile.Id, fullName, phone, address);
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            _profile.FullName = fullName;
+            _profile.Phone = phone;
+            _profile.Address = address;
+            FillForm();
+
+            if (isNameChanged)
+            {
+                var nameResult = await SupabaseSvc.UpdateDisplayNameAsync(fullName);
+                if (!nameResult.IsSuccess)
+                {
+                    Extension.ShowAlert(nameResult.Message, Variant.Filled, Snackbar, Severity.Warning);
+                    return;
+                }
+            }
+
+            Extension.ShowAlert("Your profile has been saved.", Variant.Filled, Snackbar, Severity.Success);
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private static string? ToNullIfEmpty(string value)
+    {
+        var trimmed = value.Trim();
+        return trimmed.Length == 0 ? null : trimmed;
+    }
+
+    private static string DisplayText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+
+    private static string GetRoleLabel(string role)
+    {
+        return role switch
+        {
+            "admin" => "Admin",
+            "employee" => "Employee",
+            _ => "Customer"
+        };
+    }
+
+    private static string GetInitials(string? fullName)
+    {
+        if (string.IsNullOrWhiteSpace(fullName)) return "-";
+
+        var parts = fullName.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var first = char.ToUpper(parts[0][0]);
+
+        if (parts.Length == 1) return first.ToString();
+
+        var last = char.ToUpper(parts[^1][0]);
+        return $"{first}{last}";
+    }
+    #endregion
+}
