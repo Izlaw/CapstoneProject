@@ -44,6 +44,55 @@
                         <MudText Typo="Typo.caption" Class="collection-image-hint">PNG, JPG or WebP, up to 2 MB</MudText>
                     </div>
                 </div>
+
+                <MudDivider Class="mt-2" />
+                <MudText Typo="Typo.overline">3D Preview</MudText>
+
+                <MudSwitch T="bool" @bind-Value="_showIn3D" Color="Color.Primary" Disabled="@_isSubmitting"
+                           Label="Show a 3D preview when customers open this design" />
+
+                @if (_showIn3D)
+                {
+                    <div class="collection-color-row">
+                        <label class="collection-color-field">
+                            <input type="color" value="@_bodyColor" disabled="@_isSubmitting"
+                                   @onchange="@(e => _bodyColor = e.Value?.ToString() ?? _bodyColor)" />
+                            <span>Body</span>
+                        </label>
+                        <label class="collection-color-field">
+                            <input type="color" value="@_sleevesColor" disabled="@_isSubmitting"
+                                   @onchange="@(e => _sleevesColor = e.Value?.ToString() ?? _sleevesColor)" />
+                            <span>Sleeves</span>
+                        </label>
+                        <label class="collection-color-field">
+                            <input type="color" value="@_collarColor" disabled="@_isSubmitting"
+                                   @onchange="@(e => _collarColor = e.Value?.ToString() ?? _collarColor)" />
+                            <span>Collar</span>
+                        </label>
+                    </div>
+
+                    <MudTextField T="string" @bind-Value="_designText" Label="Text on the Shirt (optional)" Variant="Variant.Outlined"
+                                  MaxLength="40" Disabled="@_isSubmitting" HelperText="Leave empty for a plain shirt" />
+
+                    @if (!string.IsNullOrWhiteSpace(_designText))
+                    {
+                        <div class="collection-text-row">
+                            <MudSelect T="string" @bind-Value="_textFont" Label="Font" Variant="Variant.Outlined" Disabled="@_isSubmitting">
+                                @foreach (var font in Fonts)
+                                {
+                                    <MudSelectItem T="string" Value="@font">@font</MudSelectItem>
+                                }
+                            </MudSelect>
+                            <MudNumericField T="int" @bind-Value="_textSize" Label="Text Size" Variant="Variant.Outlined"
+                                             Min="MinTextSize" Max="MaxTextSize" Disabled="@_isSubmitting" />
+                            <label class="collection-color-field">
+                                <input type="color" value="@_textColor" disabled="@_isSubmitting"
+                                       @onchange="@(e => _textColor = e.Value?.ToString() ?? _textColor)" />
+                                <span>Text Color</span>
+                            </label>
+                        </div>
+                    }
+                }
             </MudStack>
         </MudForm>
     </DialogContent>
@@ -69,9 +118,119 @@
         string.IsNullOrWhiteSpace(value) ? "Enter a design name." : null;
 
     private string? PreviewUrl => _pendingImagePreviewUrl ?? Item.ImageUrl;
+
+    private const int MinTextSize = 12;
+    private const int MaxTextSize = 72;
+    private static readonly string[] Fonts = ["Arial", "Georgia", "Impact", "Courier New", "Trebuchet MS", "Verdana"];
+
+    private bool _showIn3D;
+    private string _bodyColor = "#ffffff";
+    private string _sleevesColor = "#ffffff";
+    private string _collarColor = "#ffffff";
+    private string _designText = string.Empty;
+    private string _textColor = "#000000";
+    private string _textFont = "Arial";
+    private int _textSize = 36;
+    #endregion
+
+    #region Lifecycle
+    protected override void OnInitialized()
+    {
+        LoadDesignFields();
+    }
     #endregion
 
     #region Methods
+    private void LoadDesignFields()
+    {
+        var parts = Item.DesignData?.Parts;
+        if (parts == null) return;
+
+        _showIn3D = true;
+        _bodyColor = parts.Body;
+        _sleevesColor = parts.Sleeves;
+        _collarColor = parts.Collar;
+
+        var textElement = Item.DesignData!.Elements.FirstOrDefault(element => element.Type == "text");
+        if (textElement == null) return;
+
+        _designText = textElement.Text ?? string.Empty;
+        _textColor = textElement.Color ?? _textColor;
+        _textFont = textElement.Font ?? _textFont;
+        _textSize = (int)(textElement.FontSize ?? _textSize);
+    }
+
+    private string? GetDesignValidationMessage()
+    {
+        if (!_showIn3D) return null;
+
+        var colors = new List<string> { _bodyColor, _sleevesColor, _collarColor };
+        if (!string.IsNullOrWhiteSpace(_designText))
+        {
+            colors.Add(_textColor);
+        }
+
+        if (colors.Any(color => DesignPartsModel.ToSafeColor(color) == "-"))
+        {
+            return "One of the 3D preview colors is not valid. Please pick it again.";
+        }
+
+        if (string.IsNullOrWhiteSpace(_designText)) return null;
+
+        if (!Fonts.Contains(_textFont))
+        {
+            return "Choose a font for the text on the shirt.";
+        }
+
+        if (_textSize < MinTextSize || _textSize > MaxTextSize)
+        {
+            return $"The text size must be between {MinTextSize} and {MaxTextSize}.";
+        }
+
+        return null;
+    }
+
+    private DesignDataModel? BuildDesignData()
+    {
+        if (!_showIn3D) return null;
+
+        var designData = new DesignDataModel
+        {
+            Parts = new DesignPartsModel
+            {
+                Body = _bodyColor,
+                Sleeves = _sleevesColor,
+                Collar = _collarColor
+            }
+        };
+
+        if (!string.IsNullOrWhiteSpace(_designText))
+        {
+            designData.Elements.Add(BuildTextElement());
+        }
+
+        return designData;
+    }
+
+    private DesignElementModel BuildTextElement()
+    {
+        return new DesignElementModel
+        {
+            Type = "text",
+            Text = _designText.Trim(),
+            Font = _textFont,
+            FontSize = _textSize,
+            Color = _textColor,
+            Size = 0.6m,
+            OriginX = 0m,
+            OriginY = 0.2m,
+            OriginZ = 2m,
+            DirX = 0m,
+            DirY = 0m,
+            DirZ = -1m
+        };
+    }
+
     private async Task SelectImage(IBrowserFile file)
     {
         if (file.Size > MaxImageBytes)
@@ -111,6 +270,13 @@
         await _form.Validate();
         if (!_form.IsValid) return;
 
+        var designMessage = GetDesignValidationMessage();
+        if (designMessage != null)
+        {
+            Extension.ShowAlert(designMessage, Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
         _isSubmitting = true;
 
         try
@@ -128,6 +294,7 @@
             }
 
             Item.Name = Item.Name.Trim();
+            Item.DesignData = BuildDesignData();
             var result = await CatalogSvc.SaveAsync(Item, IsNew);
 
             if (!result.IsSuccess)

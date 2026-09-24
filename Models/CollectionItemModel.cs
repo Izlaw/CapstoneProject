@@ -19,6 +19,9 @@ public class CollectionItemModel : BaseModel, ISortableItem
     [Column("image_url", NullValueHandling.Include)]
     public string? ImageUrl { get; set; }
 
+    [Column("design_data", NullValueHandling.Include)]
+    public DesignDataModel? DesignData { get; set; }
+
     [Column("sort_order")]
     public int SortOrder { get; set; }
 

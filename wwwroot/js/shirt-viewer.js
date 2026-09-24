@@ -6,6 +6,7 @@ import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 
 let scene, camera, renderer, controls, shirtGroup;
 let blazorRef = null;
+let resizeHandler = null;
 let modelReady = Promise.resolve();
 let resolveModelReady = () => {};
 
@@ -87,6 +88,11 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     loader.load(
         './models/shirt.glb',
         (gltf) => {
+            if (!scene) {
+                resolveModelReady();
+                return;
+            }
+
             shirtGroup = gltf.scene;
 
             const box = new THREE.Box3().setFromObject(shirtGroup);
@@ -128,12 +134,13 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     );
 
     // ── Window Resize ──────────────────────────────────────
-    window.addEventListener('resize', () => {
+    resizeHandler = () => {
         if (!container || !camera || !renderer) return;
         camera.aspect = container.clientWidth / container.clientHeight;
         camera.updateProjectionMatrix();
         renderer.setSize(container.clientWidth, container.clientHeight);
-    });
+    };
+    window.addEventListener('resize', resizeHandler);
 
     // ── Render Loop ────────────────────────────────────────
     renderer.setAnimationLoop(() => {
@@ -385,6 +392,8 @@ export async function applyDesignBatch(config) {
         return item;
     }));
 
+    if (!scene) return;
+
     // 2. Everything is ready, now clear the old design! (No flickering)
     clearDesign();
 
@@ -463,6 +472,35 @@ export function setAutoSpin(enable) {
         controls.autoRotate = enable;
         controls.autoRotateSpeed = 2.0;
     }
+}
+
+export function dispose() {
+    if (resizeHandler) {
+        window.removeEventListener('resize', resizeHandler);
+        resizeHandler = null;
+    }
+
+    if (scene) {
+        clearDesign();
+    }
+
+    if (controls) {
+        controls.dispose();
+    }
+
+    if (renderer) {
+        renderer.setAnimationLoop(null);
+        renderer.dispose();
+        renderer.forceContextLoss();
+        renderer.domElement.remove();
+    }
+
+    scene = null;
+    camera = null;
+    renderer = null;
+    controls = null;
+    shirtGroup = null;
+    blazorRef = null;
 }
 
 window.downloadDataUrl = function (dataUrl, filename) {

@@ -14,10 +14,19 @@
 
     <div class="d-flex justify-space-between align-center mb-6">
         <MudText Typo="Typo.h4" Style="font-weight: 600; color: var(--text-primary);">Order Management</MudText>
-        
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadOrders">
-            Refresh
-        </MudButton>
+
+        <div class="d-flex" style="gap: 0.75rem;">
+            <AuthorizeView Roles="admin" Context="adminContext">
+                <Authorized>
+                    <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Tune" Href="/admin/catalog">
+                        Catalog Settings
+                    </MudButton>
+                </Authorized>
+            </AuthorizeView>
+            <MudButton Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Refresh" OnClick="LoadOrders">
+                Refresh
+            </MudButton>
+        </div>
     </div>
     
     <MudPaper Elevation="0" Class="pa-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">

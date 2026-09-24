@@ -4,8 +4,16 @@
 
 <MudDialog>
     <DialogContent>
+        @if (HasDesignIn3D)
+        {
+            <div class="collection-order-3d">
+                <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="ShowDesignIn3D" ShowControls="true" />
+            </div>
+            <p class="collection-order-3d-hint">Drag to rotate the shirt and scroll to zoom.</p>
+        }
+
         <div class="collection-order-header">
-            @if (!string.IsNullOrEmpty(Collection.ImageUrl))
+            @if (!HasDesignIn3D && !string.IsNullOrEmpty(Collection.ImageUrl))
             {
                 <img src="@Collection.ImageUrl" alt="@Collection.Name" class="collection-order-image" />
             }
@@ -25,14 +33,63 @@
 
 @code {
     #region Properties
+    private const string ViewerBackgroundColor = "#10121F";
+
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public CollectionItemModel Collection { get; set; } = new();
 
     private OrderFormComponent _orderForm = default!;
+    private ShirtViewerComponent? _shirtViewer;
     private bool _isSubmitting;
+    private bool _hasViewerFailed;
+
+    private bool HasDesignIn3D => Collection.DesignData?.Parts != null && !_hasViewerFailed;
     #endregion
 
     #region Methods
+    private async Task ShowDesignIn3D()
+    {
+        if (_shirtViewer == null || Collection.DesignData?.Parts == null) return;
+
+        try
+        {
+            await _shirtViewer.SetBackgroundColorAsync(ViewerBackgroundColor);
+
+            var items = new List<object>();
+            foreach (var element in Collection.DesignData.Elements)
+            {
+                items.Add(BuildViewerItem(element));
+            }
+
+            await _shirtViewer.ApplyDesignBatchAsync(new { parts = Collection.DesignData.Parts, items });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            _hasViewerFailed = true;
+            StateHasChanged();
+        }
+    }
+
+    private static object BuildViewerItem(DesignElementModel element)
+    {
+        return new
+        {
+            type = element.Type,
+            text = element.Text,
+            fontSize = element.FontSize,
+            color = element.Color,
+            font = element.Font,
+            size = element.Size,
+            originX = element.OriginX,
+            originY = element.OriginY,
+            originZ = element.OriginZ,
+            dirX = element.DirX,
+            dirY = element.DirY,
+            dirZ = element.DirZ
+        };
+    }
+
     private async Task PlaceOrder()
     {
         if (_isSubmitting) return;

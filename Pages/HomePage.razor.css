@@ -87,6 +87,16 @@
     background-color: transparent;
 }
 
+::deep .home-btn-text {
+    color: var(--text-secondary);
+    padding: 0.85rem 1.1rem;
+}
+
+::deep .home-btn-text:hover {
+    color: var(--accent);
+    background-color: transparent;
+}
+
 .home-steps {
     display: flex;
     gap: 1.75rem;
