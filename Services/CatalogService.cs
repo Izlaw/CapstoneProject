@@ -52,6 +52,15 @@ public class CatalogService
         return response.Models;
     }
 
+    public async Task<List<CollectionItemModel>> GetSubmissionsAsync(string submittedBy)
+    {
+        var response = await _supabase.From<CollectionItemModel>()
+            .Where(x => x.SubmittedBy == submittedBy)
+            .Order(x => x.UpdatedAt, Ordering.Descending)
+            .Get();
+        return response.Models;
+    }
+
     public async Task<List<PriceAuditLogModel>> GetPriceHistoryAsync(int limit = 200)
     {
         var response = await _supabase.From<PriceAuditLogModel>()

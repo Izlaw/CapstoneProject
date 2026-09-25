@@ -1,0 +1,137 @@
+@using CapstoneProject.Commons
+@using CapstoneProject.Dialogs
+@inject CatalogService CatalogSvc
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<div class="admin-toolbar">
+    <MudText Typo="Typo.body2" Class="admin-hint">Designs employees submitted for approval. Approved designs are added to Designs and shown to customers.</MudText>
+</div>
+
+<div class="admin-panel">
+    <MudTable Items="@_submissions" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+        <HeaderContent>
+            <MudTh>Image</MudTh>
+            <MudTh>Design</MudTh>
+            <MudTh>Submitted By</MudTh>
+            <MudTh>Submitted</MudTh>
+            <MudTh Class="admin-actions">Actions</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Image">
+                @if (!string.IsNullOrEmpty(context.ImageUrl))
+                {
+                    <img src="@context.ImageUrl" alt="@context.Name" class="collection-thumb" />
+                }
+                else
+                {
+                    <div class="collection-thumb collection-thumb-empty">-</div>
+                }
+            </MudTd>
+            <MudTd DataLabel="Design"><span class="admin-name">@context.Name</span></MudTd>
+            <MudTd DataLabel="Submitted By">@GetSubmitterName(context)</MudTd>
+            <MudTd DataLabel="Submitted">@context.UpdatedAt.ToString("MMM dd, yyyy")</MudTd>
+            <MudTd Class="admin-actions">
+                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                           StartIcon="@Icons.Material.Filled.RateReview" OnClick="@(() => Review(context))">
+                    Review
+                </MudButton>
+            </MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="admin-empty">No designs are waiting for approval.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</div>
+
+@code {
+    #region Properties
+    private List<CollectionItemModel> _submissions = new();
+    private Dictionary<string, string> _submitterNames = new();
+    private int _nextSortOrder = 10;
+    private bool _isLoading;
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSubmissions();
+    }
+    #endregion
+
+    #region Methods
+    private async Task LoadSubmissions()
+    {
+        if (_isLoading) return;
+        _isLoading = true;
+
+        try
+        {
+            var collections = await CatalogSvc.GetCollectionsAsync();
+            _submissions = collections
+                .Where(collection => collection.Status == CollectionStatuses.Pending)
+                .OrderBy(collection => collection.UpdatedAt)
+                .ToList();
+
+            var approved = collections.Where(collection => collection.Status == CollectionStatuses.Approved).ToList();
+            _nextSortOrder = approved.Count == 0 ? 10 : approved.Max(collection => collection.SortOrder) + 10;
+
+            var submitterIds = _submissions
+                .Where(collection => !string.IsNullOrEmpty(collection.SubmittedBy))
+                .Select(collection => collection.SubmittedBy!);
+            _submitterNames = await CatalogSvc.GetProfileNamesAsync(submitterIds);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Submissions could not be loaded. Please refresh the page.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private string GetSubmitterName(CollectionItemModel collection)
+    {
+        return collection.SubmittedBy != null && _submitterNames.TryGetValue(collection.SubmittedBy, out var name) ? name : "-";
+    }
+
+    private async Task Review(CollectionItemModel collection)
+    {
+        var item = new CollectionItemModel
+        {
+            Id = collection.Id,
+            Name = collection.Name,
+            Price = collection.Price,
+            ImageUrl = collection.ImageUrl,
+            DesignData = collection.DesignData,
+            SortOrder = _nextSortOrder,
+            IsActive = collection.IsActive,
+            Status = collection.Status,
+            SubmittedBy = collection.SubmittedBy,
+            RejectionReason = collection.RejectionReason
+        };
+
+        var parameters = new DialogParameters<CollectionDialog>
+        {
+            { x => x.Item, item },
+            { x => x.IsNew, false },
+            { x => x.Mode, CollectionDialog.DialogMode.Review }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<CollectionDialog>("Review Design", parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false)
+        {
+            var message = item.Status == CollectionStatuses.Approved
+                ? $"\"{item.Name}\" is approved and now shown to customers."
+                : $"\"{item.Name}\" was rejected. The employee can edit and resubmit it.";
+            Extension.ShowAlert(message, Variant.Filled, Snackbar, Severity.Success);
+            await LoadSubmissions();
+        }
+    }
+    #endregion
+}

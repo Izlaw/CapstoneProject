@@ -1,0 +1,194 @@
+@page "/employee/designs"
+@using Microsoft.AspNetCore.Authorization
+@using CapstoneProject.Commons
+@using CapstoneProject.Dialogs
+@attribute [Authorize(Roles = "employee,admin")]
+@inject CatalogService CatalogSvc
+@inject AuthenticationStateProvider AuthStateProvider
+@inject IDialogService DialogService
+@inject ISnackbar Snackbar
+
+<PageTitle>My Designs - 7 Guys House of Fashion</PageTitle>
+
+<div class="admin-page">
+    <div class="admin-header">
+        <h1 class="admin-title">My Designs</h1>
+        <p class="admin-subtitle">Create collection designs and submit them to the admin. Approved designs are priced by the admin and shown to customers.</p>
+    </div>
+
+    <div class="admin-toolbar">
+        <MudSpacer />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                   StartIcon="@Icons.Material.Filled.Add" OnClick="SubmitDesign" Disabled="@(_currentUserId == null)">
+            Submit Design
+        </MudButton>
+    </div>
+
+    <div class="admin-panel">
+        <MudTable Items="@_submissions" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+            <HeaderContent>
+                <MudTh>Image</MudTh>
+                <MudTh>Design</MudTh>
+                <MudTh>Status</MudTh>
+                <MudTh>Details</MudTh>
+                <MudTh>Last Updated</MudTh>
+                <MudTh Class="admin-actions">Actions</MudTh>
+            </HeaderContent>
+            <RowTemplate>
+                <MudTd DataLabel="Image">
+                    @if (!string.IsNullOrEmpty(context.ImageUrl))
+                    {
+                        <img src="@context.ImageUrl" alt="@context.Name" class="collection-thumb" />
+                    }
+                    else
+                    {
+                        <div class="collection-thumb collection-thumb-empty">-</div>
+                    }
+                </MudTd>
+                <MudTd DataLabel="Design"><span class="admin-name">@context.Name</span></MudTd>
+                <MudTd DataLabel="Status">
+                    <span class="state-badge @GetStatusClass(context.Status)">@GetStatusText(context.Status)</span>
+                </MudTd>
+                <MudTd DataLabel="Details">@GetDetails(context)</MudTd>
+                <MudTd DataLabel="Last Updated">@context.UpdatedAt.ToString("MMM dd, yyyy")</MudTd>
+                <MudTd Class="admin-actions">
+                    @if (context.Status != CollectionStatuses.Approved)
+                    {
+                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                                   StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditDesign(context))">
+                            Edit
+                        </MudButton>
+                    }
+                </MudTd>
+            </RowTemplate>
+            <NoRecordsContent>
+                <MudText Class="admin-empty">You have not submitted any designs yet. Use "Submit Design" to create one.</MudText>
+            </NoRecordsContent>
+        </MudTable>
+    </div>
+</div>
+
+@code {
+    #region Properties
+    private List<CollectionItemModel> _submissions = new();
+    private string? _currentUserId;
+    private bool _isLoading;
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        await LoadSubmissions();
+    }
+    #endregion
+
+    #region Methods
+    private async Task LoadSubmissions()
+    {
+        if (_isLoading || _currentUserId == null) return;
+        _isLoading = true;
+
+        try
+        {
+            _submissions = await CatalogSvc.GetSubmissionsAsync(_currentUserId);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Your designs could not be loaded. Please refresh the page.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task SubmitDesign()
+    {
+        var item = new CollectionItemModel
+        {
+            Price = 0,
+            IsActive = false,
+            Status = CollectionStatuses.Pending,
+            SubmittedBy = _currentUserId
+        };
+
+        await OpenDesignDialog(item, true, "Submit Design");
+    }
+
+    private async Task EditDesign(CollectionItemModel collection)
+    {
+        var item = new CollectionItemModel
+        {
+            Id = collection.Id,
+            Name = collection.Name,
+            Price = collection.Price,
+            ImageUrl = collection.ImageUrl,
+            DesignData = collection.DesignData,
+            SortOrder = collection.SortOrder,
+            IsActive = collection.IsActive,
+            Status = collection.Status,
+            SubmittedBy = collection.SubmittedBy,
+            RejectionReason = collection.RejectionReason
+        };
+
+        await OpenDesignDialog(item, false, "Edit Design");
+    }
+
+    private async Task OpenDesignDialog(CollectionItemModel item, bool isNew, string title)
+    {
+        var parameters = new DialogParameters<CollectionDialog>
+        {
+            { x => x.Item, item },
+            { x => x.IsNew, isNew },
+            { x => x.Mode, CollectionDialog.DialogMode.Submit }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<CollectionDialog>(title, parameters, options);
+        var result = await dialog.Result;
+
+        if (result?.Canceled == false)
+        {
+            Extension.ShowAlert($"\"{item.Name}\" was sent to the admin for approval.", Variant.Filled, Snackbar, Severity.Success);
+            await LoadSubmissions();
+        }
+    }
+
+    private static string GetStatusText(string status)
+    {
+        return status switch
+        {
+            CollectionStatuses.Pending => "Pending",
+            CollectionStatuses.Approved => "Approved",
+            CollectionStatuses.Rejected => "Rejected",
+            _ => "-"
+        };
+    }
+
+    private static string GetStatusClass(string status)
+    {
+        return status switch
+        {
+            CollectionStatuses.Pending => "state-pending",
+            CollectionStatuses.Approved => "state-active",
+            CollectionStatuses.Rejected => "state-rejected",
+            _ => "state-inactive"
+        };
+    }
+
+    private static string GetDetails(CollectionItemModel collection)
+    {
+        return collection.Status switch
+        {
+            CollectionStatuses.Pending => "Waiting for the admin to review.",
+            CollectionStatuses.Approved => $"Priced at ₱{collection.Price:N2}" + (collection.IsActive ? "" : " (hidden by the admin)"),
+            CollectionStatuses.Rejected => collection.RejectionReason ?? "-",
+            _ => "-"
+        };
+    }
+    #endregion
+}

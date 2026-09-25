@@ -28,6 +28,15 @@ public class CollectionItemModel : BaseModel, ISortableItem
     [Column("is_active")]
     public bool IsActive { get; set; } = true;
 
+    [Column("status")]
+    public string Status { get; set; } = CollectionStatuses.Approved;
+
+    [Column("submitted_by", NullValueHandling.Include)]
+    public string? SubmittedBy { get; set; }
+
+    [Column("rejection_reason", NullValueHandling.Include)]
+    public string? RejectionReason { get; set; }
+
     [Column("created_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
     public DateTime CreatedAt { get; set; }
 

@@ -24,6 +24,10 @@
                         @if (IsStaff(context.User))
                         {
                             <a href="/employee/dashboard" class="@GetNavLinkClass("employee/dashboard", "order-preview")">Orders</a>
+                            @if (context.User.IsInRole("employee"))
+                            {
+                                <a href="/employee/designs" class="@GetNavLinkClass("employee/designs")">My Designs</a>
+                            }
                             @if (context.User.IsInRole("admin"))
                             {
                                 <a href="/admin/catalog" class="@GetNavLinkClass("admin/catalog")">Catalog</a>
@@ -131,6 +135,12 @@
                         <a href="/employee/dashboard" class="@GetDrawerLinkClass("employee/dashboard", "order-preview")">
                             <MudIcon Icon="@Icons.Material.Filled.ListAlt" Size="Size.Small" /> Orders
                         </a>
+                        @if (context.User.IsInRole("employee"))
+                        {
+                            <a href="/employee/designs" class="@GetDrawerLinkClass("employee/designs")">
+                                <MudIcon Icon="@Icons.Material.Filled.Palette" Size="Size.Small" /> My Designs
+                            </a>
+                        }
                         @if (context.User.IsInRole("admin"))
                         {
                             <a href="/admin/catalog" class="@GetDrawerLinkClass("admin/catalog")">

@@ -491,6 +491,8 @@ h1:focus { outline: none; }
 .state-badge::before { content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
 .state-active { color: #5fd39a; background: rgba(95,211,154,0.14); }
 .state-inactive { color: var(--text-muted); background: rgba(255,255,255,0.06); }
+.state-pending { color: #f5c26b; background: rgba(245,194,107,0.14); }
+.state-rejected { color: #f28b82; background: rgba(242,139,130,0.14); }
 
 .collection-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); display: block; }
 .collection-thumb-empty { display: grid; place-items: center; background: var(--bg-elevated); color: var(--text-muted); }

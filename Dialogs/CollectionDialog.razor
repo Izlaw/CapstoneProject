@@ -6,14 +6,25 @@
     <DialogContent>
         <MudForm @ref="_form">
             <MudStack Spacing="2">
+                @if (Mode == DialogMode.Submit && Item.Status == CollectionStatuses.Rejected)
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">
+                        Rejected: @Item.RejectionReason<br />Saving your changes sends this design back to the admin for approval.
+                    </MudAlert>
+                }
+
                 <MudTextField T="string" @bind-Value="Item.Name" Label="Design Name" Variant="Variant.Outlined"
                               Required="true" RequiredError="Enter a design name." MaxLength="80"
                               Validation="@_validateName" />
 
-                <MudNumericField T="decimal" @bind-Value="Item.Price" Label="Price" Variant="Variant.Outlined"
-                                 Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
-                                 Adornment="Adornment.Start" AdornmentText="₱"
-                                 HelperText="Added to the price of every piece of this design" />
+                @if (Mode != DialogMode.Submit)
+                {
+                    <MudNumericField T="decimal?" @bind-Value="_price" Label="Price" Variant="Variant.Outlined"
+                                     Required="true" RequiredError="Enter a price."
+                                     Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
+                                     Adornment="Adornment.Start" AdornmentText="₱"
+                                     HelperText="Added to the price of every piece of this design" />
+                }
 
                 <div class="collection-image-field">
                     @if (!string.IsNullOrEmpty(PreviewUrl))
@@ -48,8 +59,11 @@
                 <MudDivider Class="mt-2" />
                 <MudText Typo="Typo.overline">3D Preview</MudText>
 
-                <MudSwitch T="bool" @bind-Value="_showIn3D" Color="Color.Primary" Disabled="@_isSubmitting"
-                           Label="Show a 3D preview when customers open this design" />
+                @if (Mode != DialogMode.Submit)
+                {
+                    <MudSwitch T="bool" @bind-Value="_showIn3D" Color="Color.Primary" Disabled="@_isSubmitting"
+                               Label="Show a 3D preview when customers open this design" />
+                }
 
                 @if (_showIn3D)
                 {
@@ -93,11 +107,30 @@
                         </div>
                     }
                 }
+
+                @if (Mode == DialogMode.Review)
+                {
+                    <MudDivider Class="mt-2" />
+                    <MudTextField T="string" @bind-Value="_rejectionReason" Label="Rejection Reason" Variant="Variant.Outlined"
+                                  Lines="2" MaxLength="500" Disabled="@_isSubmitting"
+                                  HelperText="Required if you reject this design. The employee will see it." />
+                }
             </MudStack>
         </MudForm>
     </DialogContent>
     <DialogActions>
-        <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel" ButtonText="Save" />
+        @if (Mode == DialogMode.Review)
+        {
+            <MudButton Variant="Variant.Outlined" Color="Color.Error" Disabled="@_isSubmitting" OnClick="Reject" Class="dialog-btn">
+                Reject
+            </MudButton>
+            <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel" ButtonText="Approve" />
+        }
+        else
+        {
+            <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel"
+                                   ButtonText="@(Mode == DialogMode.Submit ? "Submit for Approval" : "Save")" />
+        }
     </DialogActions>
 </MudDialog>
 
@@ -108,9 +141,19 @@
     [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
     [Parameter] public CollectionItemModel Item { get; set; } = new();
     [Parameter] public bool IsNew { get; set; }
+    [Parameter] public DialogMode Mode { get; set; } = DialogMode.Admin;
+
+    public enum DialogMode
+    {
+        Admin,
+        Submit,
+        Review
+    }
 
     private MudForm _form = default!;
     private bool _isSubmitting;
+    private decimal? _price;
+    private string _rejectionReason = string.Empty;
     private byte[]? _pendingImageBytes;
     private string _pendingImageContentType = string.Empty;
     private string? _pendingImagePreviewUrl;
@@ -136,7 +179,13 @@
     #region Lifecycle
     protected override void OnInitialized()
     {
+        _price = Mode == DialogMode.Review ? null : Item.Price;
         LoadDesignFields();
+
+        if (Mode == DialogMode.Submit)
+        {
+            _showIn3D = true;
+        }
     }
     #endregion
 
@@ -295,20 +344,76 @@
 
             Item.Name = Item.Name.Trim();
             Item.DesignData = BuildDesignData();
-            var result = await CatalogSvc.SaveAsync(Item, IsNew);
+            ApplyStatus();
 
-            if (!result.IsSuccess)
-            {
-                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
-                return;
-            }
-
-            MudDialog.Close(DialogResult.Ok(true));
+            await SaveItem();
         }
         finally
         {
             _isSubmitting = false;
         }
+    }
+
+    private void ApplyStatus()
+    {
+        switch (Mode)
+        {
+            case DialogMode.Submit:
+                Item.Price = 0;
+                Item.Status = CollectionStatuses.Pending;
+                Item.IsActive = false;
+                Item.RejectionReason = null;
+                break;
+            case DialogMode.Review:
+                Item.Price = _price ?? 0;
+                Item.Status = CollectionStatuses.Approved;
+                Item.IsActive = true;
+                Item.RejectionReason = null;
+                break;
+            default:
+                Item.Price = _price ?? 0;
+                break;
+        }
+    }
+
+    private async Task Reject()
+    {
+        if (_isSubmitting) return;
+
+        if (string.IsNullOrWhiteSpace(_rejectionReason))
+        {
+            Extension.ShowAlert("Enter a rejection reason so the employee knows what to change.", Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
+        _isSubmitting = true;
+
+        try
+        {
+            Item.Name = Item.Name.Trim();
+            Item.Price = 0;
+            Item.Status = CollectionStatuses.Rejected;
+            Item.IsActive = false;
+            Item.RejectionReason = _rejectionReason.Trim();
+
+            await SaveItem();
+        }
+        finally
+        {
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task SaveItem()
+    {
+        var result = await CatalogSvc.SaveAsync(Item, IsNew);
+        if (!result.IsSuccess)
+        {
+            Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+            return;
+        }
+
+        MudDialog.Close(DialogResult.Ok(true));
     }
 
     private void Cancel()
