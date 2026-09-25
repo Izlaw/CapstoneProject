@@ -1,11 +1,10 @@
 @page "/employee/designs"
 @using Microsoft.AspNetCore.Authorization
 @using CapstoneProject.Commons
-@using CapstoneProject.Dialogs
 @attribute [Authorize(Roles = "employee,admin")]
 @inject CatalogService CatalogSvc
 @inject AuthenticationStateProvider AuthStateProvider
-@inject IDialogService DialogService
+@inject NavigationManager NavManager
 @inject ISnackbar Snackbar
 
 <PageTitle>My Designs - 7 Guys House of Fashion</PageTitle>
@@ -13,14 +12,14 @@
 <div class="admin-page">
     <div class="admin-header">
         <h1 class="admin-title">My Designs</h1>
-        <p class="admin-subtitle">Create collection designs and submit them to the admin. Approved designs are priced by the admin and shown to customers.</p>
+        <p class="admin-subtitle">Design shirts in the Design Studio and submit them to the admin. Approved designs are priced by the admin and shown to customers.</p>
     </div>
 
     <div class="admin-toolbar">
         <MudSpacer />
         <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
-                   StartIcon="@Icons.Material.Filled.Add" OnClick="SubmitDesign" Disabled="@(_currentUserId == null)">
-            Submit Design
+                   StartIcon="@Icons.Material.Filled.Add" OnClick="CreateDesign" Disabled="@(_currentUserId == null)">
+            Create Design
         </MudButton>
     </div>
 
@@ -52,17 +51,14 @@
                 <MudTd DataLabel="Details">@GetDetails(context)</MudTd>
                 <MudTd DataLabel="Last Updated">@context.UpdatedAt.ToString("MMM dd, yyyy")</MudTd>
                 <MudTd Class="admin-actions">
-                    @if (context.Status != CollectionStatuses.Approved)
-                    {
-                        <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
-                                   StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditDesign(context))">
-                            Edit
-                        </MudButton>
-                    }
+                    <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
+                               StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditDesign(context))">
+                        Edit
+                    </MudButton>
                 </MudTd>
             </RowTemplate>
             <NoRecordsContent>
-                <MudText Class="admin-empty">You have not submitted any designs yet. Use "Submit Design" to create one.</MudText>
+                <MudText Class="admin-empty">You have not submitted any designs yet. Use "Create Design" to make one.</MudText>
             </NoRecordsContent>
         </MudTable>
     </div>
@@ -106,56 +102,14 @@
         }
     }
 
-    private async Task SubmitDesign()
+    private void CreateDesign()
     {
-        var item = new CollectionItemModel
-        {
-            Price = 0,
-            IsActive = false,
-            Status = CollectionStatuses.Pending,
-            SubmittedBy = _currentUserId
-        };
-
-        await OpenDesignDialog(item, true, "Submit Design");
+        NavManager.NavigateTo("/employee/designer");
     }
 
-    private async Task EditDesign(CollectionItemModel collection)
+    private void EditDesign(CollectionItemModel collection)
     {
-        var item = new CollectionItemModel
-        {
-            Id = collection.Id,
-            Name = collection.Name,
-            Price = collection.Price,
-            ImageUrl = collection.ImageUrl,
-            DesignData = collection.DesignData,
-            SortOrder = collection.SortOrder,
-            IsActive = collection.IsActive,
-            Status = collection.Status,
-            SubmittedBy = collection.SubmittedBy,
-            RejectionReason = collection.RejectionReason
-        };
-
-        await OpenDesignDialog(item, false, "Edit Design");
-    }
-
-    private async Task OpenDesignDialog(CollectionItemModel item, bool isNew, string title)
-    {
-        var parameters = new DialogParameters<CollectionDialog>
-        {
-            { x => x.Item, item },
-            { x => x.IsNew, isNew },
-            { x => x.Mode, CollectionDialog.DialogMode.Submit }
-        };
-        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
-
-        var dialog = await DialogService.ShowAsync<CollectionDialog>(title, parameters, options);
-        var result = await dialog.Result;
-
-        if (result?.Canceled == false)
-        {
-            Extension.ShowAlert($"\"{item.Name}\" was sent to the admin for approval.", Variant.Filled, Snackbar, Severity.Success);
-            await LoadSubmissions();
-        }
+        NavManager.NavigateTo($"/employee/designer/{collection.Id}");
     }
 
     private static string GetStatusText(string status)

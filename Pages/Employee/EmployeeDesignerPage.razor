@@ -1,0 +1,434 @@
+@page "/employee/designer"
+@page "/employee/designer/{Id}"
+@using System.Text.RegularExpressions
+@using Microsoft.AspNetCore.Authorization
+@using CapstoneProject.Commons
+@using CapstoneProject.Dialogs
+@attribute [Authorize(Roles = "employee,admin")]
+@inject CatalogService CatalogSvc
+@inject AuthenticationStateProvider AuthStateProvider
+@inject ISnackbar Snackbar
+@inject IDialogService DialogService
+@inject NavigationManager NavManager
+@implements IAsyncDisposable
+
+<PageTitle>Design Studio - 7 Guys House of Fashion</PageTitle>
+
+<NavigationLock OnBeforeInternalNavigation="ConfirmLeaveDesigner" ConfirmExternalNavigation="@_hasUnsavedDesign" />
+
+<div class="designer-layout">
+    <div class="designer-canvas-area">
+        <div class="designer-back"><BackButtonComponent Href="/employee/designs" Text="Back to My Designs" /></div>
+        <ShirtCanvasComponent @ref="_shirtCanvas"
+                              OnModuleReady="OnModuleReady"
+                              OnObjectSelected="OnObjectSelected"
+                              OnObjectCleared="OnObjectCleared" />
+    </div>
+    <div class="designer-tools-area">
+        <DesignToolbarComponent @ref="_toolbar"
+            OnColorChanged="ChangeShirtColor"
+            OnBackgroundColorChanged="ChangeBackgroundColor"
+            OnTextAdded="AddText"
+            OnTextUpdated="UpdateText"
+            OnLogoUploaded="AddLogo"
+            OnClearDesign="ClearDesign"
+            OnDeleteSelected="DeleteSelected"
+            OnDeselect="DeselectObject" />
+
+        <div class="export-section">
+            <p class="tool-section-title">Submit</p>
+            <MudText Typo="Typo.body2" Class="submit-design-note">
+                When you are done, submit your design. A front picture of the shirt is taken for the admin to review.
+            </MudText>
+
+            <div class="order-actions">
+                <MudButton Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" DropShadow="false"
+                           Disabled="@(_isSubmitting || _isLoading)" StartIcon="@Icons.Material.Filled.Send" OnClick="SubmitDesign">
+                    @if (_isSubmitting)
+                    {
+                        <MudProgressCircular Size="Size.Small" Indeterminate="true" Class="mr-2" />
+                        <span>Submitting Your Design...</span>
+                    }
+                    else
+                    {
+                        <span>Submit for Approval</span>
+                    }
+                </MudButton>
+            </div>
+
+            <MudText Typo="Typo.caption" Class="order-tip">Tip: drag to rotate the shirt and scroll to zoom.</MudText>
+        </div>
+    </div>
+</div>
+
+@code {
+    #region Properties
+    private const long MaxImageBytes = 2 * 1024 * 1024;
+    private static readonly HashSet<string> AllowedImageTypes = new() { "image/png", "image/jpeg", "image/webp" };
+    private static readonly Regex HexColorPattern = new("^#[0-9A-Fa-f]{6}$");
+    private readonly List<string> _uploadedPaths = new();
+
+    [Parameter] public string? Id { get; set; }
+
+    private ShirtCanvasComponent _shirtCanvas = default!;
+    private DesignToolbarComponent _toolbar = default!;
+    private CollectionItemModel? _existingDesign;
+    private string? _currentUserId;
+    private bool _isLoading;
+    private bool _isSubmitting;
+    private bool _hasUnsavedDesign;
+    private bool _isExistingDesignShown;
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await AuthStateProvider.GetAuthenticationStateAsync();
+        _currentUserId = authState.User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+
+        if (!string.IsNullOrEmpty(Id))
+        {
+            await LoadExistingDesign();
+        }
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await _shirtCanvas.DisposeAsync();
+    }
+    #endregion
+
+    #region Loading
+    private async Task LoadExistingDesign()
+    {
+        _isLoading = true;
+
+        try
+        {
+            var design = await CatalogSvc.GetCollectionAsync(Id!);
+            if (design == null || design.SubmittedBy != _currentUserId)
+            {
+                Extension.ShowAlert("This design could not be found.", Variant.Filled, Snackbar, Severity.Error);
+                NavManager.NavigateTo("/employee/designs");
+                return;
+            }
+
+            _existingDesign = design;
+            await ShowExistingDesign();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Your design could not be loaded. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+
+    private async Task ShowExistingDesign()
+    {
+        if (_isExistingDesignShown || _existingDesign?.DesignData == null || _shirtCanvas?.Module is null) return;
+        _isExistingDesignShown = true;
+
+        var items = new List<object>();
+        foreach (var element in _existingDesign.DesignData.Elements)
+        {
+            items.Add(BuildCanvasItem(element));
+        }
+
+        await _shirtCanvas.Module.InvokeVoidAsync("loadDesign", new { parts = _existingDesign.DesignData.Parts, items });
+    }
+
+    private object BuildCanvasItem(DesignElementModel element)
+    {
+        var imageUrl = element.Type == "image" && !string.IsNullOrEmpty(element.Path)
+            ? CatalogSvc.GetCollectionImageUrl(element.Path)
+            : null;
+
+        return new
+        {
+            type = element.Type,
+            text = element.Text,
+            fontSize = element.FontSize,
+            color = element.Color,
+            font = element.Font,
+            size = element.Size,
+            originX = element.OriginX,
+            originY = element.OriginY,
+            originZ = element.OriginZ,
+            dirX = element.DirX,
+            dirY = element.DirY,
+            dirZ = element.DirZ,
+            path = element.Path,
+            url = imageUrl
+        };
+    }
+    #endregion
+
+    #region Canvas events
+    private async Task OnModuleReady()
+    {
+        try
+        {
+            await ShowExistingDesign();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Your saved design could not be shown on the shirt. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+        }
+
+        StateHasChanged();
+    }
+
+    private void OnObjectSelected(Dictionary<string, object> properties)
+    {
+        _toolbar.SetSelectedObject(properties);
+    }
+
+    private void OnObjectCleared()
+    {
+        _toolbar.ClearSelectedObject();
+    }
+
+    private async Task ChangeShirtColor((string Target, string Hex) args)
+    {
+        await _shirtCanvas.SetColorAsync(args.Hex, args.Target);
+        _hasUnsavedDesign = true;
+    }
+
+    private async Task ChangeBackgroundColor(string hex)
+    {
+        await _shirtCanvas.SetBackgroundColorAsync(hex);
+    }
+
+    private async Task AddText((string text, int size, string color, string font) args)
+    {
+        await _shirtCanvas.AddTextAsync(args.text, args.size, args.color, args.font);
+        _hasUnsavedDesign = true;
+    }
+
+    private async Task UpdateText((string text, int size, string color, string font) args)
+    {
+        await _shirtCanvas.UpdateSelectedTextAsync(args.text, args.size, args.color, args.font);
+        _hasUnsavedDesign = true;
+    }
+
+    private async Task AddLogo(string dataUrl)
+    {
+        await _shirtCanvas.AddImageAsync(dataUrl);
+        _hasUnsavedDesign = true;
+    }
+
+    private async Task ClearDesign()
+    {
+        await _shirtCanvas.ClearDesignAsync();
+        await _shirtCanvas.SetColorAsync("#ffffff");
+        _hasUnsavedDesign = true;
+    }
+
+    private async Task DeleteSelected()
+    {
+        await _shirtCanvas.DeleteSelectedAsync();
+        _hasUnsavedDesign = true;
+    }
+
+    private async Task DeselectObject()
+    {
+        await _shirtCanvas.DeselectActiveObjectAsync();
+    }
+
+    private async Task ConfirmLeaveDesigner(LocationChangingContext context)
+    {
+        if (!_hasUnsavedDesign) return;
+
+        var isLeaving = await DialogService.ShowMessageBox(
+            "Leave the Design Studio?",
+            "Your changes have not been submitted yet. If you leave now, they will be lost.",
+            yesText: "Leave",
+            cancelText: "Stay");
+
+        if (isLeaving != true)
+        {
+            context.PreventNavigation();
+        }
+    }
+    #endregion
+
+    #region Submit
+    private async Task SubmitDesign()
+    {
+        if (_isSubmitting || _shirtCanvas.Module is null || _currentUserId == null) return;
+
+        var parts = await _shirtCanvas.GetPartColorsAsync();
+        if (parts.GetAllColors().Any(color => !HexColorPattern.IsMatch(color)))
+        {
+            Extension.ShowAlert("One of the shirt colors is not valid. Please pick it again.", Variant.Filled, Snackbar, Severity.Warning);
+            return;
+        }
+
+        _isSubmitting = true;
+        _uploadedPaths.Clear();
+        var isSaved = false;
+
+        try
+        {
+            var screenshot = await _shirtCanvas.Module.InvokeAsync<string>("exportCollectionPng");
+            if (!TryReadDataUrl(screenshot, out var screenshotBytes, out var screenshotType))
+            {
+                Extension.ShowAlert("The design picture could not be created. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            var name = await AskForDesignName(screenshot);
+            if (name == null) return;
+
+            var imagePath = await UploadFile(screenshotBytes, screenshotType);
+            if (imagePath == null) return;
+
+            var elements = await UploadDesignElements();
+            if (elements == null) return;
+
+            var design = BuildDesign(name, imagePath, new DesignDataModel { Elements = elements, Parts = parts });
+            var result = await CatalogSvc.SaveAsync(design, _existingDesign == null);
+            if (!result.IsSuccess)
+            {
+                Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
+                return;
+            }
+
+            isSaved = true;
+            await DeleteOldScreenshot();
+
+            _hasUnsavedDesign = false;
+            Extension.ShowAlert($"\"{name}\" was sent to the admin for approval.", Variant.Filled, Snackbar, Severity.Success);
+            NavManager.NavigateTo("/employee/designs");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("Something went wrong while submitting your design. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            if (!isSaved) await CatalogSvc.DeleteCollectionFilesAsync(_uploadedPaths);
+            _isSubmitting = false;
+        }
+    }
+
+    private async Task<string?> AskForDesignName(string screenshot)
+    {
+        var parameters = new DialogParameters<SubmitDesignDialog>
+        {
+            { x => x.PreviewDataUrl, screenshot },
+            { x => x.Name, _existingDesign?.Name ?? string.Empty },
+            { x => x.RejectionReason, _existingDesign?.RejectionReason },
+            { x => x.IsLive, _existingDesign?.IsActive == true }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Small, FullWidth = true, BackdropClick = false };
+
+        var dialog = await DialogService.ShowAsync<SubmitDesignDialog>("Submit Design", parameters, options);
+        var result = await dialog.Result;
+
+        if (result == null || result.Canceled) return null;
+        return result.Data as string;
+    }
+
+    private async Task<string?> UploadFile(byte[] bytes, string contentType)
+    {
+        var upload = await CatalogSvc.UploadCollectionFileAsync(bytes, contentType);
+        if (!upload.IsSuccess)
+        {
+            Extension.ShowAlert(upload.Message, Variant.Filled, Snackbar, Severity.Error);
+            return null;
+        }
+
+        _uploadedPaths.Add(upload.Value!);
+        return upload.Value;
+    }
+
+    private async Task<List<DesignElementModel>?> UploadDesignElements()
+    {
+        var elements = await _shirtCanvas.Module!.InvokeAsync<List<DesignElementModel>>("getDesignElements");
+
+        foreach (var element in elements.Where(item => item.Type == "image" && string.IsNullOrEmpty(item.Path)))
+        {
+            if (!TryReadDataUrl(element.DataUrl, out var bytes, out var contentType) || !AllowedImageTypes.Contains(contentType))
+            {
+                Extension.ShowAlert("Logos and images must be PNG, JPG or WebP files.", Variant.Filled, Snackbar, Severity.Warning);
+                return null;
+            }
+
+            if (bytes.Length > MaxImageBytes)
+            {
+                Extension.ShowAlert("One of your logos is larger than 2 MB. Please use a smaller file.", Variant.Filled, Snackbar, Severity.Warning);
+                return null;
+            }
+
+            var path = await UploadFile(bytes, contentType);
+            if (path == null) return null;
+
+            element.Path = path;
+            element.DataUrl = null;
+        }
+
+        return elements;
+    }
+
+    private CollectionItemModel BuildDesign(string name, string imagePath, DesignDataModel designData)
+    {
+        var design = new CollectionItemModel
+        {
+            Name = name,
+            Price = 0,
+            ImageUrl = CatalogSvc.GetCollectionImageUrl(imagePath),
+            DesignData = designData,
+            IsActive = false,
+            Status = CollectionStatuses.Pending,
+            SubmittedBy = _currentUserId,
+            RejectionReason = null
+        };
+
+        if (_existingDesign != null)
+        {
+            design.Id = _existingDesign.Id;
+            design.SortOrder = _existingDesign.SortOrder;
+        }
+
+        return design;
+    }
+
+    private async Task DeleteOldScreenshot()
+    {
+        var oldPath = CatalogSvc.GetCollectionFilePath(_existingDesign?.ImageUrl);
+        if (oldPath == null) return;
+
+        await CatalogSvc.DeleteCollectionFilesAsync(new List<string> { oldPath });
+    }
+
+    private static bool TryReadDataUrl(string? dataUrl, out byte[] bytes, out string contentType)
+    {
+        bytes = Array.Empty<byte>();
+        contentType = string.Empty;
+
+        if (string.IsNullOrEmpty(dataUrl) || !dataUrl.StartsWith("data:")) return false;
+
+        var separatorIndex = dataUrl.IndexOf(";base64,", StringComparison.Ordinal);
+        if (separatorIndex < 0) return false;
+
+        contentType = dataUrl.Substring(5, separatorIndex - 5);
+
+        try
+        {
+            bytes = Convert.FromBase64String(dataUrl.Substring(separatorIndex + ";base64,".Length));
+            return bytes.Length > 0;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+    #endregion
+}

@@ -38,6 +38,7 @@
 
     public IJSObjectReference? Module { get; private set; }
     private bool _isReady = false;
+    private bool _isDisposed;
     private DotNetObjectReference<ShirtViewerComponent>? _objRef;
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
@@ -46,9 +47,18 @@
 
         _objRef = DotNetObjectReference.Create(this);
         Module = await JS.InvokeAsync<IJSObjectReference>("import", "./js/shirt-viewer.js");
+        if (_isDisposed)
+        {
+            await Module.DisposeAsync();
+            Module = null;
+            return;
+        }
+
         await Module.InvokeVoidAsync("init", _containerId, _canvasId, _objRef, BackgroundColor);
 
         await Task.Delay(600); // allow model to begin loading
+        if (_isDisposed) return;
+
         _isReady = true;
         await OnModuleReady.InvokeAsync();
         StateHasChanged();
@@ -109,10 +119,15 @@
 
     public async ValueTask DisposeAsync()
     {
+        _isDisposed = true;
+
         if (Module is not null)
         {
-            try { await Module.InvokeVoidAsync("dispose"); } catch { }
-            await Module.DisposeAsync();
+            var module = Module;
+            Module = null;
+
+            try { await module.InvokeVoidAsync("dispose"); } catch { }
+            await module.DisposeAsync();
         }
         _objRef?.Dispose();
     }

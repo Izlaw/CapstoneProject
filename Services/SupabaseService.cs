@@ -105,6 +105,21 @@ public class SupabaseService
         catch { return new List<ChatMessageModel>(); }
     }
 
+    public async Task<Dictionary<string, string>> GetConversationNamesAsync(string conversationId)
+    {
+        try
+        {
+            var parameters = new Dictionary<string, object> { { "p_conversation_id", conversationId } };
+            var names = await _supabase.Rpc<Dictionary<string, string>>("get_conversation_names", parameters);
+            return names ?? new Dictionary<string, string>();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return new Dictionary<string, string>();
+        }
+    }
+
     public async Task<bool> SendMessageAsync(string conversationId, string content)
     {
         try

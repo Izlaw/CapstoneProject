@@ -6,105 +6,103 @@
     <DialogContent>
         <MudForm @ref="_form">
             <MudStack Spacing="2">
-                @if (Mode == DialogMode.Submit && Item.Status == CollectionStatuses.Rejected)
-                {
-                    <MudAlert Severity="Severity.Error" Dense="true">
-                        Rejected: @Item.RejectionReason<br />Saving your changes sends this design back to the admin for approval.
-                    </MudAlert>
-                }
-
                 <MudTextField T="string" @bind-Value="Item.Name" Label="Design Name" Variant="Variant.Outlined"
                               Required="true" RequiredError="Enter a design name." MaxLength="80"
                               Validation="@_validateName" />
 
-                @if (Mode != DialogMode.Submit)
+                <MudNumericField T="decimal?" @bind-Value="_price" Label="Price" Variant="Variant.Outlined"
+                                 Required="true" RequiredError="Enter a price."
+                                 Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
+                                 Adornment="Adornment.Start" AdornmentText="₱"
+                                 HelperText="Added to the price of every piece of this design" />
+
+                @if (IsStudioDesign)
                 {
-                    <MudNumericField T="decimal?" @bind-Value="_price" Label="Price" Variant="Variant.Outlined"
-                                     Required="true" RequiredError="Enter a price."
-                                     Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
-                                     Adornment="Adornment.Start" AdornmentText="₱"
-                                     HelperText="Added to the price of every piece of this design" />
+                    @if (!string.IsNullOrEmpty(Item.ImageUrl))
+                    {
+                        <img src="@Item.ImageUrl" alt="@Item.Name" class="submit-design-preview" />
+                    }
+                    <MudText Typo="Typo.caption">This design was made in the Design Studio. Its picture and 3D preview are kept exactly as the employee submitted them.</MudText>
                 }
-
-                <div class="collection-image-field">
-                    @if (!string.IsNullOrEmpty(PreviewUrl))
-                    {
-                        <img src="@PreviewUrl" alt="Design preview" class="collection-image-preview" />
-                    }
-                    else
-                    {
-                        <div class="collection-image-empty">No image</div>
-                    }
-
-                    <div class="collection-image-actions">
-                        <MudFileUpload T="IBrowserFile" FilesChanged="SelectImage" Accept=".png,.jpg,.jpeg,.webp">
-                            <ActivatorContent>
-                                <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isSubmitting"
-                                           StartIcon="@Icons.Material.Filled.CloudUpload">
-                                    Choose Image
-                                </MudButton>
-                            </ActivatorContent>
-                        </MudFileUpload>
+                else
+                {
+                    <div class="collection-image-field">
                         @if (!string.IsNullOrEmpty(PreviewUrl))
                         {
-                            <MudButton Variant="Variant.Text" Color="Color.Default" Disabled="@_isSubmitting"
-                                       StartIcon="@Icons.Material.Filled.Delete" OnClick="RemoveImage">
-                                Remove Image
-                            </MudButton>
+                            <img src="@PreviewUrl" alt="Design preview" class="collection-image-preview" />
                         }
-                        <MudText Typo="Typo.caption" Class="collection-image-hint">PNG, JPG or WebP, up to 2 MB</MudText>
+                        else
+                        {
+                            <div class="collection-image-empty">No image</div>
+                        }
+
+                        <div class="collection-image-actions">
+                            <MudFileUpload T="IBrowserFile" FilesChanged="SelectImage" Accept=".png,.jpg,.jpeg,.webp">
+                                <ActivatorContent>
+                                    <MudButton Variant="Variant.Outlined" Color="Color.Primary" Disabled="@_isSubmitting"
+                                               StartIcon="@Icons.Material.Filled.CloudUpload">
+                                        Choose Image
+                                    </MudButton>
+                                </ActivatorContent>
+                            </MudFileUpload>
+                            @if (!string.IsNullOrEmpty(PreviewUrl))
+                            {
+                                <MudButton Variant="Variant.Text" Color="Color.Default" Disabled="@_isSubmitting"
+                                           StartIcon="@Icons.Material.Filled.Delete" OnClick="RemoveImage">
+                                    Remove Image
+                                </MudButton>
+                            }
+                            <MudText Typo="Typo.caption" Class="collection-image-hint">PNG, JPG or WebP, up to 2 MB</MudText>
+                        </div>
                     </div>
-                </div>
 
-                <MudDivider Class="mt-2" />
-                <MudText Typo="Typo.overline">3D Preview</MudText>
+                    <MudDivider Class="mt-2" />
+                    <MudText Typo="Typo.overline">3D Preview</MudText>
 
-                @if (Mode != DialogMode.Submit)
-                {
                     <MudSwitch T="bool" @bind-Value="_showIn3D" Color="Color.Primary" Disabled="@_isSubmitting"
                                Label="Show a 3D preview when customers open this design" />
-                }
 
-                @if (_showIn3D)
-                {
-                    <div class="collection-color-row">
-                        <label class="collection-color-field">
-                            <input type="color" value="@_bodyColor" disabled="@_isSubmitting"
-                                   @onchange="@(e => _bodyColor = e.Value?.ToString() ?? _bodyColor)" />
-                            <span>Body</span>
-                        </label>
-                        <label class="collection-color-field">
-                            <input type="color" value="@_sleevesColor" disabled="@_isSubmitting"
-                                   @onchange="@(e => _sleevesColor = e.Value?.ToString() ?? _sleevesColor)" />
-                            <span>Sleeves</span>
-                        </label>
-                        <label class="collection-color-field">
-                            <input type="color" value="@_collarColor" disabled="@_isSubmitting"
-                                   @onchange="@(e => _collarColor = e.Value?.ToString() ?? _collarColor)" />
-                            <span>Collar</span>
-                        </label>
-                    </div>
-
-                    <MudTextField T="string" @bind-Value="_designText" Label="Text on the Shirt (optional)" Variant="Variant.Outlined"
-                                  MaxLength="40" Disabled="@_isSubmitting" HelperText="Leave empty for a plain shirt" />
-
-                    @if (!string.IsNullOrWhiteSpace(_designText))
+                    @if (_showIn3D)
                     {
-                        <div class="collection-text-row">
-                            <MudSelect T="string" @bind-Value="_textFont" Label="Font" Variant="Variant.Outlined" Disabled="@_isSubmitting">
-                                @foreach (var font in Fonts)
-                                {
-                                    <MudSelectItem T="string" Value="@font">@font</MudSelectItem>
-                                }
-                            </MudSelect>
-                            <MudNumericField T="int" @bind-Value="_textSize" Label="Text Size" Variant="Variant.Outlined"
-                                             Min="MinTextSize" Max="MaxTextSize" Disabled="@_isSubmitting" />
+                        <div class="collection-color-row">
                             <label class="collection-color-field">
-                                <input type="color" value="@_textColor" disabled="@_isSubmitting"
-                                       @onchange="@(e => _textColor = e.Value?.ToString() ?? _textColor)" />
-                                <span>Text Color</span>
+                                <input type="color" value="@_bodyColor" disabled="@_isSubmitting"
+                                       @onchange="@(e => _bodyColor = e.Value?.ToString() ?? _bodyColor)" />
+                                <span>Body</span>
+                            </label>
+                            <label class="collection-color-field">
+                                <input type="color" value="@_sleevesColor" disabled="@_isSubmitting"
+                                       @onchange="@(e => _sleevesColor = e.Value?.ToString() ?? _sleevesColor)" />
+                                <span>Sleeves</span>
+                            </label>
+                            <label class="collection-color-field">
+                                <input type="color" value="@_collarColor" disabled="@_isSubmitting"
+                                       @onchange="@(e => _collarColor = e.Value?.ToString() ?? _collarColor)" />
+                                <span>Collar</span>
                             </label>
                         </div>
+
+                        <MudTextField T="string" @bind-Value="_designText" Label="Text on the Shirt (optional)" Variant="Variant.Outlined"
+                                      MaxLength="40" Disabled="@_isSubmitting" HelperText="Leave empty for a plain shirt" />
+
+                        @if (!string.IsNullOrWhiteSpace(_designText))
+                        {
+                            <div class="collection-text-row">
+                                <MudSelect T="string" @bind-Value="_textFont" Label="Font" Variant="Variant.Outlined" Disabled="@_isSubmitting">
+                                    @foreach (var font in Fonts)
+                                    {
+                                        <MudSelectItem T="string" Value="@font">@font</MudSelectItem>
+                                    }
+                                </MudSelect>
+                                <MudNumericField T="int" @bind-Value="_textSize" Label="Text Size" Variant="Variant.Outlined"
+                                                 Min="MinTextSize" Max="MaxTextSize" Disabled="@_isSubmitting" />
+                                <label class="collection-color-field">
+                                    <input type="color" value="@_textColor" disabled="@_isSubmitting"
+                                           @onchange="@(e => _textColor = e.Value?.ToString() ?? _textColor)" />
+                                    <span>Text Color</span>
+                                </label>
+                            </div>
+                        }
                     }
                 }
 
@@ -128,8 +126,7 @@
         }
         else
         {
-            <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel"
-                                   ButtonText="@(Mode == DialogMode.Submit ? "Submit for Approval" : "Save")" />
+            <DialogButtonComponent Loading="@_isSubmitting" Submit="Save" Cancel="Cancel" ButtonText="Save" />
         }
     </DialogActions>
 </MudDialog>
@@ -146,7 +143,6 @@
     public enum DialogMode
     {
         Admin,
-        Submit,
         Review
     }
 
@@ -161,6 +157,7 @@
         string.IsNullOrWhiteSpace(value) ? "Enter a design name." : null;
 
     private string? PreviewUrl => _pendingImagePreviewUrl ?? Item.ImageUrl;
+    private bool IsStudioDesign => !string.IsNullOrEmpty(Item.SubmittedBy);
 
     private const int MinTextSize = 12;
     private const int MaxTextSize = 72;
@@ -181,11 +178,6 @@
     {
         _price = Mode == DialogMode.Review ? null : Item.Price;
         LoadDesignFields();
-
-        if (Mode == DialogMode.Submit)
-        {
-            _showIn3D = true;
-        }
     }
     #endregion
 
@@ -211,7 +203,7 @@
 
     private string? GetDesignValidationMessage()
     {
-        if (!_showIn3D) return null;
+        if (IsStudioDesign || !_showIn3D) return null;
 
         var colors = new List<string> { _bodyColor, _sleevesColor, _collarColor };
         if (!string.IsNullOrWhiteSpace(_designText))
@@ -343,7 +335,10 @@
             }
 
             Item.Name = Item.Name.Trim();
-            Item.DesignData = BuildDesignData();
+            if (!IsStudioDesign)
+            {
+                Item.DesignData = BuildDesignData();
+            }
             ApplyStatus();
 
             await SaveItem();
@@ -358,12 +353,6 @@
     {
         switch (Mode)
         {
-            case DialogMode.Submit:
-                Item.Price = 0;
-                Item.Status = CollectionStatuses.Pending;
-                Item.IsActive = false;
-                Item.RejectionReason = null;
-                break;
             case DialogMode.Review:
                 Item.Price = _price ?? 0;
                 Item.Status = CollectionStatuses.Approved;

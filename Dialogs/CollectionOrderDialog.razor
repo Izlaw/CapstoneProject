@@ -1,5 +1,6 @@
 @using CapstoneProject.Commons
 @inject OrderService OrderSvc
+@inject CatalogService CatalogSvc
 @inject ISnackbar Snackbar
 
 <MudDialog>
@@ -71,8 +72,12 @@
         }
     }
 
-    private static object BuildViewerItem(DesignElementModel element)
+    private object BuildViewerItem(DesignElementModel element)
     {
+        var imageUrl = element.Type == "image" && !string.IsNullOrEmpty(element.Path)
+            ? CatalogSvc.GetCollectionImageUrl(element.Path)
+            : null;
+
         return new
         {
             type = element.Type,
@@ -86,7 +91,8 @@
             originZ = element.OriginZ,
             dirX = element.DirX,
             dirY = element.DirY,
-            dirZ = element.DirZ
+            dirZ = element.DirZ,
+            dataUrl = imageUrl
         };
     }
 

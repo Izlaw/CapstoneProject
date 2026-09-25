@@ -168,9 +168,9 @@
                         <p class="receipt-chat-subtitle">Message us about any changes to your order.</p>
                     </div>
 
-                    <MudDivider Class="mb-4" />
+                    <MudDivider Class="receipt-chat-divider mb-4" />
 
-                    <div class="flex-grow-1 overflow-y-auto mb-4" style="background-color: var(--bg-base); border-radius: 8px; padding: 16px;">
+                    <div class="receipt-chat-messages mb-4">
                         @if (_messages == null)
                         {
                             <MudProgressCircular Color="Color.Primary" Indeterminate="true" Size="Size.Small" />
@@ -191,7 +191,7 @@
                                     <MudPaper Elevation="0" Class="pa-3" Style="@msgStyle">
                                         <MudText Typo="Typo.body2">@msg.Content</MudText>
                                         <MudText Typo="Typo.caption" Style="@timeStyle">
-                                            @(isMyMessage ? "You" : "Support") • @Extension.ToDisplayTime(msg.CreatedAt).ToString("hh:mm tt")
+                                            @GetSenderLabel(msg) • @Extension.ToDisplayTime(msg.CreatedAt).ToString("hh:mm tt")
                                         </MudText>
                                     </MudPaper>
                                 </div>
@@ -226,6 +226,7 @@
     private string? _imageUrl;
     private string? _loadMessage;
     private List<ChatMessageModel>? _messages;
+    private Dictionary<string, string> _senderNames = new();
     private string? _conversationId;
     private Supabase.Realtime.RealtimeChannel? _messagesChannel;
     private string? _currentUserId;
@@ -362,6 +363,7 @@
         if (!string.IsNullOrEmpty(_conversationId))
         {
             _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
+            _senderNames = await SupabaseSvc.GetConversationNamesAsync(_conversationId);
             _messagesChannel = await SupabaseSvc.SubscribeToMessagesAsync(_conversationId, OnMessageReceived);
 
             // The user may have left the page while the subscription was connecting.
@@ -373,11 +375,23 @@
         }
     }
 
+    private string GetSenderLabel(ChatMessageModel message)
+    {
+        if (message.SenderId == _currentUserId) return "You";
+
+        return _senderNames.TryGetValue(message.SenderId, out var name) ? name : "-";
+    }
+
     private void OnMessageReceived(ChatMessageModel message)
     {
-        _ = InvokeAsync(() =>
+        _ = InvokeAsync(async () =>
         {
             if (_messages == null || _messages.Any(x => x.Id == message.Id)) return;
+
+            if (!_senderNames.ContainsKey(message.SenderId) && !string.IsNullOrEmpty(_conversationId))
+            {
+                _senderNames = await SupabaseSvc.GetConversationNamesAsync(_conversationId);
+            }
 
             if (message.CreatedAt.Kind == DateTimeKind.Utc)
             {

@@ -61,6 +61,14 @@ public class CatalogService
         return response.Models;
     }
 
+    public async Task<CollectionItemModel?> GetCollectionAsync(string id)
+    {
+        var response = await _supabase.From<CollectionItemModel>()
+            .Where(x => x.Id == id)
+            .Get();
+        return response.Models.FirstOrDefault();
+    }
+
     public async Task<List<PriceAuditLogModel>> GetPriceHistoryAsync(int limit = 200)
     {
         var response = await _supabase.From<PriceAuditLogModel>()
@@ -147,6 +155,14 @@ public class CatalogService
 
     public async Task<OperationResult<string>> UploadCollectionImageAsync(byte[] fileBytes, string contentType)
     {
+        var upload = await UploadCollectionFileAsync(fileBytes, contentType);
+        if (!upload.IsSuccess) return upload;
+
+        return OperationResult<string>.Success(GetCollectionImageUrl(upload.Value!));
+    }
+
+    public async Task<OperationResult<string>> UploadCollectionFileAsync(byte[] fileBytes, string contentType)
+    {
         try
         {
             var extension = contentType switch
@@ -160,12 +176,42 @@ public class CatalogService
             var bucket = _supabase.Storage.From(CollectionImagesBucket);
             await bucket.Upload(fileBytes, filePath, new Supabase.Storage.FileOptions { ContentType = contentType });
 
-            return OperationResult<string>.Success(bucket.GetPublicUrl(filePath));
+            return OperationResult<string>.Success(filePath);
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
             return OperationResult<string>.Failure("The image could not be uploaded. Please try again.");
+        }
+    }
+
+    public string GetCollectionImageUrl(string filePath)
+    {
+        return _supabase.Storage.From(CollectionImagesBucket).GetPublicUrl(filePath);
+    }
+
+    public string? GetCollectionFilePath(string? imageUrl)
+    {
+        if (string.IsNullOrEmpty(imageUrl)) return null;
+
+        var marker = $"/{CollectionImagesBucket}/";
+        var markerIndex = imageUrl.IndexOf(marker, StringComparison.Ordinal);
+        if (markerIndex < 0) return null;
+
+        return imageUrl.Substring(markerIndex + marker.Length);
+    }
+
+    public async Task DeleteCollectionFilesAsync(List<string> filePaths)
+    {
+        if (filePaths.Count == 0) return;
+
+        try
+        {
+            await _supabase.Storage.From(CollectionImagesBucket).Remove(filePaths);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
         }
     }
 

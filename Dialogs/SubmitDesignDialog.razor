@@ -1,0 +1,68 @@
+<MudDialog>
+    <DialogContent>
+        <MudForm @ref="_form">
+            <MudStack Spacing="2">
+                @if (!string.IsNullOrEmpty(RejectionReason))
+                {
+                    <MudAlert Severity="Severity.Error" Dense="true">
+                        Rejected: @RejectionReason<br />Submitting sends this design back to the admin for approval.
+                    </MudAlert>
+                }
+
+                @if (IsLive)
+                {
+                    <MudAlert Severity="Severity.Warning" Dense="true">
+                        This design is shown to customers right now. Submitting your changes hides it until the admin approves it again.
+                    </MudAlert>
+                }
+
+                <img src="@PreviewDataUrl" alt="Design preview" class="submit-design-preview" />
+                <MudText Typo="Typo.caption" Class="submit-design-hint">This is the picture the admin and customers will see.</MudText>
+
+                <MudTextField T="string" @bind-Value="_name" Label="Design Name" Variant="Variant.Outlined"
+                              Required="true" RequiredError="Enter a design name." MaxLength="80"
+                              Validation="@_validateName" Immediate="true" />
+            </MudStack>
+        </MudForm>
+    </DialogContent>
+    <DialogActions>
+        <DialogButtonComponent Submit="Submit" Cancel="Cancel" ButtonText="Submit for Approval" />
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Properties
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public string PreviewDataUrl { get; set; } = string.Empty;
+    [Parameter] public string Name { get; set; } = string.Empty;
+    [Parameter] public string? RejectionReason { get; set; }
+    [Parameter] public bool IsLive { get; set; }
+
+    private MudForm _form = default!;
+    private string _name = string.Empty;
+    private readonly Func<string, string?> _validateName = value =>
+        string.IsNullOrWhiteSpace(value) ? "Enter a design name." : null;
+    #endregion
+
+    #region Lifecycle
+    protected override void OnInitialized()
+    {
+        _name = Name;
+    }
+    #endregion
+
+    #region Methods
+    private async Task Submit()
+    {
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        MudDialog.Close(DialogResult.Ok(_name.Trim()));
+    }
+
+    private void Cancel()
+    {
+        MudDialog.Cancel();
+    }
+    #endregion
+}

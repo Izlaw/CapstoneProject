@@ -233,7 +233,7 @@
     [
         ("front", "Front"), ("back", "Back"), ("leftSleeve", "Left Sleeve"), ("rightSleeve", "Right Sleeve")
     ];
-    private string _backgroundColor = "#f5f5f5";
+    private string _backgroundColor = "#17181e";
     private readonly string[] _swatches =
     [
         "#ffffff", "#f8fafc", "#1e293b", "#0f172a",
@@ -331,7 +331,7 @@
 
     private async Task OnCustomBgColorInput(ChangeEventArgs e)
     {
-        _backgroundColor = e.Value?.ToString() ?? "#f5f5f5";
+        _backgroundColor = e.Value?.ToString() ?? "#17181e";
         await OnBackgroundColorChanged.InvokeAsync(_backgroundColor);
     }
 

@@ -106,7 +106,7 @@
             Price = collection.Price,
             ImageUrl = collection.ImageUrl,
             DesignData = collection.DesignData,
-            SortOrder = _nextSortOrder,
+            SortOrder = collection.SortOrder > 0 ? collection.SortOrder : _nextSortOrder,
             IsActive = collection.IsActive,
             Status = collection.Status,
             SubmittedBy = collection.SubmittedBy,

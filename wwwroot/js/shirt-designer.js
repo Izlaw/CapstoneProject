@@ -6,6 +6,13 @@ import { DecalGeometry } from 'three/addons/geometries/DecalGeometry.js';
 
 let scene, camera, renderer, controls, shirtGroup;
 let blazorRef = null;
+let modelReady = Promise.resolve();
+let resolveModelReady = null;
+
+const COLLECTION_IMAGE_SIZE = 900;
+const COLLECTION_BACKGROUND = 0x222222;
+const COLLECTION_CAMERA_DISTANCE = 2.31;
+const COLLECTION_CAMERA_HEIGHT = -0.055;
 
 const decals = [];
 let activeDecal = null;
@@ -35,6 +42,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
     activeDecal = null;
     shirtGroup = null;
     Object.keys(partColors).forEach(piece => { partColors[piece] = '#ffffff'; });
+    modelReady = new Promise(resolve => { resolveModelReady = resolve; });
     
     const container = document.getElementById(containerId);
     if (!container) {
@@ -44,7 +52,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
 
     // ── Scene Setup ────────────────────────────────────────
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf5f5f5);
+    scene.background = new THREE.Color(0x17181e);
     scene.add(dragPreviewMesh);
 
     camera = new THREE.PerspectiveCamera(45, container.clientWidth / container.clientHeight, 0.1, 100);
@@ -115,6 +123,7 @@ export function init(containerId, dummyCanvasId, dotnetHelper) {
             });
 
             scene.add(shirtGroup);
+            resolveModelReady();
         },
         undefined,
         (err) => console.error('Error loading shirt model:', err)
@@ -549,6 +558,116 @@ export function exportPng() {
     return renderer.domElement.toDataURL('image/png');
 }
 
+export function exportCollectionPng() {
+    if (!renderer || !scene || !camera) return '';
+
+    const savedPosition = camera.position.clone();
+    const savedTarget = controls.target.clone();
+    const savedAspect = camera.aspect;
+    const savedBackground = scene.background;
+    const savedPixelRatio = renderer.getPixelRatio();
+    const savedSize = renderer.getSize(new THREE.Vector2());
+    const savedPreviewVisible = dragPreviewMesh.visible;
+
+    dragPreviewMesh.visible = false;
+    renderer.setPixelRatio(1);
+    renderer.setSize(COLLECTION_IMAGE_SIZE, COLLECTION_IMAGE_SIZE, false);
+    scene.background = new THREE.Color(COLLECTION_BACKGROUND);
+    camera.aspect = 1;
+    camera.position.set(0, COLLECTION_CAMERA_HEIGHT, COLLECTION_CAMERA_DISTANCE);
+    camera.lookAt(0, COLLECTION_CAMERA_HEIGHT, 0);
+    camera.updateProjectionMatrix();
+
+    renderer.render(scene, camera);
+    const dataUrl = renderer.domElement.toDataURL('image/png');
+
+    dragPreviewMesh.visible = savedPreviewVisible;
+    renderer.setPixelRatio(savedPixelRatio);
+    renderer.setSize(savedSize.x, savedSize.y, false);
+    scene.background = savedBackground;
+    camera.aspect = savedAspect;
+    camera.position.copy(savedPosition);
+    camera.lookAt(savedTarget);
+    camera.updateProjectionMatrix();
+    renderer.render(scene, camera);
+
+    return dataUrl;
+}
+
+function loadImage(url) {
+    return new Promise(resolve => {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => resolve(img);
+        img.onerror = () => resolve(null);
+        img.src = url;
+    });
+}
+
+function getSavedPartColor(parts, piece) {
+    if (parts[piece]) return parts[piece];
+    if (piece === 'front' || piece === 'back') return parts.body;
+    if (piece === 'collar') return parts.collar;
+    return parts.sleeves;
+}
+
+function findSurfaceHit(item, targets) {
+    const rc = new THREE.Raycaster();
+    const origin = new THREE.Vector3(item.originX, item.originY, item.originZ);
+    const direction = new THREE.Vector3(item.dirX, item.dirY, item.dirZ).normalize();
+    rc.set(origin, direction);
+    const intersects = rc.intersectObjects(targets, false);
+    return intersects.length > 0 ? intersects[0] : null;
+}
+
+export async function loadDesign(config) {
+    await modelReady;
+    if (!scene) return;
+
+    clearDesign();
+    if (config.parts) {
+        Object.keys(partColors).forEach(piece => {
+            const hex = getSavedPartColor(config.parts, piece);
+            if (hex && PART_COLOR_PATTERN.test(hex)) partColors[piece] = hex;
+        });
+        applyPartColors();
+    }
+
+    const targets = getDecalTargets();
+    for (const item of config.items || []) {
+        const hit = findSurfaceHit(item, targets);
+        if (!hit) continue;
+
+        const size = item.size || 0.6;
+        let decalObj;
+        if (item.type === 'text') {
+            const texture = createTextCanvasTexture(item.text, parseInt(item.fontSize) * 2 || 100, item.color, item.font);
+            decalObj = {
+                type: 'text',
+                texture: texture,
+                size: size,
+                textData: { text: item.text, fontSize: item.fontSize, fillColor: item.color, fontFamily: item.font }
+            };
+        } else if (item.type === 'image') {
+            const img = await loadImage(item.url);
+            if (!img) continue;
+            const texture = new THREE.Texture(img);
+            texture.needsUpdate = true;
+            texture.anisotropy = renderer.capabilities.getMaxAnisotropy();
+            decalObj = { type: 'image', texture: texture, size: size, path: item.path };
+        } else {
+            continue;
+        }
+
+        decalObj.mesh = createDecalMesh(decalObj.texture, hit.point, hit.face.normal, hit.object, size);
+        decalObj.placement = buildPlacement(hit.point, hit.face.normal, hit.object);
+        decals.push(decalObj);
+    }
+
+    activeDecal = null;
+    triggerSelection();
+}
+
 export function getDesignElements() {
     return decals.map(decal => {
         const origin = decal.placement.point.clone().addScaledVector(decal.placement.normal, 1);
@@ -570,6 +689,8 @@ export function getDesignElements() {
             element.fontSize = decal.textData.fontSize;
             element.color = decal.textData.fillColor;
             element.font = decal.textData.fontFamily;
+        } else if (decal.path) {
+            element.path = decal.path;
         } else {
             element.dataUrl = decal.texture.image.src;
         }
