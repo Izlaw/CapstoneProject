@@ -2,6 +2,7 @@
 @using Microsoft.AspNetCore.Authorization
 @using CapstoneProject.Commons
 @attribute [Authorize]
+@implements IAsyncDisposable
 @inject SupabaseService SupabaseSvc
 @inject OrderService OrderSvc
 @inject AuthenticationStateProvider AuthStateProvider
@@ -226,10 +227,12 @@
     private string? _loadMessage;
     private List<ChatMessageModel>? _messages;
     private string? _conversationId;
+    private Supabase.Realtime.RealtimeChannel? _messagesChannel;
     private string? _currentUserId;
     private string _newMessage = string.Empty;
     private bool _isLoading = true;
     private bool _isSending;
+    private bool _isDisposed;
     #endregion
 
     #region Lifecycle
@@ -263,6 +266,18 @@
         {
             _isLoading = false;
         }
+    }
+
+    public ValueTask DisposeAsync()
+    {
+        _isDisposed = true;
+        if (_messagesChannel != null)
+        {
+            SupabaseSvc.UnsubscribeFromMessages(_messagesChannel);
+            _messagesChannel = null;
+        }
+
+        return ValueTask.CompletedTask;
     }
     #endregion
 
@@ -347,7 +362,31 @@
         if (!string.IsNullOrEmpty(_conversationId))
         {
             _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);
+            _messagesChannel = await SupabaseSvc.SubscribeToMessagesAsync(_conversationId, OnMessageReceived);
+
+            // The user may have left the page while the subscription was connecting.
+            if (_isDisposed && _messagesChannel != null)
+            {
+                SupabaseSvc.UnsubscribeFromMessages(_messagesChannel);
+                _messagesChannel = null;
+            }
         }
+    }
+
+    private void OnMessageReceived(ChatMessageModel message)
+    {
+        _ = InvokeAsync(() =>
+        {
+            if (_messages == null || _messages.Any(x => x.Id == message.Id)) return;
+
+            if (message.CreatedAt.Kind == DateTimeKind.Utc)
+            {
+                message.CreatedAt = message.CreatedAt.ToLocalTime();
+            }
+
+            _messages = _messages.Append(message).OrderBy(x => x.CreatedAt).ToList();
+            StateHasChanged();
+        });
     }
 
     private static string GetOrderTypeText(string orderType)

@@ -1,6 +1,8 @@
 using Supabase;
 using CapstoneProject.Models;
 using Supabase.Gotrue;
+using Supabase.Realtime;
+using Supabase.Realtime.PostgresChanges;
 
 namespace CapstoneProject.Services;
 
@@ -120,6 +122,37 @@ public class SupabaseService
             return response.Models.Count > 0;
         }
         catch { return false; }
+    }
+
+    public async Task<RealtimeChannel?> SubscribeToMessagesAsync(string conversationId, Action<ChatMessageModel> onMessage)
+    {
+        try
+        {
+            if (_supabase.Auth.CurrentSession?.AccessToken is string accessToken)
+            {
+                _supabase.Realtime.SetAuth(accessToken);
+            }
+
+            var channel = _supabase.Realtime.Channel($"messages:{conversationId}");
+            channel.Register(new PostgresChangesOptions("public", "messages", PostgresChangesOptions.ListenType.Inserts, $"conversation_id=eq.{conversationId}"));
+            channel.AddPostgresChangeHandler(PostgresChangesOptions.ListenType.Inserts, (_, change) =>
+            {
+                var message = change.Model<ChatMessageModel>();
+                if (message != null) onMessage(message);
+            });
+            await channel.Subscribe();
+            return channel;
+        }
+        catch { return null; }
+    }
+
+    public void UnsubscribeFromMessages(RealtimeChannel channel)
+    {
+        try
+        {
+            _supabase.Realtime.Remove(channel);
+        }
+        catch { }
     }
 
     public async Task<Session?> LoginAsync(string email, string password)
