@@ -1,0 +1,25 @@
+<MudMenuItem OnClick="SelectItem" Disabled="@Disabled">
+    <div class="d-flex align-center">
+        <MudIcon Class="mr-2" Icon="@Icon" Size="Size.Small" />
+        @Text
+    </div>
+</MudMenuItem>
+
+@code {
+    #region Properties
+    [Parameter] public string Icon { get; set; } = Icons.Material.Filled.Add;
+    [Parameter] public string Text { get; set; } = string.Empty;
+    [Parameter] public bool Disabled { get; set; }
+    [Parameter] public EventCallback OnItemSelect { get; set; }
+    #endregion
+
+    #region Methods
+    private async Task SelectItem()
+    {
+        if (OnItemSelect.HasDelegate)
+        {
+            await OnItemSelect.InvokeAsync();
+        }
+    }
+    #endregion
+}

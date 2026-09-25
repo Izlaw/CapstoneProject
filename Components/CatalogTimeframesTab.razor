@@ -4,13 +4,17 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<div class="admin-toolbar">
-    <MudSwitch T="bool" @bind-Value="_showInactive" Color="Color.Primary" Label="Show Inactive Options" />
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
-               StartIcon="@Icons.Material.Filled.Add" OnClick="AddTimeframe">
-        Add Delivery Option
-    </MudButton>
-</div>
+<ToolbarComponent SearchText="@_searchText" SearchTextChanged="@(value => _searchText = value ?? string.Empty)"
+                  SearchPlaceholder="Search delivery options..." ShowStatusFilter="true"
+                  Status="@_statusFilter" StatusChanged="@(value => _statusFilter = value)"
+                  ResultText="@ResultText">
+    <ActionTemplate>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                   StartIcon="@Icons.Material.Filled.Add" OnClick="AddTimeframe">
+            Add Delivery Option
+        </MudButton>
+    </ActionTemplate>
+</ToolbarComponent>
 
 <div class="admin-panel">
     <MudTable Items="@VisibleTimeframes" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
@@ -27,22 +31,21 @@
             <MudTd DataLabel="Extra Charge" Class="admin-num">@context.SurchargePercent.ToString("0.##")%</MudTd>
             <MudTd DataLabel="Max Pieces per Order" Class="admin-num">@(context.MaxQuantity?.ToString("N0") ?? "No limit")</MudTd>
             <MudTd DataLabel="Order">
-                <MoveButtonsComponent CanMoveUp="@CanMoveUp(context)" CanMoveDown="@CanMoveDown(context)" Disabled="@_isProcessing"
+                <MoveButtonsComponent CanMoveUp="@CanMoveUp(context)" CanMoveDown="@CanMoveDown(context)" Disabled="@(_isProcessing || IsSearching)"
                                       MoveUp="@(() => MoveItem(context, -1))" MoveDown="@(() => MoveItem(context, 1))" />
             </MudTd>
             <MudTd DataLabel="Status">
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
             </MudTd>
             <MudTd Class="admin-actions">
-                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Disabled="@_isProcessing"
-                           StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditTimeframe(context))">
-                    Edit
-                </MudButton>
-                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Disabled="@_isProcessing"
-                           StartIcon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
-                           OnClick="@(() => ToggleActive(context))">
-                    @(context.IsActive ? "Deactivate" : "Activate")
-                </MudButton>
+                <MudMenu Label="Actions" EndIcon="@Icons.Material.Filled.ArrowDropDown" Variant="Variant.Text" Color="Color.Primary"
+                         Size="Size.Small" Dense="true" Disabled="@_isProcessing"
+                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                    <MenuItemsComponent Icon="@Icons.Material.Filled.Edit" Text="Edit" OnItemSelect="@(() => EditTimeframe(context))" />
+                    <MenuItemsComponent Icon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                                        Text="@(context.IsActive ? "Deactivate" : "Activate")"
+                                        OnItemSelect="@(() => ToggleActive(context))" />
+                </MudMenu>
             </MudTd>
         </RowTemplate>
         <NoRecordsContent>
@@ -57,9 +60,18 @@
     private bool _isLoading;
     private bool _isProcessing;
     private string? _lastMovedId;
-    private bool _showInactive;
+    private string _searchText = string.Empty;
+    private StatusFilter _statusFilter = StatusFilter.Active;
 
-    private IEnumerable<TimeframeModel> VisibleTimeframes => _timeframes.Where(timeframe => _showInactive || timeframe.IsActive);
+    private IEnumerable<TimeframeModel> VisibleTimeframes => _timeframes
+        .Where(timeframe => Extension.MatchesStatus(timeframe.IsActive, _statusFilter))
+        .Where(timeframe => Extension.MatchesSearch(timeframe.Label, _searchText));
+
+    private bool IsSearching => !string.IsNullOrWhiteSpace(_searchText);
+
+    private string ResultText => IsSearching
+        ? $"Showing {VisibleTimeframes.Count()} of {_timeframes.Count} delivery options. Clear the search to change the order."
+        : $"Showing {VisibleTimeframes.Count()} of {_timeframes.Count} delivery options";
     #endregion
 
     #region Lifecycle

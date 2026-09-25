@@ -4,13 +4,17 @@
 @inject IDialogService DialogService
 @inject ISnackbar Snackbar
 
-<div class="admin-toolbar">
-    <MudSwitch T="bool" @bind-Value="_showInactive" Color="Color.Primary" Label="Show Inactive Fabrics" />
-    <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
-               StartIcon="@Icons.Material.Filled.Add" OnClick="AddFabric">
-        Add Fabric
-    </MudButton>
-</div>
+<ToolbarComponent SearchText="@_searchText" SearchTextChanged="@(value => _searchText = value ?? string.Empty)"
+                  SearchPlaceholder="Search fabrics..." ShowStatusFilter="true"
+                  Status="@_statusFilter" StatusChanged="@(value => _statusFilter = value)"
+                  ResultText="@ResultText">
+    <ActionTemplate>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false"
+                   StartIcon="@Icons.Material.Filled.Add" OnClick="AddFabric">
+            Add Fabric
+        </MudButton>
+    </ActionTemplate>
+</ToolbarComponent>
 
 <div class="admin-panel">
     <MudTable Items="@VisibleFabrics" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
@@ -25,22 +29,21 @@
             <MudTd DataLabel="Fabric"><span class="admin-name">@context.Name</span></MudTd>
             <MudTd DataLabel="Price" Class="admin-num">₱@context.Price.ToString("N2")</MudTd>
             <MudTd DataLabel="Order">
-                <MoveButtonsComponent CanMoveUp="@CanMoveUp(context)" CanMoveDown="@CanMoveDown(context)" Disabled="@_isProcessing"
+                <MoveButtonsComponent CanMoveUp="@CanMoveUp(context)" CanMoveDown="@CanMoveDown(context)" Disabled="@(_isProcessing || IsSearching)"
                                       MoveUp="@(() => MoveItem(context, -1))" MoveDown="@(() => MoveItem(context, 1))" />
             </MudTd>
             <MudTd DataLabel="Status">
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
             </MudTd>
             <MudTd Class="admin-actions">
-                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small" Disabled="@_isProcessing"
-                           StartIcon="@Icons.Material.Filled.Edit" OnClick="@(() => EditFabric(context))">
-                    Edit
-                </MudButton>
-                <MudButton Variant="Variant.Text" Color="Color.Default" Size="Size.Small" Disabled="@_isProcessing"
-                           StartIcon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
-                           OnClick="@(() => ToggleActive(context))">
-                    @(context.IsActive ? "Deactivate" : "Activate")
-                </MudButton>
+                <MudMenu Label="Actions" EndIcon="@Icons.Material.Filled.ArrowDropDown" Variant="Variant.Text" Color="Color.Primary"
+                         Size="Size.Small" Dense="true" Disabled="@_isProcessing"
+                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                    <MenuItemsComponent Icon="@Icons.Material.Filled.Edit" Text="Edit" OnItemSelect="@(() => EditFabric(context))" />
+                    <MenuItemsComponent Icon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
+                                        Text="@(context.IsActive ? "Deactivate" : "Activate")"
+                                        OnItemSelect="@(() => ToggleActive(context))" />
+                </MudMenu>
             </MudTd>
         </RowTemplate>
         <NoRecordsContent>
@@ -55,9 +58,18 @@
     private bool _isLoading;
     private bool _isProcessing;
     private string? _lastMovedId;
-    private bool _showInactive;
+    private string _searchText = string.Empty;
+    private StatusFilter _statusFilter = StatusFilter.Active;
 
-    private IEnumerable<FabricModel> VisibleFabrics => _fabrics.Where(fabric => _showInactive || fabric.IsActive);
+    private IEnumerable<FabricModel> VisibleFabrics => _fabrics
+        .Where(fabric => Extension.MatchesStatus(fabric.IsActive, _statusFilter))
+        .Where(fabric => Extension.MatchesSearch(fabric.Name, _searchText));
+
+    private bool IsSearching => !string.IsNullOrWhiteSpace(_searchText);
+
+    private string ResultText => IsSearching
+        ? $"Showing {VisibleFabrics.Count()} of {_fabrics.Count} fabrics. Clear the search to change the order."
+        : $"Showing {VisibleFabrics.Count()} of {_fabrics.Count} fabrics";
     #endregion
 
     #region Lifecycle

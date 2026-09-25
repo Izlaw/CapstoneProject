@@ -1,0 +1,55 @@
+<div class="admin-toolbar">
+    <div class="toolbar-filters">
+        <MudTextField T="string"
+                      Value="@SearchText"
+                      ValueChanged="@SearchTextChanged"
+                      Placeholder="@SearchPlaceholder"
+                      Variant="Variant.Outlined"
+                      Margin="Margin.Dense"
+                      Clearable="true"
+                      Immediate="true"
+                      DebounceInterval="200"
+                      Adornment="Adornment.Start"
+                      AdornmentIcon="@Icons.Material.Filled.Search"
+                      IconSize="Size.Small"
+                      Class="toolbar-search" />
+
+        @if (ShowStatusFilter)
+        {
+            <MudToggleGroup T="StatusFilter"
+                            Value="@Status"
+                            ValueChanged="@StatusChanged"
+                            SelectionMode="SelectionMode.SingleSelection"
+                            Color="Color.Primary"
+                            Size="Size.Small"
+                            Outlined="true"
+                            Class="toolbar-status">
+                <MudToggleItem Value="StatusFilter.All" Text="All" />
+                <MudToggleItem Value="StatusFilter.Active" Text="Active" />
+                <MudToggleItem Value="StatusFilter.Inactive" Text="Inactive" />
+            </MudToggleGroup>
+        }
+    </div>
+
+    @ActionTemplate
+</div>
+
+@if (!string.IsNullOrEmpty(ResultText))
+{
+    <MudText Typo="Typo.caption" Class="toolbar-result">@ResultText</MudText>
+}
+
+@code {
+    #region Properties
+    [Parameter] public string SearchText { get; set; } = string.Empty;
+    [Parameter] public EventCallback<string> SearchTextChanged { get; set; }
+    [Parameter] public string SearchPlaceholder { get; set; } = "Search";
+
+    [Parameter] public bool ShowStatusFilter { get; set; }
+    [Parameter] public StatusFilter Status { get; set; } = StatusFilter.Active;
+    [Parameter] public EventCallback<StatusFilter> StatusChanged { get; set; }
+
+    [Parameter] public string? ResultText { get; set; }
+    [Parameter] public RenderFragment? ActionTemplate { get; set; }
+    #endregion
+}
