@@ -195,6 +195,9 @@ public class CollectionOrderModel : BaseModel
     [Column("collection_name")]
     public string CollectionName { get; set; } = string.Empty;
 
+    [Column("design_data")]
+    public DesignDataModel? DesignData { get; set; }
+
     [Column("created_at", ignoreOnInsert: true, ignoreOnUpdate: true)]
     public DateTime CreatedAt { get; set; }
 }

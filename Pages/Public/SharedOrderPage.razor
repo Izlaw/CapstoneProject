@@ -1,6 +1,7 @@
 @page "/shared/{Token:guid}"
 @using CapstoneProject.Commons
 @inject OrderService OrderSvc
+@inject CatalogService CatalogSvc
 
 <PageTitle>Shared Order - 7 Guys House of Fashion</PageTitle>
 
@@ -32,7 +33,7 @@
                         <MudChip T="string" Color="@GetStatusColor(_order.Status)" Variant="Variant.Filled" Size="Size.Small">@_order.Status</MudChip>
                     </div>
 
-                    @if (_order.Custom != null)
+                    @if (HasDesignIn3D)
                     {
                         <div class="receipt-3d">
                             <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="ShowDesignIn3D" ShowControls="true" />
@@ -147,6 +148,8 @@
     private ShirtViewerComponent? _shirtViewer;
     private string? _loadMessage;
     private bool _isLoading = true;
+
+    private bool HasDesignIn3D => _order?.Custom != null || _order?.Collection?.DesignData?.Parts != null;
     #endregion
 
     #region Lifecycle
@@ -175,23 +178,54 @@
     #region Methods
     private async Task ShowDesignIn3D()
     {
-        if (_shirtViewer == null || _order?.Custom == null) return;
+        if (_shirtViewer == null || _order == null) return;
 
         try
         {
             await _shirtViewer.SetBackgroundColorAsync(ViewerBackgroundColor);
 
-            var items = _order.Custom.DesignData.Elements
-                .Where(element => element.Type != "image" || !string.IsNullOrEmpty(element.DataUrl))
-                .Select(BuildViewerItem)
-                .ToList();
-
-            await _shirtViewer.ApplyDesignBatchAsync(new { color = _order.Custom.ShirtColor, parts = _order.Custom.DesignData.Parts, items });
+            if (_order.Custom != null)
+            {
+                await ShowCustomDesign(_order.Custom);
+            }
+            else if (_order.Collection?.DesignData != null)
+            {
+                await ShowCollectionDesign(_order.Collection.DesignData);
+            }
         }
         catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
         }
+    }
+
+    private async Task ShowCustomDesign(SharedCustomOrderModel customOrder)
+    {
+        if (_shirtViewer == null) return;
+
+        var items = customOrder.DesignData.Elements
+            .Where(element => element.Type != "image" || !string.IsNullOrEmpty(element.DataUrl))
+            .Select(BuildViewerItem)
+            .ToList();
+
+        await _shirtViewer.ApplyDesignBatchAsync(new { color = customOrder.ShirtColor, parts = customOrder.DesignData.Parts, items });
+    }
+
+    private async Task ShowCollectionDesign(DesignDataModel designData)
+    {
+        if (_shirtViewer == null) return;
+
+        var items = new List<object>();
+        foreach (var element in designData.Elements)
+        {
+            if (element.Type == "image" && !string.IsNullOrEmpty(element.Path))
+            {
+                element.DataUrl = CatalogSvc.GetCollectionImageUrl(element.Path);
+            }
+            items.Add(BuildViewerItem(element));
+        }
+
+        await _shirtViewer.ApplyDesignBatchAsync(new { parts = designData.Parts, items });
     }
 
     private static object BuildViewerItem(DesignElementModel element)

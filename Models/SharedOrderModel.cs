@@ -96,4 +96,7 @@ public class SharedCollectionOrderModel
 {
     [JsonProperty("collection_name")]
     public string CollectionName { get; set; } = string.Empty;
+
+    [JsonProperty("design_data")]
+    public DesignDataModel? DesignData { get; set; }
 }
