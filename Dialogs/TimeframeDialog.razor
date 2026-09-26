@@ -6,16 +6,16 @@
     <DialogContent>
         <MudForm @ref="_form">
             <MudStack Spacing="2">
-                <MudTextField T="string" @bind-Value="Item.Label" Label="Delivery Option Name" Variant="Variant.Outlined"
+                <MudTextField T="string" @bind-Value="Item.Label" Label="Timeframe Name" Variant="Variant.Outlined" Margin="Margin.Dense"
                               Required="true" RequiredError="Enter a name." MaxLength="50"
                               Validation="@_validateLabel" HelperText="For example: 1 week, 2 weeks" />
 
-                <MudNumericField T="decimal" @bind-Value="Item.SurchargePercent" Label="Extra Charge" Variant="Variant.Outlined"
+                <MudNumericField T="decimal" @bind-Value="Item.SurchargePercent" Label="Fee" Variant="Variant.Outlined" Margin="Margin.Dense"
                                  Min="0" Max="100" Format="N2" HideSpinButtons="true"
                                  Adornment="Adornment.End" AdornmentText="%"
-                                 HelperText="Percentage added to the order subtotal. Use 0 for no extra charge." />
+                                 HelperText="Percentage added to the order subtotal. Use 0 for no fee." />
 
-                <MudNumericField T="int?" @bind-Value="Item.MaxQuantity" Label="Maximum Pieces per Order" Variant="Variant.Outlined"
+                <MudNumericField T="int?" @bind-Value="Item.MaxQuantity" Label="Maximum Pieces per Order" Variant="Variant.Outlined" Margin="Margin.Dense"
                                  Min="1" Clearable="true" HideSpinButtons="true"
                                  HelperText="Leave empty for no limit" />
             </MudStack>

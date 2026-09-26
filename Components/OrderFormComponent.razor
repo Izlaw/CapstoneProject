@@ -18,7 +18,7 @@
         <p class="order-form-title">Sizes and Quantities</p>
 
         <MudSelect T="string" Value="@_sizeToAdd" ValueChanged="AddSize" Label="Add a Size"
-                   Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@(Disabled || !AvailableSizes.Any())"
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Disabled="@(Disabled || !AvailableSizes.Any())"
                    HelperText="@(AvailableSizes.Any() ? "Choose a size to add it to your order" : "All sizes have been added")">
             @foreach (var size in AvailableSizes)
             {
@@ -65,7 +65,7 @@
         {
             <p class="order-form-title">Fabric</p>
             <MudSelect T="string" Value="@_fabricId" ValueChanged="OnFabricChanged" Label="Fabric"
-                       Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@Disabled">
+                       Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Disabled="@Disabled">
                 @foreach (var fabric in _fabrics)
                 {
                     <MudSelectItem Value="@fabric.Id">@fabric.Name (₱@fabric.Price.ToString("N2") per piece)</MudSelectItem>
@@ -80,9 +80,9 @@
             }
         }
 
-        <p class="order-form-title">Delivery</p>
+        <p class="order-form-title">Timeframe</p>
         <MudSelect T="string" Value="@_timeframeId" ValueChanged="OnTimeframeChanged" Label="When Do You Need It?"
-                   Variant="Variant.Outlined" Margin="Margin.Dense" Disabled="@Disabled">
+                   Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Disabled="@Disabled">
             @foreach (var timeframe in _timeframes)
             {
                 <MudSelectItem Value="@timeframe.Id">@GetTimeframeText(timeframe)</MudSelectItem>
@@ -108,7 +108,7 @@
                 @if (_quote.SurchargePercent > 0)
                 {
                     <div class="order-summary-row">
-                        <span>Delivery Extra (@_quote.SurchargePercent.ToString("0.##")%)</span>
+                        <span>Timeframe Fee (@_quote.SurchargePercent.ToString("0.##")%)</span>
                         <span>₱@_quote.SurchargeAmount.ToString("N2")</span>
                     </div>
                 }
@@ -244,7 +244,7 @@
 
     private string GetTimeframeText(TimeframeModel timeframe)
     {
-        var extra = timeframe.SurchargePercent > 0 ? $"+{timeframe.SurchargePercent:0.##}%" : "no extra charge";
+        var extra = timeframe.SurchargePercent > 0 ? $"+{timeframe.SurchargePercent:0.##}%" : "no fee";
         var limit = timeframe.MaxQuantity.HasValue ? $", up to {timeframe.MaxQuantity:N0} pieces" : string.Empty;
         return $"{timeframe.Label} ({extra}{limit})";
     }

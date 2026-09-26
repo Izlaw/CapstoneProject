@@ -79,7 +79,7 @@
                             <span class="receipt-value">@GetOrderTypeText(_order.OrderType)</span>
                         </div>
                         <div>
-                            <span class="receipt-label">Delivery</span>
+                            <span class="receipt-label">Timeframe</span>
                             <span class="receipt-value">@(_order.TimeframeLabel ?? "-")</span>
                         </div>
                         @if (_order.CustomOrder != null)
@@ -149,7 +149,7 @@
                         @if ((_order.SurchargePercent ?? 0) > 0)
                         {
                             <div class="receipt-total-row">
-                                <span>Delivery Extra (@_order.SurchargePercent?.ToString("0.##")%)</span>
+                                <span>Timeframe Fee (@_order.SurchargePercent?.ToString("0.##")%)</span>
                                 <span>₱@((_order.SurchargeAmount ?? 0).ToString("N2"))</span>
                             </div>
                         }

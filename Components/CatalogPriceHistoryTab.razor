@@ -12,7 +12,7 @@
 </div>
 
 <div class="admin-panel">
-    <MudTable Items="@_history" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+    <MudTable Items="@_history" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
         <HeaderContent>
             <MudTh>When</MudTh>
             <MudTh>Item</MudTh>
@@ -82,7 +82,7 @@
             ("sizes", "price") => "Size Price",
             ("fabrics", "price") => "Fabric Price",
             ("collections", "price") => "Design Price",
-            ("timeframes", "surcharge_percent") => "Delivery Extra Charge",
+            ("timeframes", "surcharge_percent") => "Timeframe Fee",
             ("timeframes", "max_quantity") => "Max Pieces per Order",
             _ => entry.Field
         };
