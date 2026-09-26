@@ -5,11 +5,11 @@
 @inject ISnackbar Snackbar
 
 <div class="admin-toolbar">
-    <MudText Typo="Typo.body2" Class="admin-hint">Designs employees submitted for approval. Approved designs are added to Designs and shown to customers.</MudText>
+    <MudText Typo="Typo.body2" Class="admin-hint">Designs employees submitted for approval. Approved designs are added to Collections and shown to customers.</MudText>
 </div>
 
 <div class="admin-panel">
-    <MudTable Items="@_submissions" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+    <MudTable Items="@_submissions" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
         <HeaderContent>
             <MudTh>Image</MudTh>
             <MudTh>Design</MudTh>
@@ -32,10 +32,13 @@
             <MudTd DataLabel="Submitted By">@GetSubmitterName(context)</MudTd>
             <MudTd DataLabel="Submitted">@context.UpdatedAt.ToString("MMM dd, yyyy")</MudTd>
             <MudTd Class="admin-actions">
-                <MudButton Variant="Variant.Text" Color="Color.Primary" Size="Size.Small"
-                           StartIcon="@Icons.Material.Filled.RateReview" OnClick="@(() => Review(context))">
-                    Review
-                </MudButton>
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Default" AriaLabel="Actions"
+                         Size="Size.Small" Dense="true"
+                         AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                    <MenuItemsComponent Icon="@Icons.Material.Filled.Visibility" Text="Preview" Disabled="@(context.DesignData?.Parts == null)"
+                                        OnItemSelect="@(() => PreviewSubmission(context))" />
+                    <MenuItemsComponent Icon="@Icons.Material.Filled.RateReview" Text="Review" OnItemSelect="@(() => Review(context))" />
+                </MudMenu>
             </MudTd>
         </RowTemplate>
         <NoRecordsContent>
@@ -95,6 +98,17 @@
     private string GetSubmitterName(CollectionItemModel collection)
     {
         return collection.SubmittedBy != null && _submitterNames.TryGetValue(collection.SubmittedBy, out var name) ? name : "-";
+    }
+
+    private async Task PreviewSubmission(CollectionItemModel collection)
+    {
+        var parameters = new DialogParameters<PreviewDesignDialog>
+        {
+            { x => x.Collection, collection }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+
+        await DialogService.ShowAsync<PreviewDesignDialog>(collection.Name, parameters, options);
     }
 
     private async Task Review(CollectionItemModel collection)

@@ -1,0 +1,90 @@
+@inject CatalogService CatalogSvc
+
+<MudDialog>
+    <DialogContent>
+        @if (_hasViewerFailed)
+        {
+            <div class="design-preview-failed">The 3D preview could not be loaded. Please close this and try again.</div>
+        }
+        else
+        {
+            <div class="design-preview-3d">
+                <ShirtViewerComponent @ref="_shirtViewer" OnModuleReady="ShowDesignIn3D" ShowControls="true" />
+            </div>
+            <p class="collection-order-3d-hint">Drag to rotate the shirt and scroll to zoom. This is how customers will see it.</p>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Close"
+                   OnClick="Close" Class="dialog-btn">
+            Close
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Properties
+    private const string ViewerBackgroundColor = "#0E0F13";
+
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public CollectionItemModel Collection { get; set; } = new();
+
+    private ShirtViewerComponent? _shirtViewer;
+    private bool _hasViewerFailed;
+    #endregion
+
+    #region Methods
+    private async Task ShowDesignIn3D()
+    {
+        if (_shirtViewer == null || Collection.DesignData?.Parts == null) return;
+
+        try
+        {
+            await _shirtViewer.SetBackgroundColorAsync(ViewerBackgroundColor);
+
+            var items = new List<object>();
+            foreach (var element in Collection.DesignData.Elements)
+            {
+                items.Add(BuildViewerItem(element));
+            }
+
+            await _shirtViewer.ApplyDesignBatchAsync(new { parts = Collection.DesignData.Parts, items });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            _hasViewerFailed = true;
+            StateHasChanged();
+        }
+    }
+
+    private object BuildViewerItem(DesignElementModel element)
+    {
+        var imageUrl = element.Type == "image" && !string.IsNullOrEmpty(element.Path)
+            ? CatalogSvc.GetCollectionImageUrl(element.Path)
+            : null;
+
+        return new
+        {
+            type = element.Type,
+            text = element.Text,
+            fontSize = element.FontSize,
+            color = element.Color,
+            font = element.Font,
+            size = element.Size,
+            originX = element.OriginX,
+            originY = element.OriginY,
+            originZ = element.OriginZ,
+            dirX = element.DirX,
+            dirY = element.DirY,
+            dirZ = element.DirZ,
+            dataUrl = imageUrl
+        };
+    }
+
+    private void Close()
+    {
+        MudDialog.Close();
+    }
+    #endregion
+}

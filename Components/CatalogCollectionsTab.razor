@@ -5,7 +5,7 @@
 @inject ISnackbar Snackbar
 
 <ToolbarComponent SearchText="@_searchText" SearchTextChanged="@(value => _searchText = value ?? string.Empty)"
-                  SearchPlaceholder="Search designs..." ShowStatusFilter="true"
+                  SearchPlaceholder="Search collections..." ShowStatusFilter="true"
                   Status="@_statusFilter" StatusChanged="@(value => _statusFilter = value)"
                   ResultText="@ResultText">
     <ActionTemplate>
@@ -17,7 +17,7 @@
 </ToolbarComponent>
 
 <div class="admin-panel">
-    <MudTable Items="@VisibleCollections" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+    <MudTable Items="@VisibleCollections" Dense="true" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
         <HeaderContent>
             <MudTh>Image</MudTh>
             <MudTh>Design</MudTh>
@@ -47,9 +47,11 @@
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
             </MudTd>
             <MudTd Class="admin-actions">
-                <MudMenu Label="Actions" EndIcon="@Icons.Material.Filled.ArrowDropDown" Variant="Variant.Text" Color="Color.Primary"
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Default" AriaLabel="Actions"
                          Size="Size.Small" Dense="true" Disabled="@_isProcessing"
                          AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
+                    <MenuItemsComponent Icon="@Icons.Material.Filled.Visibility" Text="Preview" Disabled="@(context.DesignData?.Parts == null)"
+                                        OnItemSelect="@(() => PreviewCollection(context))" />
                     <MenuItemsComponent Icon="@Icons.Material.Filled.Edit" Text="Edit" OnItemSelect="@(() => EditCollection(context))" />
                     <MenuItemsComponent Icon="@(context.IsActive ? Icons.Material.Filled.Block : Icons.Material.Filled.CheckCircle)"
                                         Text="@(context.IsActive ? "Deactivate" : "Activate")"
@@ -156,6 +158,17 @@
         {
             await LoadCollections();
         }
+    }
+
+    private async Task PreviewCollection(CollectionItemModel collection)
+    {
+        var parameters = new DialogParameters<PreviewDesignDialog>
+        {
+            { x => x.Collection, collection }
+        };
+        var options = new DialogOptions { MaxWidth = MaxWidth.Medium, FullWidth = true, CloseButton = true };
+
+        await DialogService.ShowAsync<PreviewDesignDialog>(collection.Name, parameters, options);
     }
 
     private bool CanMoveUp(CollectionItemModel item)
