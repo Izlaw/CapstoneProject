@@ -1,4 +1,5 @@
 @implements IDisposable
+@using CapstoneProject.Commons
 @inject CatalogService CatalogSvc
 @inject OrderService OrderSvc
 
@@ -102,7 +103,7 @@
             else
             {
                 <div class="order-summary-row">
-                    <span>Subtotal (@_quote.TotalQuantity pieces)</span>
+                    <span>Subtotal (@OrderDisplay.GetPieceCountText(_quote.TotalQuantity))</span>
                     <span>₱@_quote.Subtotal.ToString("N2")</span>
                 </div>
                 @if (_quote.SurchargePercent > 0)

@@ -147,7 +147,7 @@
 
                     <div class="receipt-totals">
                         <div class="receipt-total-row">
-                            <span>Subtotal (@_order.Quantity pieces)</span>
+                            <span>Subtotal (@OrderDisplay.GetPieceCountText(_order.Quantity))</span>
                             <span>₱@((_order.Subtotal ?? _order.TotalPrice).ToString("N2"))</span>
                         </div>
                         @if ((_order.SurchargePercent ?? 0) > 0)
@@ -376,7 +376,7 @@
     {
         if (_order == null || string.IsNullOrEmpty(_order.CustomerId)) return;
 
-        _conversationId = await SupabaseSvc.GetOrCreateConversationAsync(_order.CustomerId);
+        _conversationId = await SupabaseSvc.GetOrCreateOrderConversationAsync(_order.Id, _order.CustomerId);
         if (!string.IsNullOrEmpty(_conversationId))
         {
             _messages = await SupabaseSvc.GetMessagesAsync(_conversationId);

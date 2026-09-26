@@ -12,6 +12,9 @@ public class ConversationModel : BaseModel
     [Column("customer_id")]
     public string CustomerId { get; set; } = string.Empty;
 
+    [Column("order_id")]
+    public string? OrderId { get; set; }
+
     [Column("status")]
     public string Status { get; set; } = "open";
 

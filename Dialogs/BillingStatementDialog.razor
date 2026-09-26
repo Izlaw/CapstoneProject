@@ -107,7 +107,7 @@
 
                 <div class="statement-totals">
                     <div class="statement-total-row">
-                        <span>Subtotal (@Order.Quantity pieces)</span>
+                        <span>Subtotal (@OrderDisplay.GetPieceCountText(Order.Quantity))</span>
                         <span>₱@((Order.Subtotal ?? Order.TotalPrice).ToString("N2"))</span>
                     </div>
                     @if ((Order.SurchargePercent ?? 0) > 0)

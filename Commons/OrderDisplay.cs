@@ -17,4 +17,9 @@ public static class OrderDisplay
     {
         return string.IsNullOrWhiteSpace(fabricNote) ? fabricName : $"{fabricName} ({fabricNote})";
     }
+
+    public static string GetPieceCountText(int quantity)
+    {
+        return quantity == 1 ? "1 piece" : $"{quantity:N0} pieces";
+    }
 }

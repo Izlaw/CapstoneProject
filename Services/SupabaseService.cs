@@ -72,24 +72,45 @@ public class SupabaseService
         }
     }
 
-    public async Task<string?> GetOrCreateConversationAsync(string customerId)
+    public async Task<string?> GetOrCreateOrderConversationAsync(string orderId, string customerId)
     {
-        try
-        {
-            var convo = await _supabase.From<ConversationModel>()
-                .Where(x => x.CustomerId == customerId)
-                .Single();
-            if (convo != null) return convo.Id;
-        }
-        catch { /* Not found */ }
+        var existingId = await GetOrderConversationIdAsync(orderId);
+        if (existingId != null) return existingId;
 
         try
         {
-            var newConvo = new ConversationModel { CustomerId = customerId, Status = "open", CreatedAt = DateTime.UtcNow, UpdatedAt = DateTime.UtcNow };
+            var newConvo = new ConversationModel
+            {
+                CustomerId = customerId,
+                OrderId = orderId,
+                Status = "open",
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
             var response = await _supabase.From<ConversationModel>().Insert(newConvo);
             return response.Models.FirstOrDefault()?.Id;
         }
-        catch { return null; }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return await GetOrderConversationIdAsync(orderId);
+        }
+    }
+
+    private async Task<string?> GetOrderConversationIdAsync(string orderId)
+    {
+        try
+        {
+            var response = await _supabase.From<ConversationModel>()
+                .Where(x => x.OrderId == orderId)
+                .Get();
+            return response.Models.FirstOrDefault()?.Id;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return null;
+        }
     }
 
     public async Task<List<ChatMessageModel>> GetMessagesAsync(string conversationId)
