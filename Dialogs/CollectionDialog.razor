@@ -6,11 +6,11 @@
     <DialogContent>
         <MudForm @ref="_form">
             <MudStack Spacing="2">
-                <MudTextField T="string" @bind-Value="Item.Name" Label="Design Name" Variant="Variant.Outlined"
+                <MudTextField T="string" @bind-Value="Item.Name" Label="Design Name" Variant="Variant.Outlined" Margin="Margin.Dense"
                               Required="true" RequiredError="Enter a design name." MaxLength="80"
                               Validation="@_validateName" />
 
-                <MudNumericField T="decimal?" @bind-Value="_price" Label="Price" Variant="Variant.Outlined"
+                <MudNumericField T="decimal?" @bind-Value="_price" Label="Price" Variant="Variant.Outlined" Margin="Margin.Dense"
                                  Required="true" RequiredError="Enter a price."
                                  Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
                                  Adornment="Adornment.Start" AdornmentText="₱"
@@ -82,19 +82,19 @@
                             </label>
                         </div>
 
-                        <MudTextField T="string" @bind-Value="_designText" Label="Text on the Shirt (optional)" Variant="Variant.Outlined"
+                        <MudTextField T="string" @bind-Value="_designText" Label="Text on the Shirt (optional)" Variant="Variant.Outlined" Margin="Margin.Dense"
                                       MaxLength="40" Disabled="@_isSubmitting" HelperText="Leave empty for a plain shirt" />
 
                         @if (!string.IsNullOrWhiteSpace(_designText))
                         {
                             <div class="collection-text-row">
-                                <MudSelect T="string" @bind-Value="_textFont" Label="Font" Variant="Variant.Outlined" Disabled="@_isSubmitting">
+                                <MudSelect T="string" @bind-Value="_textFont" Label="Font" Variant="Variant.Outlined" Margin="Margin.Dense" Dense="true" Disabled="@_isSubmitting">
                                     @foreach (var font in Fonts)
                                     {
                                         <MudSelectItem T="string" Value="@font">@font</MudSelectItem>
                                     }
                                 </MudSelect>
-                                <MudNumericField T="int" @bind-Value="_textSize" Label="Text Size" Variant="Variant.Outlined"
+                                <MudNumericField T="int" @bind-Value="_textSize" Label="Text Size" Variant="Variant.Outlined" Margin="Margin.Dense"
                                                  Min="MinTextSize" Max="MaxTextSize" Disabled="@_isSubmitting" />
                                 <label class="collection-color-field">
                                     <input type="color" value="@_textColor" disabled="@_isSubmitting"
@@ -109,7 +109,7 @@
                 @if (Mode == DialogMode.Review)
                 {
                     <MudDivider Class="mt-2" />
-                    <MudTextField T="string" @bind-Value="_rejectionReason" Label="Rejection Reason" Variant="Variant.Outlined"
+                    <MudTextField T="string" @bind-Value="_rejectionReason" Label="Rejection Reason" Variant="Variant.Outlined" Margin="Margin.Dense"
                                   Lines="2" MaxLength="500" Disabled="@_isSubmitting"
                                   HelperText="Required if you reject this design. The employee will see it." />
                 }

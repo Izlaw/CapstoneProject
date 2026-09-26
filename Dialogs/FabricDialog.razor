@@ -6,11 +6,11 @@
     <DialogContent>
         <MudForm @ref="_form">
             <MudStack Spacing="2">
-                <MudTextField T="string" @bind-Value="Item.Name" Label="Fabric Name" Variant="Variant.Outlined"
+                <MudTextField T="string" @bind-Value="Item.Name" Label="Fabric Name" Variant="Variant.Outlined" Margin="Margin.Dense"
                               Required="true" RequiredError="Enter a fabric name." MaxLength="50"
                               Validation="@_validateName" HelperText="For example: Cotton, Polyester" />
 
-                <MudNumericField T="decimal" @bind-Value="Item.Price" Label="Price" Variant="Variant.Outlined"
+                <MudNumericField T="decimal" @bind-Value="Item.Price" Label="Price" Variant="Variant.Outlined" Margin="Margin.Dense"
                                  Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
                                  Adornment="Adornment.Start" AdornmentText="₱"
                                  HelperText="Added to the price of every piece made with this fabric" />

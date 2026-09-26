@@ -51,18 +51,18 @@
 
             <section class="profile-form">
                 <h2 class="order-form-title">Personal Details</h2>
-                <MudTextField @bind-Value="FullName" Immediate="true" Label="Full Name" Variant="Variant.Outlined"
+                <MudTextField @bind-Value="FullName" Immediate="true" Label="Full Name" Variant="Variant.Outlined" Margin="Margin.Dense"
                               Required="true" MaxLength="100" Disabled="@_isSubmitting" />
 
                 <h2 class="order-form-title">Contact</h2>
                 <div class="profile-field-row">
-                    <MudTextField @bind-Value="Phone" Immediate="true" Label="Contact Number" Variant="Variant.Outlined"
+                    <MudTextField @bind-Value="Phone" Immediate="true" Label="Contact Number" Variant="Variant.Outlined" Margin="Margin.Dense"
                                   InputType="InputType.Telephone" MaxLength="20" Disabled="@_isSubmitting"
                                   HelperText="Example: 0917 123 4567" />
-                    <MudTextField Value="@_email" Label="Email" Variant="Variant.Outlined" ReadOnly="true" Disabled="true"
+                    <MudTextField Value="@_email" Label="Email" Variant="Variant.Outlined" Margin="Margin.Dense" ReadOnly="true" Disabled="true"
                                   HelperText="Your email is used to log in and can't be changed here." />
                 </div>
-                <MudTextField @bind-Value="Address" Immediate="true" Label="Delivery Address" Variant="Variant.Outlined"
+                <MudTextField @bind-Value="Address" Immediate="true" Label="Address" Variant="Variant.Outlined" Margin="Margin.Dense"
                               Lines="3" MaxLength="300" Disabled="@_isSubmitting" />
 
                 <div class="profile-actions">

@@ -17,7 +17,7 @@
 </ToolbarComponent>
 
 <div class="admin-panel">
-    <MudTable Items="@VisibleSizes" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
+    <MudTable Items="@VisibleSizes" Dense="true" RowClassFunc="@GetRowClass" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Loading="@_isLoading">
         <HeaderContent>
             <MudTh>Size</MudTh>
             <MudTh Class="admin-num">Price</MudTh>
@@ -40,7 +40,7 @@
                 <span class="state-badge @(context.IsActive ? "state-active" : "state-inactive")">@(context.IsActive ? "Active" : "Inactive")</span>
             </MudTd>
             <MudTd Class="admin-actions">
-                <MudMenu Label="Actions" EndIcon="@Icons.Material.Filled.ArrowDropDown" Variant="Variant.Text" Color="Color.Primary"
+                <MudMenu Icon="@Icons.Material.Filled.MoreVert" Color="Color.Default" AriaLabel="Actions"
                          Size="Size.Small" Dense="true" Disabled="@_isProcessing"
                          AnchorOrigin="Origin.BottomRight" TransformOrigin="Origin.TopRight">
                     <MenuItemsComponent Icon="@Icons.Material.Filled.Edit" Text="Edit" OnItemSelect="@(() => EditSize(context))" />

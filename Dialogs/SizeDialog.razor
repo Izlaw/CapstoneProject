@@ -6,19 +6,19 @@
     <DialogContent>
         <MudForm @ref="_form">
             <MudStack Spacing="2">
-                <MudTextField T="string" @bind-Value="Item.Name" Label="Size Name" Variant="Variant.Outlined"
+                <MudTextField T="string" @bind-Value="Item.Name" Label="Size Name" Variant="Variant.Outlined" Margin="Margin.Dense"
                               Required="true" RequiredError="Enter a size name." MaxLength="20"
                               Validation="@_validateName" HelperText="For example: M, XL, 3XL" />
 
-                <MudNumericField T="decimal" @bind-Value="Item.Price" Label="Price" Variant="Variant.Outlined"
+                <MudNumericField T="decimal" @bind-Value="Item.Price" Label="Price" Variant="Variant.Outlined" Margin="Margin.Dense"
                                  Min="0" Max="9999999" Format="N2" HideSpinButtons="true"
                                  Adornment="Adornment.Start" AdornmentText="₱"
                                  HelperText="Added to the price of every piece in this size" />
 
                 <MudStack Row="true" Spacing="2">
-                    <MudNumericField T="decimal?" @bind-Value="Item.WidthIn" Label="Width (inches)" Variant="Variant.Outlined"
+                    <MudNumericField T="decimal?" @bind-Value="Item.WidthIn" Label="Width (inches)" Variant="Variant.Outlined" Margin="Margin.Dense"
                                      Min="0" Max="200" Clearable="true" HideSpinButtons="true" />
-                    <MudNumericField T="decimal?" @bind-Value="Item.LengthIn" Label="Length (inches)" Variant="Variant.Outlined"
+                    <MudNumericField T="decimal?" @bind-Value="Item.LengthIn" Label="Length (inches)" Variant="Variant.Outlined" Margin="Margin.Dense"
                                      Min="0" Max="200" Clearable="true" HideSpinButtons="true" />
                 </MudStack>
             </MudStack>

@@ -11,7 +11,7 @@
     <div class="d-flex justify-space-between align-center mb-6" style="flex-wrap: wrap; gap: 1rem;">
         <div>
             <MudText Typo="Typo.h4" Style="font-weight: 900; letter-spacing: -0.02em; color: var(--text-primary);">My Orders</MudText>
-            <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Track your custom garments from production to delivery.</MudText>
+            <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Track your custom garments from production to pickup.</MudText>
         </div>
         <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
                    Style="border-radius: 100px; font-weight: 700;">
@@ -67,7 +67,7 @@
         }
         else
         {
-            <MudTable Items="@Orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;">
+            <MudTable Items="@Orders" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;">
                 <HeaderContent>
                     <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Order ID</MudText></MudTh>
                     <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Type</MudText></MudTh>

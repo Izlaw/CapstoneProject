@@ -11,8 +11,8 @@
     <MudPaper Class="auth-card auth-card-narrow" Elevation="0">
         <span class="auth-brand">7 Guys <span class="brand-accent">House of Fashion</span></span>
 
-        <MudTextField @bind-Value="Email" Label="Email" Variant="Variant.Outlined" Class="mb-4" Disabled="@_isLoading" />
-        <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Class="mb-6" Disabled="@_isLoading" />
+        <MudTextField @bind-Value="Email" Label="Email" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-4" Disabled="@_isLoading" />
+        <MudTextField @bind-Value="Password" Label="Password" InputType="InputType.Password" Variant="Variant.Outlined" Margin="Margin.Dense" Class="mb-6" Disabled="@_isLoading" />
         
         <MudButton OnClick="HandleLogin" Disabled="@_isLoading" Variant="Variant.Filled" Color="Color.Primary" FullWidth="true" Size="Size.Large" Class="mb-4" Style="border-radius: 100px;">
             @if (_isLoading)

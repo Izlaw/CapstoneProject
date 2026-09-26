@@ -21,7 +21,7 @@
     </div>
     
     <MudPaper Elevation="0" Class="pa-4" Style="background-color: var(--bg-surface); border: 1px solid var(--border-color);">
-        <MudTable Items="@_orders" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;" Loading="@_isLoading">
+        <MudTable Items="@_orders" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;" Loading="@_isLoading">
             <HeaderContent>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Order ID</MudText></MudTh>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Customer</MudText></MudTh>
@@ -50,7 +50,7 @@
                 </MudTd>
                 <MudTd DataLabel="Date">@context.CreatedAt.ToString("MMM dd, yyyy")</MudTd>
                 <MudTd DataLabel="Status">
-                    <MudSelect T="string" Value="@context.Status" ValueChanged="@(async (string s) => await UpdateStatus(context, s))" Disabled="@IsStatusLocked(context)" Margin="Margin.Dense" Variant="Variant.Outlined" Style="width: 140px; background-color: var(--bg-base);">
+                    <MudSelect T="string" Value="@context.Status" ValueChanged="@(async (string s) => await UpdateStatus(context, s))" Disabled="@IsStatusLocked(context)" Margin="Margin.Dense" Dense="true" Variant="Variant.Outlined" Style="width: 140px; background-color: var(--bg-base);">
                         @foreach (var status in GetStatusOptions(context))
                         {
                             <MudSelectItem Value="@status">@status</MudSelectItem>
