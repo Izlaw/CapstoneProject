@@ -1967,6 +1967,219 @@ h1:focus {
     color: var(--text-secondary);
 }
 
+.statement-sheet {
+    background: #FFFFFF;
+    color: #1A1A1A;
+    border-radius: 12px;
+    padding: 2.5rem;
+}
+
+.statement-sheet p {
+    margin: 0;
+}
+
+.statement-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    padding-bottom: 1.25rem;
+    border-bottom: 2px solid #1A1A1A;
+    font-size: 0.85rem;
+    color: #4A4A4A;
+}
+
+.statement-shop-name {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #541B2E;
+}
+
+.statement-heading {
+    text-align: right;
+}
+
+.statement-title {
+    margin: 0 0 0.25rem;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1A1A1A;
+}
+
+.statement-notice {
+    margin-top: 1.25rem !important;
+    padding: 0.75rem 1rem;
+    border: 1px solid #C8243B;
+    border-radius: 8px;
+    color: #C8243B;
+    font-weight: 600;
+}
+
+.statement-info {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.statement-block-title {
+    margin: 0 0 0.6rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #6A6A6A;
+}
+
+.statement-facts {
+    margin: 0;
+    display: grid;
+    gap: 0.4rem;
+    font-size: 0.9rem;
+}
+
+.statement-facts div {
+    display: grid;
+    grid-template-columns: 140px 1fr;
+    gap: 0.5rem;
+}
+
+.statement-facts dt {
+    color: #6A6A6A;
+}
+
+.statement-facts dd {
+    margin: 0;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+}
+
+.statement-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.9rem;
+}
+
+.statement-table th {
+    padding: 0.6rem 0.5rem;
+    text-align: left;
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #4A4A4A;
+    background: #F2F2F2;
+    border-bottom: 1px solid #CCCCCC;
+}
+
+.statement-table td {
+    padding: 0.6rem 0.5rem;
+    border-bottom: 1px solid #E2E2E2;
+}
+
+.statement-totals {
+    margin: 1rem 0 0 auto;
+    max-width: 340px;
+}
+
+.statement-total-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.25rem 0;
+    color: #4A4A4A;
+    font-variant-numeric: tabular-nums;
+}
+
+.statement-grand-total {
+    margin-top: 0.4rem;
+    padding-top: 0.6rem;
+    border-top: 2px solid #1A1A1A;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1A1A1A;
+}
+
+.statement-footer {
+    margin-top: 2.5rem;
+    padding-top: 1rem;
+    border-top: 1px solid #E2E2E2;
+    text-align: center;
+    font-size: 0.85rem;
+    color: #6A6A6A;
+}
+
+@media (max-width: 600px) {
+    .statement-sheet {
+        padding: 1.25rem;
+    }
+
+    .statement-heading {
+        text-align: left;
+    }
+
+    .statement-facts div {
+        grid-template-columns: 1fr;
+        gap: 0;
+    }
+}
+
+@media print {
+    @page {
+        margin: 0;
+    }
+
+    html:has(.statement-dialog),
+    body:has(.statement-dialog),
+    body:has(.statement-dialog) #app {
+        height: auto !important;
+        overflow: visible !important;
+        background: #FFFFFF !important;
+    }
+
+    body:has(.statement-dialog) .mud-layout,
+    body:has(.statement-dialog) .mud-snackbar-provider,
+    body:has(.statement-dialog) #blazor-error-ui,
+    .mud-dialog-container:has(.statement-dialog) .mud-overlay,
+    .statement-dialog .mud-dialog-title,
+    .statement-dialog .mud-dialog-actions {
+        display: none !important;
+    }
+
+    .mud-dialog-container:has(.statement-dialog) {
+        position: static !important;
+        display: block !important;
+    }
+
+    .statement-dialog {
+        position: static !important;
+        width: 100% !important;
+        max-width: none !important;
+        max-height: none !important;
+        margin: 0 !important;
+        border-radius: 0 !important;
+        box-shadow: none !important;
+        background: #FFFFFF !important;
+    }
+
+    .statement-dialog .mud-dialog-content {
+        padding: 0 !important;
+        max-height: none !important;
+        overflow: visible !important;
+    }
+
+    .statement-sheet {
+        border-radius: 0;
+        padding: 12mm;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+
+    .statement-facts div {
+        grid-template-columns: 140px 1fr;
+        gap: 0.5rem;
+    }
+}
+
 
 @media (max-width: 860px) {
     .upload-layout {

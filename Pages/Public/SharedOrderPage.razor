@@ -53,7 +53,7 @@
                         </div>
                         <div>
                             <span class="receipt-label">Order Type</span>
-                            <span class="receipt-value">@GetOrderTypeText(_order.OrderType)</span>
+                            <span class="receipt-value">@OrderDisplay.GetOrderTypeText(_order.OrderType)</span>
                         </div>
                         <div>
                             <span class="receipt-label">Timeframe</span>
@@ -63,7 +63,7 @@
                         {
                             <div>
                                 <span class="receipt-label">Fabric</span>
-                                <span class="receipt-value">@GetFabricText(_order.Custom.FabricName, _order.Custom.FabricNote)</span>
+                                <span class="receipt-value">@OrderDisplay.GetFabricText(_order.Custom.FabricName, _order.Custom.FabricNote)</span>
                             </div>
                             @foreach (var row in _order.Custom.DesignData.GetColorRows(_order.Custom.ShirtColor))
                             {
@@ -80,7 +80,7 @@
                         {
                             <div>
                                 <span class="receipt-label">Fabric</span>
-                                <span class="receipt-value">@GetFabricText(_order.Upload.FabricName, _order.Upload.FabricNote)</span>
+                                <span class="receipt-value">@OrderDisplay.GetFabricText(_order.Upload.FabricName, _order.Upload.FabricNote)</span>
                             </div>
                         }
                         @if (_order.Collection != null)
@@ -212,22 +212,6 @@
             dirZ = element.DirZ,
             dataUrl = element.DataUrl
         };
-    }
-
-    private static string GetOrderTypeText(string orderType)
-    {
-        return orderType switch
-        {
-            "custom" => "Custom Design",
-            "collection" => "Collection Design",
-            "upload" => "Uploaded Design",
-            _ => "-"
-        };
-    }
-
-    private static string GetFabricText(string fabricName, string? fabricNote)
-    {
-        return string.IsNullOrWhiteSpace(fabricNote) ? fabricName : $"{fabricName} ({fabricNote})";
     }
 
     private static Color GetStatusColor(string? status)

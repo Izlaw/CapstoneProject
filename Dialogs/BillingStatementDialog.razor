@@ -1,0 +1,224 @@
+@using CapstoneProject.Commons
+@inject SupabaseService SupabaseSvc
+@inject IJSRuntime JS
+@inject ISnackbar Snackbar
+
+<MudDialog Class="statement-dialog">
+    <DialogContent>
+        @if (_isLoading)
+        {
+            <MudProgressLinear Indeterminate="true" Color="Color.Primary" />
+        }
+        else
+        {
+            <article class="statement-sheet">
+                <header class="statement-header">
+                    <div class="statement-shop">
+                        <p class="statement-shop-name">@ShopInfo.Name</p>
+                        <p>@ShopInfo.Address</p>
+                        @if (!string.IsNullOrWhiteSpace(ShopInfo.ContactNumber))
+                        {
+                            <p>@ShopInfo.ContactNumber</p>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(ShopInfo.Email))
+                        {
+                            <p>@ShopInfo.Email</p>
+                        }
+                    </div>
+                    <div class="statement-heading">
+                        <h1 class="statement-title">Billing Statement</h1>
+                        <p>Order #@ShortId</p>
+                        <p>Issued @_issuedOn.ToString("MMM dd, yyyy")</p>
+                    </div>
+                </header>
+
+                @if (Order.Status == OrderStatuses.Cancelled)
+                {
+                    <p class="statement-notice">This order was cancelled. No amount is due.</p>
+                }
+
+                <section class="statement-info">
+                    <div class="statement-block">
+                        <h2 class="statement-block-title">Billed To</h2>
+                        <dl class="statement-facts">
+                            <div>
+                                <dt>Name</dt>
+                                <dd>@DisplayText(_customer?.FullName)</dd>
+                            </div>
+                            <div>
+                                <dt>Contact Number</dt>
+                                <dd>@DisplayText(_customer?.Phone)</dd>
+                            </div>
+                            <div>
+                                <dt>Address</dt>
+                                <dd>@DisplayText(_customer?.Address)</dd>
+                            </div>
+                        </dl>
+                    </div>
+
+                    <div class="statement-block">
+                        <h2 class="statement-block-title">Order Details</h2>
+                        <dl class="statement-facts">
+                            <div>
+                                <dt>Order Date</dt>
+                                <dd>@Extension.ToDisplayTime(Order.CreatedAt).ToString("MMM dd, yyyy")</dd>
+                            </div>
+                            <div>
+                                <dt>Order Type</dt>
+                                <dd>@OrderDisplay.GetOrderTypeText(Order.OrderType)</dd>
+                            </div>
+                            <div>
+                                <dt>@GetItemLabel()</dt>
+                                <dd>@GetItemText()</dd>
+                            </div>
+                            <div>
+                                <dt>Pickup Timeframe</dt>
+                                <dd>@DisplayText(Order.TimeframeLabel)</dd>
+                            </div>
+                            <div>
+                                <dt>Status</dt>
+                                <dd>@Order.Status</dd>
+                            </div>
+                        </dl>
+                    </div>
+                </section>
+
+                <table class="statement-table">
+                    <thead>
+                        <tr>
+                            <th>Size</th>
+                            <th class="receipt-num">Quantity</th>
+                            <th class="receipt-num">Price Each</th>
+                            <th class="receipt-num">Amount</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Order.Items.OrderBy(item => item.SizeName))
+                        {
+                            <tr>
+                                <td>@item.SizeName</td>
+                                <td class="receipt-num">@item.Quantity</td>
+                                <td class="receipt-num">₱@item.UnitPrice.ToString("N2")</td>
+                                <td class="receipt-num">₱@item.LineTotal.ToString("N2")</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <div class="statement-totals">
+                    <div class="statement-total-row">
+                        <span>Subtotal (@Order.Quantity pieces)</span>
+                        <span>₱@((Order.Subtotal ?? Order.TotalPrice).ToString("N2"))</span>
+                    </div>
+                    @if ((Order.SurchargePercent ?? 0) > 0)
+                    {
+                        <div class="statement-total-row">
+                            <span>Timeframe Fee (@Order.SurchargePercent?.ToString("0.##")%)</span>
+                            <span>₱@((Order.SurchargeAmount ?? 0).ToString("N2"))</span>
+                        </div>
+                    }
+                    <div class="statement-total-row statement-grand-total">
+                        <span>Total</span>
+                        <span>₱@Order.TotalPrice.ToString("N2")</span>
+                    </div>
+                </div>
+
+                <footer class="statement-footer">
+                    <p>Thank you for ordering from @ShopInfo.Name!</p>
+                    <p>Payment arrangements are made with our staff through the order page chat.</p>
+                </footer>
+            </article>
+        }
+    </DialogContent>
+    <DialogActions>
+        <MudButton Variant="Variant.Outlined" Color="Color.Default" StartIcon="@Icons.Material.Filled.Close"
+                   OnClick="Close" Class="dialog-btn">
+            Close
+        </MudButton>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" DropShadow="false" StartIcon="@Icons.Material.Filled.Print"
+                   OnClick="PrintStatement" Disabled="@(_isLoading || _isProcessing)" Class="dialog-btn">
+            Print / Save as PDF
+        </MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    #region Properties
+    [CascadingParameter] private IMudDialogInstance MudDialog { get; set; } = default!;
+    [Parameter] public AppOrderModel Order { get; set; } = new();
+
+    private UserProfileModel? _customer;
+    private DateTime _issuedOn = DateTime.Now;
+    private bool _isLoading = true;
+    private bool _isProcessing;
+
+    private string ShortId => Order.Id[..Math.Min(8, Order.Id.Length)];
+    #endregion
+
+    #region Lifecycle
+    protected override async Task OnInitializedAsync()
+    {
+        _isLoading = true;
+
+        try
+        {
+            _customer = await SupabaseSvc.GetUserProfileAsync(Order.CustomerId);
+            _issuedOn = DateTime.Now;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("The customer details could not be loaded.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isLoading = false;
+        }
+    }
+    #endregion
+
+    #region Methods
+    private async Task PrintStatement()
+    {
+        if (_isProcessing) return;
+        _isProcessing = true;
+
+        try
+        {
+            await JS.InvokeVoidAsync("print");
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("The print window could not be opened. Please try again.", Variant.Filled, Snackbar, Severity.Error);
+        }
+        finally
+        {
+            _isProcessing = false;
+        }
+    }
+
+    private void Close()
+    {
+        MudDialog.Close();
+    }
+
+    private string GetItemLabel()
+    {
+        return Order.CollectionOrder != null ? "Design" : "Fabric";
+    }
+
+    private string GetItemText()
+    {
+        if (Order.CollectionOrder != null) return DisplayText(Order.CollectionOrder.CollectionName);
+        if (Order.CustomOrder != null) return OrderDisplay.GetFabricText(Order.CustomOrder.FabricName, Order.CustomOrder.FabricNote);
+        if (Order.UploadOrder != null) return OrderDisplay.GetFabricText(Order.UploadOrder.FabricName, Order.UploadOrder.FabricNote);
+        return "-";
+    }
+
+    private static string DisplayText(string? value)
+    {
+        return string.IsNullOrWhiteSpace(value) ? "-" : value;
+    }
+    #endregion
+}
