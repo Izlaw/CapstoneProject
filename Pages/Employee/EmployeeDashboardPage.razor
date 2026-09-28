@@ -4,6 +4,7 @@
 @attribute [Authorize(Roles = "employee,admin")]
 @inject CapstoneProject.Services.SupabaseService SupabaseSvc
 @inject CapstoneProject.Services.OrderService OrderSvc
+@inject CapstoneProject.Services.CatalogService CatalogSvc
 @inject AuthenticationStateProvider AuthStateProvider
 @inject ISnackbar Snackbar
 
@@ -24,6 +25,7 @@
         <MudTable Items="@_orders" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;" Loading="@_isLoading">
             <HeaderContent>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Order ID</MudText></MudTh>
+                <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Preview</MudText></MudTh>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Customer</MudText></MudTh>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Type</MudText></MudTh>
                 <MudTh><MudText Style="color: var(--text-secondary); font-weight: 500;">Date</MudText></MudTh>
@@ -33,6 +35,16 @@
             </HeaderContent>
             <RowTemplate>
                 <MudTd DataLabel="Order ID">#@ShortId(context.Id)</MudTd>
+                <MudTd DataLabel="Preview">
+                    @if (_previewUrls.TryGetValue(context.Id, out var previewUrl))
+                    {
+                        <img src="@previewUrl" alt="Order #@ShortId(context.Id) design" class="collection-thumb order-thumb" />
+                    }
+                    else
+                    {
+                        <div class="collection-thumb collection-thumb-empty order-thumb">-</div>
+                    }
+                </MudTd>
                 <MudTd DataLabel="Customer">@GetCustomerName(context.CustomerId)</MudTd>
                 <MudTd DataLabel="Type">
                     @if (context.OrderType == "custom")
@@ -71,11 +83,15 @@
 </div>
 
 @code {
+    #region Properties
     private List<CapstoneProject.Models.AppOrderModel> _orders = new();
     private Dictionary<string, string> _customerNames = new();
+    private Dictionary<string, string> _previewUrls = new();
     private bool _isLoading = true;
     private bool _isAdmin;
+    #endregion
 
+    #region Lifecycle
     protected override async Task OnInitializedAsync()
     {
         var authState = await AuthStateProvider.GetAuthenticationStateAsync();
@@ -83,7 +99,9 @@
 
         await LoadOrders();
     }
+    #endregion
 
+    #region Methods
     private IEnumerable<string> GetStatusOptions(CapstoneProject.Models.AppOrderModel order)
     {
         return CapstoneProject.Models.OrderStatuses.All
@@ -102,11 +120,103 @@
         {
             _orders = await SupabaseSvc.GetAllOrdersAsync();
             _customerNames = await SupabaseSvc.GetCustomerNamesAsync(_orders.Select(x => x.CustomerId));
+            _previewUrls = await GetPreviewUrls();
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            Extension.ShowAlert("The orders could not be loaded. Please try again.", Variant.Filled, Snackbar, Severity.Error);
         }
         finally
         {
             _isLoading = false;
         }
+    }
+
+    private async Task<Dictionary<string, string>> GetPreviewUrls()
+    {
+        var previewUrls = new Dictionary<string, string>();
+
+        var orderImageUrls = await GetOrderImagePreviews();
+        foreach (var preview in orderImageUrls)
+        {
+            previewUrls[preview.Key] = preview.Value;
+        }
+
+        var collectionImageUrls = await GetCollectionPreviews();
+        foreach (var preview in collectionImageUrls)
+        {
+            previewUrls[preview.Key] = preview.Value;
+        }
+
+        return previewUrls;
+    }
+
+    private async Task<Dictionary<string, string>> GetOrderImagePreviews()
+    {
+        var previews = new Dictionary<string, string>();
+
+        var imagePaths = _orders
+            .Select(GetOrderImagePath)
+            .Where(path => !string.IsNullOrWhiteSpace(path))
+            .Select(path => path!)
+            .Distinct()
+            .ToList();
+
+        var signedUrls = await OrderSvc.GetImageUrlsAsync(imagePaths);
+
+        foreach (var order in _orders)
+        {
+            var imagePath = GetOrderImagePath(order);
+            if (imagePath == null) continue;
+
+            if (signedUrls.TryGetValue(imagePath, out var signedUrl))
+            {
+                previews[order.Id] = signedUrl;
+            }
+        }
+
+        return previews;
+    }
+
+    private async Task<Dictionary<string, string>> GetCollectionPreviews()
+    {
+        var previews = new Dictionary<string, string>();
+
+        var collectionIds = _orders
+            .Where(order => !string.IsNullOrEmpty(order.CollectionOrder?.CollectionId))
+            .Select(order => order.CollectionOrder!.CollectionId)
+            .ToList();
+
+        var collectionImageUrls = await CatalogSvc.GetCollectionImageUrlsAsync(collectionIds);
+
+        foreach (var order in _orders)
+        {
+            var collectionId = order.CollectionOrder?.CollectionId;
+            if (string.IsNullOrEmpty(collectionId)) continue;
+
+            if (collectionImageUrls.TryGetValue(collectionId, out var imageUrl))
+            {
+                previews[order.Id] = imageUrl;
+            }
+        }
+
+        return previews;
+    }
+
+    private static string? GetOrderImagePath(CapstoneProject.Models.AppOrderModel order)
+    {
+        if (!string.IsNullOrWhiteSpace(order.CustomOrder?.DesignImagePath))
+        {
+            return order.CustomOrder.DesignImagePath;
+        }
+
+        if (!string.IsNullOrWhiteSpace(order.UploadOrder?.UploadedImagePath))
+        {
+            return order.UploadOrder.UploadedImagePath;
+        }
+
+        return null;
     }
 
     private string GetCustomerName(string customerId)
@@ -135,4 +245,5 @@
             Extension.ShowAlert(result.Message, Variant.Filled, Snackbar, Severity.Error);
         }
     }
+    #endregion
 }

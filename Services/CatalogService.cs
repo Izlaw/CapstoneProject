@@ -69,6 +69,34 @@ public class CatalogService
         return response.Models.FirstOrDefault();
     }
 
+    public async Task<Dictionary<string, string>> GetCollectionImageUrlsAsync(IEnumerable<string> collectionIds)
+    {
+        var urls = new Dictionary<string, string>();
+        var idList = collectionIds.Distinct().ToList();
+        if (idList.Count == 0) return urls;
+
+        try
+        {
+            var response = await _supabase.From<CollectionItemModel>()
+                .Filter(x => x.Id, Operator.In, idList)
+                .Get();
+
+            foreach (var collection in response.Models)
+            {
+                if (string.IsNullOrEmpty(collection.ImageUrl)) continue;
+
+                urls[collection.Id] = collection.ImageUrl;
+            }
+
+            return urls;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return urls;
+        }
+    }
+
     public async Task<List<PriceAuditLogModel>> GetPriceHistoryAsync(int limit = 200)
     {
         var response = await _supabase.From<PriceAuditLogModel>()

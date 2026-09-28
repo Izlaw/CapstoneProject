@@ -995,6 +995,11 @@ h1:focus {
     color: var(--text-muted);
 }
 
+.order-thumb {
+    width: 96px;
+    height: 96px;
+}
+
 .collection-image-field {
     display: flex;
     align-items: center;

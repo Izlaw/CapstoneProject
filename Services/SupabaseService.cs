@@ -20,6 +20,7 @@ public class SupabaseService
         try
         {
             var response = await _supabase.From<AppOrderModel>()
+                .Select("*, custom_orders(design_image_path), collection_orders(collection_id), upload_orders(uploaded_image_path)")
                 .Order(x => x.CreatedAt, Postgrest.Constants.Ordering.Descending)
                 .Get();
             return response.Models;

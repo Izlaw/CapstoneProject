@@ -116,6 +116,32 @@ public class OrderService
         }
     }
 
+    public async Task<Dictionary<string, string>> GetImageUrlsAsync(List<string> imagePaths)
+    {
+        var urls = new Dictionary<string, string>();
+        if (imagePaths.Count == 0) return urls;
+
+        try
+        {
+            var signedUrls = await _supabase.Storage.From(OrderImagesBucket).CreateSignedUrls(imagePaths, SignedUrlSeconds);
+            if (signedUrls == null) return urls;
+
+            foreach (var signedUrl in signedUrls)
+            {
+                if (string.IsNullOrEmpty(signedUrl.Path) || string.IsNullOrEmpty(signedUrl.SignedUrl)) continue;
+
+                urls[signedUrl.Path] = signedUrl.SignedUrl;
+            }
+
+            return urls;
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return urls;
+        }
+    }
+
     public async Task DeleteImagesAsync(List<string> imagePaths)
     {
         if (imagePaths.Count == 0) return;
