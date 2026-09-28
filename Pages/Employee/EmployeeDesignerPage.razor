@@ -275,7 +275,7 @@
 
         try
         {
-            var screenshot = await _shirtCanvas.Module.InvokeAsync<string>("exportCollectionPng");
+            var screenshot = await _shirtCanvas.Module.InvokeAsync<string>("exportProductPng");
             if (!TryReadDataUrl(screenshot, out var screenshotBytes, out var screenshotType))
             {
                 Extension.ShowAlert("The design picture could not be created. Please try again.", Variant.Filled, Snackbar, Severity.Error);

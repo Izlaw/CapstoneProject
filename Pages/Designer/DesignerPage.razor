@@ -206,7 +206,7 @@
 
     private async Task<string?> UploadPreviewAsync()
     {
-        var dataUrl = await _shirtCanvas.Module!.InvokeAsync<string>("exportPng");
+        var dataUrl = await _shirtCanvas.Module!.InvokeAsync<string>("exportProductPng");
         if (!TryReadDataUrl(dataUrl, out var bytes, out var contentType))
         {
             Extension.ShowAlert("The design preview could not be created. Please try again.", Variant.Filled, Snackbar, Severity.Error);

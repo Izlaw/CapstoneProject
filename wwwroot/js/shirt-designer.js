@@ -558,7 +558,7 @@ export function exportPng() {
     return renderer.domElement.toDataURL('image/png');
 }
 
-export function exportCollectionPng() {
+export function exportProductPng() {
     if (!renderer || !scene || !camera) return '';
 
     const savedPosition = camera.position.clone();
