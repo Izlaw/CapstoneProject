@@ -37,6 +37,29 @@ public static class Extension
         return value.Contains(searchText.Trim(), StringComparison.OrdinalIgnoreCase);
     }
 
+    public static bool TryReadDataUrl(string? dataUrl, out byte[] bytes, out string contentType)
+    {
+        bytes = Array.Empty<byte>();
+        contentType = string.Empty;
+
+        if (string.IsNullOrEmpty(dataUrl) || !dataUrl.StartsWith("data:")) return false;
+
+        var separatorIndex = dataUrl.IndexOf(";base64,", StringComparison.Ordinal);
+        if (separatorIndex < 0) return false;
+
+        contentType = dataUrl.Substring(5, separatorIndex - 5);
+
+        try
+        {
+            bytes = Convert.FromBase64String(dataUrl.Substring(separatorIndex + ";base64,".Length));
+            return bytes.Length > 0;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
     public static bool MatchesStatus(bool isActive, StatusFilter status)
     {
         return status switch

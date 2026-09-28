@@ -207,7 +207,7 @@
     private async Task<string?> UploadPreviewAsync()
     {
         var dataUrl = await _shirtCanvas.Module!.InvokeAsync<string>("exportProductPng");
-        if (!TryReadDataUrl(dataUrl, out var bytes, out var contentType))
+        if (!Extension.TryReadDataUrl(dataUrl, out var bytes, out var contentType))
         {
             Extension.ShowAlert("The design preview could not be created. Please try again.", Variant.Filled, Snackbar, Severity.Error);
             return null;
@@ -230,7 +230,7 @@
 
         foreach (var element in elements.Where(item => item.Type == "image"))
         {
-            if (!TryReadDataUrl(element.DataUrl, out var bytes, out var contentType) || !AllowedImageTypes.Contains(contentType))
+            if (!Extension.TryReadDataUrl(element.DataUrl, out var bytes, out var contentType) || !AllowedImageTypes.Contains(contentType))
             {
                 Extension.ShowAlert("Logos and images must be PNG, JPG or WebP files.", Variant.Filled, Snackbar, Severity.Warning);
                 return null;
@@ -267,29 +267,6 @@
 
         var dialog = await DialogService.ShowAsync<OrderSuccessDialog>("Order placed", parameters, options);
         await dialog.Result;
-    }
-
-    private static bool TryReadDataUrl(string? dataUrl, out byte[] bytes, out string contentType)
-    {
-        bytes = Array.Empty<byte>();
-        contentType = string.Empty;
-
-        if (string.IsNullOrEmpty(dataUrl) || !dataUrl.StartsWith("data:")) return false;
-
-        var separatorIndex = dataUrl.IndexOf(";base64,", StringComparison.Ordinal);
-        if (separatorIndex < 0) return false;
-
-        contentType = dataUrl.Substring(5, separatorIndex - 5);
-
-        try
-        {
-            bytes = Convert.FromBase64String(dataUrl.Substring(separatorIndex + ";base64,".Length));
-            return bytes.Length > 0;
-        }
-        catch (FormatException)
-        {
-            return false;
-        }
     }
     #endregion
 }
