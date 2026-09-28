@@ -41,6 +41,10 @@
                 </AuthorizeView>
             </nav>
 
+            <nav class="nav-links" aria-label="Disclaimer">
+                <a href="/disclaimer" class="@GetNavLinkClass("disclaimer")">Disclaimer</a>
+            </nav>
+
             <MudSpacer />
 
             <div class="nav-actions">
@@ -108,6 +112,9 @@
                     <a href="/collections" class="@GetDrawerLinkClass("collections")">
                         <MudIcon Icon="@Icons.Material.Filled.Checkroom" Size="Size.Small" /> Collections
                     </a>
+                    <a href="/disclaimer" class="@GetDrawerLinkClass("disclaimer")">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" /> Disclaimer
+                    </a>
                     <a href="@GetLoginHref()" class="@GetDrawerLinkClass("login")">
                         <MudIcon Icon="@Icons.Material.Filled.Login" Size="Size.Small" /> Log In
                     </a>
@@ -156,6 +163,9 @@
                             <MudIcon Icon="@Icons.Material.Filled.ReceiptLong" Size="Size.Small" /> My Orders
                         </a>
                     }
+                    <a href="/disclaimer" class="@GetDrawerLinkClass("disclaimer")">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Size="Size.Small" /> Disclaimer
+                    </a>
                     <a href="/profile" class="@GetDrawerLinkClass("profile")">
                         <MudIcon Icon="@Icons.Material.Filled.Person" Size="Size.Small" /> My Profile
                     </a>
