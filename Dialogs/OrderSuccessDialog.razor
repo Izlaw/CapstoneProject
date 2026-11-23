@@ -9,20 +9,20 @@
                 <MudIcon Icon="@Icons.Material.Filled.CheckCircle" Color="Color.Success" Style="font-size: 64px; margin-bottom: 16px;" />
             }
 
-            <MudText Typo="Typo.h5" Style="font-weight: 700; color: var(--text-primary); margin-bottom: 8px;">@HeaderText</MudText>
+            <MudText Typo="Typo.h5" Style="font-weight: 700; color: var(--mud-palette-text-primary); margin-bottom: 8px;">@HeaderText</MudText>
 
-            <MudText Typo="Typo.body1" Style="color: var(--text-secondary); margin-bottom: 24px;">
+            <MudText Typo="Typo.body1" Style="color: var(--mud-palette-text-secondary); margin-bottom: 24px;">
                 @MessageText
             </MudText>
 
             @if (!string.IsNullOrEmpty(_qrCodeBase64))
             {
-                <div style="background-color: white; padding: 16px; border-radius: 12px; border: 2px solid var(--border-color); margin-bottom: 24px;">
-                    <img src="@($"data:image/png;base64,{_qrCodeBase64}")" alt="Order QR Code" style="width: 200px; height: 200px;" />
+                <div style="background-color: white; padding: 16px; border-radius: 12px; border: 2px solid var(--mud-palette-lines-default); margin-bottom: 24px;">
+                    <img src="@($"data:image/png;base64,{_qrCodeBase64}")" alt="Order QR Code" style="width: min(200px, 60vw); height: auto; aspect-ratio: 1;" />
                 </div>
             }
 
-            <MudText Typo="Typo.caption" Style="color: var(--text-secondary);">
+            <MudText Typo="Typo.caption" Style="color: var(--mud-palette-text-secondary);">
                 Order ID: @OrderId
             </MudText>
         </div>

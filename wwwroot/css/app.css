@@ -1,24 +1,9 @@
 :root {
-    --primary: #C8243B;
-    --primary-hover: #D93A50;
-    --primary-dark: #541B2E;
-    --primary-light: #E0566A;
-    --primary-soft: rgba(200, 36, 59, 0.16);
-    --brand: #541B2E;
-    --accent: #F4A58A;
-    --accent-soft: rgba(244, 165, 138, 0.14);
-    --accent-glow: rgba(244, 165, 138, 0.18);
-    --bg-base: #0E0F13;
-    --bg-card: #17181E;
-    --bg-surface: #17181E;
-    --bg-elevated: #1F2027;
-    --border: rgba(255, 255, 255, 0.08);
-    --border-color: rgba(255, 255, 255, 0.08);
-    --border-strong: rgba(255, 255, 255, 0.16);
-    --text-primary: #F4F1EC;
-    --text-secondary: #A9A6A0;
-    --text-muted: #8A8680;
-    --secondary: #F4A58A;
+    --page-max: 100%;
+    --bg-elevated: color-mix(in srgb, var(--mud-palette-surface) 95%, white);
+    --border-strong: color-mix(in srgb, var(--mud-palette-text-primary) 16%, transparent);
+    --primary-soft: color-mix(in srgb, var(--mud-palette-primary) 16%, transparent);
+    --accent-soft: color-mix(in srgb, var(--mud-palette-secondary) 14%, transparent);
 }
 
 *,
@@ -30,11 +15,15 @@
 html,
 body {
     font-family: 'Outfit', sans-serif;
-    background-color: var(--bg-base);
-    color: var(--text-primary);
+    background-color: var(--mud-palette-background);
+    color: var(--mud-palette-text-primary);
     height: 100%;
     margin: 0;
     padding: 0;
+}
+
+body:has(.app-loading) {
+    background-color: #0E0F13;
 }
 
 #app {
@@ -46,11 +35,11 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-    background: var(--bg-surface);
+    background: var(--mud-palette-surface);
 }
 
 ::-webkit-scrollbar-thumb {
-    background: var(--primary-dark);
+    background: var(--mud-palette-tertiary);
     border-radius: 3px;
 }
 
@@ -60,7 +49,7 @@ body {
     align-items: center;
     justify-content: center;
     height: 100vh;
-    background: var(--bg-base);
+    background: #0E0F13;
     gap: 1.5rem;
 }
 
@@ -69,26 +58,26 @@ body {
     text-align: center;
     font-size: clamp(1.8rem, 7vw, 2.8rem);
     font-weight: 800;
-    color: var(--primary-dark);
+    color: #541B2E;
     letter-spacing: -0.02em;
 }
 
 .loading-logo .accent {
-    color: var(--accent);
+    color: #F4A58A;
 }
 
 .loading-spinner {
     width: 36px;
     height: 36px;
     border: 3px solid rgba(255, 255, 255, 0.08);
-    border-top-color: var(--primary);
+    border-top-color: #C8243B;
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
 }
 
 .loading-text {
     font-size: 0.78rem;
-    color: var(--text-muted);
+    color: #8A8680;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -104,7 +93,7 @@ body {
     align-items: center;
     gap: 0.65rem;
     text-decoration: none !important;
-    color: var(--text-primary) !important;
+    color: var(--mud-palette-text-primary) !important;
 }
 
 .brand-mark {
@@ -113,7 +102,7 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 10px;
-    background-color: var(--brand);
+    background-color: var(--mud-palette-tertiary);
     font-size: 1.05rem;
     font-weight: 800;
     letter-spacing: -0.02em;
@@ -127,7 +116,7 @@ body {
 }
 
 .brand-accent {
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
     font-weight: 600;
 }
 
@@ -136,8 +125,8 @@ h1:focus {
 }
 
 .site-appbar {
-    background-color: rgba(14, 15, 19, 0.82) !important;
-    border-bottom: 1px solid var(--border);
+    background-color: color-mix(in srgb, var(--mud-palette-background) 82%, transparent) !important;
+    border-bottom: 1px solid var(--mud-palette-lines-default);
     backdrop-filter: blur(12px);
 }
 
@@ -150,7 +139,7 @@ h1:focus {
     align-items: center;
     gap: 0.5rem;
     width: 100%;
-    max-width: 1200px;
+    max-width: var(--page-max);
     height: 64px;
     margin: 0 auto;
     padding: 0 1.5rem;
@@ -183,24 +172,24 @@ h1:focus {
     font-weight: 500;
     text-decoration: none;
     white-space: nowrap;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     transition: color 0.15s ease, background-color 0.15s ease;
 }
 
 .nav-link:hover {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     background-color: rgba(255, 255, 255, 0.05);
 }
 
 .nav-link:focus-visible,
 .nav-menu-toggle:focus-visible,
 .nav-drawer-link:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--mud-palette-secondary);
     outline-offset: 2px;
 }
 
 .nav-link-active {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .nav-link-active::after {
@@ -211,7 +200,7 @@ h1:focus {
     left: 0.85rem;
     height: 2px;
     border-radius: 2px;
-    background-color: var(--primary);
+    background-color: var(--mud-palette-primary);
 }
 
 .nav-cta.mud-button-root {
@@ -233,7 +222,7 @@ h1:focus {
     background-color: transparent;
     border: 1px solid var(--border-strong);
     border-radius: 10px;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     cursor: pointer;
 }
 
@@ -254,7 +243,7 @@ h1:focus {
     background-color: transparent;
     border: 1px solid var(--border-strong);
     border-radius: 100px;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     font-family: inherit;
     cursor: pointer;
     transition: border-color 0.15s ease, background-color 0.15s ease;
@@ -266,7 +255,7 @@ h1:focus {
 }
 
 .account-chip:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--mud-palette-secondary);
     outline-offset: 2px;
 }
 
@@ -285,12 +274,12 @@ h1:focus {
 }
 
 .account-chip-arrow {
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .account-avatar {
-    background-color: var(--brand);
-    color: var(--text-primary);
+    background-color: var(--mud-palette-tertiary);
+    color: var(--mud-palette-text-primary);
     font-size: 0.8rem;
     font-weight: 700;
 }
@@ -299,7 +288,7 @@ h1:focus {
     display: flex;
     align-items: center;
     gap: 0.75rem;
-    min-width: 260px;
+    min-width: min(260px, 90vw);
     padding: 1rem;
 }
 
@@ -312,13 +301,13 @@ h1:focus {
 .account-menu-name {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .account-menu-email {
     overflow: hidden;
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -329,12 +318,12 @@ h1:focus {
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
 }
 
 .nav-drawer.mud-drawer {
-    background-color: var(--bg-card);
-    border-left: 1px solid var(--border);
+    background-color: var(--mud-palette-surface);
+    border-left: 1px solid var(--mud-palette-lines-default);
 }
 
 .nav-drawer .mud-drawer-content {
@@ -348,7 +337,7 @@ h1:focus {
     justify-content: space-between;
     height: 64px;
     padding: 0 1rem 0 1.25rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
 }
 
 .nav-drawer-title {
@@ -356,7 +345,7 @@ h1:focus {
     font-weight: 600;
     letter-spacing: 0.14em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .nav-drawer .nav-drawer-close {
@@ -366,7 +355,7 @@ h1:focus {
 .nav-drawer-account {
     min-width: 0;
     padding: 1.25rem;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
 }
 
 .nav-drawer-links {
@@ -386,23 +375,23 @@ h1:focus {
     font-size: 1rem;
     font-weight: 500;
     text-decoration: none;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .nav-drawer-link:hover {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     background-color: rgba(255, 255, 255, 0.05);
 }
 
 .nav-drawer-link-active {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     background-color: var(--primary-soft);
 }
 
 .nav-drawer-footer {
     margin-top: auto;
     padding: 1rem;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--mud-palette-lines-default);
 }
 
 .nav-drawer-logout.mud-button-root {
@@ -450,8 +439,8 @@ h1:focus {
 }
 
 .dash-stat-card {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 16px;
     padding: 1.5rem 1.75rem;
     transition: border-color 0.2s, transform 0.2s;
@@ -459,7 +448,7 @@ h1:focus {
 
 .dash-stat-card:hover {
     transform: translateY(-3px);
-    border-color: rgba(200, 36, 59, 0.35);
+    border-color: color-mix(in srgb, var(--mud-palette-primary) 35%, transparent);
 }
 
 .dash-stat-icon {
@@ -476,7 +465,7 @@ h1:focus {
 
 .dash-stat-label {
     font-size: 0.78rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.08em;
     font-weight: 600;
@@ -514,8 +503,8 @@ h1:focus {
     position: relative;
     border-radius: 20px;
     overflow: hidden;
-    background: var(--bg-base);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-background);
+    border: 1px solid var(--mud-palette-lines-default);
     box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.4);
 }
 
@@ -536,14 +525,14 @@ h1:focus {
 
 /* -- Tool Sections ----------------------------------- */
 .tool-section {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 14px;
     padding: 1.2rem;
 }
 
 .export-section {
-    background: var(--bg-card);
+    background: var(--mud-palette-surface);
     border: 1px solid var(--border-strong);
     border-radius: 14px;
     padding: 1.2rem;
@@ -554,7 +543,7 @@ h1:focus {
     font-weight: 700;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
     margin-bottom: 0.9rem;
 }
 
@@ -584,7 +573,7 @@ h1:focus {
 .tool-hint {
     display: block;
     margin-top: 0.5rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .tool-hint-success {
@@ -603,7 +592,7 @@ h1:focus {
     border: none;
     border-radius: 6px;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font-family: inherit;
     font-size: 12px;
     font-weight: 600;
@@ -612,16 +601,16 @@ h1:focus {
 }
 
 .segmented-option:hover {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .segmented-option.active {
-    background: var(--primary);
+    background: var(--mud-palette-primary);
     color: #fff;
 }
 
 .segmented-option:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--mud-palette-secondary);
     outline-offset: 2px;
 }
 
@@ -635,7 +624,7 @@ h1:focus {
     font-weight: 600;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .piece-chips {
@@ -653,26 +642,26 @@ h1:focus {
     border: 1px solid rgba(255, 255, 255, 0.12);
     border-radius: 999px;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font: inherit;
     font-size: 0.85rem;
     cursor: pointer;
 }
 
 .piece-chip:hover {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     border-color: rgba(255, 255, 255, 0.3);
 }
 
 .piece-chip.active {
-    color: var(--text-primary);
-    border-color: var(--primary);
-    background: rgba(200, 36, 59, 0.18);
+    color: var(--mud-palette-text-primary);
+    border-color: var(--mud-palette-primary);
+    background: color-mix(in srgb, var(--mud-palette-primary) 18%, transparent);
 }
 
 .piece-chip:focus-visible,
 .piece-toggle:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--mud-palette-secondary);
     outline-offset: 2px;
 }
 
@@ -685,7 +674,7 @@ h1:focus {
 }
 
 .piece-dot.mixed {
-    border: 2px dashed var(--text-muted);
+    border: 2px dashed var(--mud-palette-text-disabled);
     background: transparent;
 }
 
@@ -697,7 +686,7 @@ h1:focus {
     padding: 0.25rem 0;
     border: none;
     background: none;
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
     font: inherit;
     font-size: 0.8rem;
     font-weight: 600;
@@ -775,7 +764,7 @@ h1:focus {
 .admin-page {
     min-height: calc(100vh - 64px);
     padding: 2rem 1.5rem 4rem;
-    max-width: 1200px;
+    max-width: var(--page-max);
     margin: 0 auto;
 }
 
@@ -788,12 +777,12 @@ h1:focus {
     font-size: 2rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .admin-subtitle {
     margin: 0.35rem 0 0;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font-size: 0.95rem;
 }
 
@@ -801,23 +790,23 @@ h1:focus {
     margin-bottom: 1.5rem;
     background: transparent;
     border-color: var(--border-strong);
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .admin-tabs .mud-tabs-toolbar {
     background: transparent;
-    border-bottom: 1px solid var(--border);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
 }
 
 .admin-tabs .mud-tab {
     text-transform: none;
     font-weight: 600;
     font-size: 0.95rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .admin-tabs .mud-tab.mud-tab-active {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .admin-page .mud-button-root {
@@ -826,7 +815,7 @@ h1:focus {
 }
 
 .admin-page .mud-button-text.mud-button-text-primary {
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
 }
 
 .admin-tab-panel {
@@ -843,7 +832,7 @@ h1:focus {
 }
 
 .admin-hint {
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .toolbar-filters {
@@ -857,7 +846,7 @@ h1:focus {
 
 .toolbar-search {
     flex: 0 1 320px;
-    min-width: 200px;
+    min-width: min(200px, 100%);
 }
 
 .toolbar-search.mud-input-control {
@@ -873,7 +862,7 @@ h1:focus {
 .toolbar-result {
     display: block;
     margin: -0.5rem 0 0.75rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 @media (max-width: 600px) {
@@ -883,8 +872,8 @@ h1:focus {
 }
 
 .admin-panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 6px;
     overflow: hidden;
 }
@@ -895,7 +884,7 @@ h1:focus {
 
 .admin-panel .mud-table-head .mud-table-cell {
     background: var(--bg-elevated);
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font-size: 0.72rem;
     font-weight: 700;
     letter-spacing: 0.08em;
@@ -903,8 +892,8 @@ h1:focus {
 }
 
 .admin-panel .mud-table-body .mud-table-cell {
-    border-bottom: 1px solid var(--border);
-    color: var(--text-primary);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    color: var(--mud-palette-text-primary);
 }
 
 .admin-name {
@@ -938,7 +927,7 @@ h1:focus {
 .admin-empty {
     padding: 2.5rem 1rem;
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .state-badge {
@@ -965,7 +954,7 @@ h1:focus {
 }
 
 .state-inactive {
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
     background: rgba(255, 255, 255, 0.06);
 }
 
@@ -984,7 +973,7 @@ h1:focus {
     height: 48px;
     object-fit: cover;
     border-radius: 8px;
-    border: 1px solid var(--border);
+    border: 1px solid var(--mud-palette-lines-default);
     display: block;
 }
 
@@ -992,7 +981,7 @@ h1:focus {
     display: grid;
     place-items: center;
     background: var(--bg-elevated);
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .order-thumb {
@@ -1020,7 +1009,7 @@ h1:focus {
 .collection-image-empty {
     display: grid;
     place-items: center;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
     font-size: 0.8rem;
 }
 
@@ -1032,7 +1021,7 @@ h1:focus {
 }
 
 .collection-image-hint {
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .collection-color-row {
@@ -1047,7 +1036,7 @@ h1:focus {
     gap: 0.5rem;
     cursor: pointer;
     font-size: 0.88rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .collection-color-field input[type="color"] {
@@ -1093,19 +1082,19 @@ h1:focus {
 
 .access-denied-icon.mud-icon-root {
     font-size: 3.5rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .access-denied-title {
     margin: 0;
     font-size: 1.6rem;
     font-weight: 800;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .access-denied-text {
     margin: 0 0 1rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .access-denied-btn {
@@ -1121,7 +1110,7 @@ h1:focus {
 .customer-page {
     min-height: calc(100vh - 64px);
     padding: 2rem 1.5rem 4rem;
-    max-width: 1200px;
+    max-width: var(--page-max);
     margin: 0 auto;
 }
 
@@ -1134,24 +1123,24 @@ h1:focus {
     font-size: 2rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .customer-subtitle {
     margin: 0.35rem 0 0;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font-size: 0.95rem;
 }
 
 .customer-empty {
     text-align: center;
     padding: 3rem 1rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .customer-empty h2 {
     margin: 0 0 0.5rem;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     font-size: 1.25rem;
 }
 
@@ -1170,8 +1159,8 @@ h1:focus {
     flex-direction: column;
     gap: 0.75rem;
     padding: 1.75rem;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 20px;
     color: inherit;
     text-decoration: none;
@@ -1181,7 +1170,7 @@ h1:focus {
 .order-choice:hover,
 .order-choice:focus-visible {
     transform: translateY(-6px);
-    border-color: var(--accent);
+    border-color: var(--mud-palette-secondary);
     outline: none;
 }
 
@@ -1200,7 +1189,7 @@ h1:focus {
 
 .order-choice-accent {
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
 }
 
 .order-choice-info {
@@ -1211,18 +1200,18 @@ h1:focus {
 .order-choice-title {
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .order-choice-text {
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font-size: 0.9rem;
     line-height: 1.5;
 }
 
 .order-choice-go {
     margin-top: auto;
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
     font-weight: 700;
     font-size: 0.85rem;
 }
@@ -1236,8 +1225,8 @@ h1:focus {
 .collection-card {
     display: flex;
     flex-direction: column;
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 16px;
     overflow: hidden;
 }
@@ -1253,7 +1242,7 @@ h1:focus {
 .collection-card-image-empty {
     display: grid;
     place-items: center;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
     font-size: 0.85rem;
 }
 
@@ -1268,19 +1257,19 @@ h1:focus {
     margin: 0;
     font-size: 1.05rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .collection-card-price {
     margin: 0;
     font-weight: 600;
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
 }
 
 .collection-card-note {
     margin: 0 0 0.75rem;
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .collection-order-header {
@@ -1295,26 +1284,26 @@ h1:focus {
     height: 72px;
     border-radius: 12px;
     object-fit: cover;
-    border: 1px solid var(--border);
+    border: 1px solid var(--mud-palette-lines-default);
 }
 
 .collection-order-name {
     margin: 0;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .collection-order-price {
     margin: 0.15rem 0 0;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .collection-order-3d {
-    height: 320px;
+    height: clamp(220px, 45vw, 320px);
     margin-bottom: 0.75rem;
     border-radius: 12px;
-    background: var(--bg-base);
+    background: var(--mud-palette-background);
     overflow: hidden;
 }
 
@@ -1328,14 +1317,14 @@ h1:focus {
     margin: -0.25rem 0 1rem;
     text-align: center;
     font-size: 0.78rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .design-preview-3d {
     height: min(60vh, 520px);
     margin-bottom: 0.75rem;
     border-radius: 12px;
-    background: var(--bg-base);
+    background: var(--mud-palette-background);
     overflow: hidden;
 }
 
@@ -1348,7 +1337,7 @@ h1:focus {
 .design-preview-failed {
     padding: 3rem 1rem;
     text-align: center;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .order-form-title {
@@ -1357,7 +1346,7 @@ h1:focus {
     font-weight: 700;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .order-form-title:first-child {
@@ -1366,7 +1355,7 @@ h1:focus {
 
 .order-empty-hint {
     margin: 0.75rem 0 0;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
     font-size: 0.88rem;
 }
 
@@ -1384,8 +1373,8 @@ h1:focus {
     gap: 0.4rem 0.75rem;
     align-items: center;
     padding: 0.7rem 0.85rem;
-    background: var(--bg-base);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-background);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 12px;
 }
 
@@ -1399,12 +1388,12 @@ h1:focus {
 .order-line-name {
     font-weight: 800;
     font-size: 1.05rem;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .order-line-detail {
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
     font-variant-numeric: tabular-nums;
 }
 
@@ -1427,7 +1416,7 @@ h1:focus {
     grid-area: total;
     text-align: right;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     font-variant-numeric: tabular-nums;
 }
 
@@ -1440,12 +1429,12 @@ h1:focus {
 .back-btn.mud-button-root {
     text-transform: none;
     font-weight: 600;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     margin-left: -0.5rem;
 }
 
 .back-btn.mud-button-root:hover {
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     background-color: rgba(255, 255, 255, 0.05);
 }
 
@@ -1464,15 +1453,15 @@ h1:focus {
     margin-left: 0;
     background: rgba(16, 18, 31, 0.75);
     border: 1px solid var(--border-strong);
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     border-radius: 100px;
 }
 
 .receipt-3d {
-    height: 420px;
+    height: clamp(260px, 60vw, 420px);
     margin-bottom: 1rem;
     border-radius: 12px;
-    background: var(--bg-base);
+    background: var(--mud-palette-background);
     overflow: hidden;
 }
 
@@ -1486,7 +1475,7 @@ h1:focus {
     margin: -0.5rem 0 1rem;
     text-align: center;
     font-size: 0.78rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .auth-page {
@@ -1496,14 +1485,14 @@ h1:focus {
     align-items: center;
     justify-content: center;
     padding: 2rem 1rem;
-    background: var(--bg-base);
+    background: var(--mud-palette-background);
 }
 
 .auth-card {
     width: 100%;
     padding: 2rem;
-    background: var(--bg-card) !important;
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface) !important;
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 16px !important;
 }
 
@@ -1522,7 +1511,7 @@ h1:focus {
     font-size: 1.3rem;
     font-weight: 800;
     letter-spacing: -0.02em;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .auth-back {
@@ -1541,8 +1530,8 @@ h1:focus {
 .order-summary {
     margin-top: 1.25rem;
     padding: 1rem;
-    background: var(--bg-base);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-background);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 12px;
 }
 
@@ -1556,7 +1545,7 @@ h1:focus {
     gap: 1rem;
     padding: 0.2rem 0;
     font-size: 0.88rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font-variant-numeric: tabular-nums;
 }
 
@@ -1566,12 +1555,12 @@ h1:focus {
     border-top: 1px solid var(--border-strong);
     font-size: 1.1rem;
     font-weight: 800;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .order-summary-hint {
     margin: 0;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
     font-size: 0.88rem;
 }
 
@@ -1596,8 +1585,8 @@ h1:focus {
 }
 
 .view-switcher .mud-button-root {
-    background: var(--bg-card);
-    color: var(--text-primary);
+    background: var(--mud-palette-surface);
+    color: var(--mud-palette-text-primary);
     text-transform: none;
     font-weight: 600;
     border-color: var(--border-strong);
@@ -1611,11 +1600,11 @@ h1:focus {
     display: block;
     margin-top: 0.75rem;
     text-align: center;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .submit-design-note {
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .submit-design-preview {
@@ -1631,7 +1620,7 @@ h1:focus {
 .submit-design-hint {
     display: block;
     text-align: center;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .upload-layout {
@@ -1655,8 +1644,8 @@ h1:focus {
 
 .profile-summary,
 .profile-form {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 16px;
     padding: 1.5rem;
 }
@@ -1671,8 +1660,8 @@ h1:focus {
 .profile-avatar.mud-avatar {
     width: 88px;
     height: 88px;
-    background-color: var(--brand);
-    color: var(--text-primary);
+    background-color: var(--mud-palette-tertiary);
+    color: var(--mud-palette-text-primary);
     font-size: 1.75rem;
     font-weight: 700;
 }
@@ -1681,13 +1670,13 @@ h1:focus {
     margin: 1rem 0 0;
     font-size: 1.25rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .profile-summary-email {
     margin: 0.2rem 0 0;
     font-size: 0.9rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     overflow-wrap: anywhere;
 }
 
@@ -1696,7 +1685,7 @@ h1:focus {
     padding: 0.2rem 0.7rem;
     border-radius: 999px;
     background: var(--accent-soft);
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
     font-size: 0.72rem;
     font-weight: 600;
     letter-spacing: 0.12em;
@@ -1707,7 +1696,7 @@ h1:focus {
     width: 100%;
     margin: 1.5rem 0 0;
     padding: 1.25rem 0 0;
-    border-top: 1px solid var(--border);
+    border-top: 1px solid var(--mud-palette-lines-default);
     display: flex;
     flex-direction: column;
     gap: 0.9rem;
@@ -1719,13 +1708,13 @@ h1:focus {
     font-weight: 600;
     letter-spacing: 0.1em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .profile-facts dd {
     margin: 0.15rem 0 0;
     font-size: 0.92rem;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     white-space: pre-line;
     overflow-wrap: anywhere;
 }
@@ -1772,8 +1761,8 @@ h1:focus {
 
 .upload-image-panel,
 .upload-form-panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 16px;
     padding: 1.25rem;
 }
@@ -1783,7 +1772,7 @@ h1:focus {
     max-height: 360px;
     object-fit: contain;
     border-radius: 12px;
-    background: var(--bg-base);
+    background: var(--mud-palette-background);
     margin-bottom: 0.5rem;
     display: block;
 }
@@ -1791,29 +1780,29 @@ h1:focus {
 .upload-empty {
     display: grid;
     place-items: center;
-    height: 220px;
+    height: clamp(160px, 40vw, 220px);
     margin-bottom: 0.75rem;
     border: 1px dashed var(--border-strong);
     border-radius: 12px;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .upload-file-name {
     margin: 0 0 0.75rem;
     font-size: 0.8rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     word-break: break-all;
 }
 
 .upload-hint {
     display: block;
     margin-top: 0.5rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .receipt-panel {
-    background: var(--bg-card);
-    border: 1px solid var(--border);
+    background: var(--mud-palette-surface);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 16px;
     padding: 1.5rem;
     height: 100%;
@@ -1830,13 +1819,13 @@ h1:focus {
     margin: 0;
     font-size: 1.4rem;
     font-weight: 800;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .receipt-id {
     margin: 0.2rem 0 0;
     font-size: 0.8rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .receipt-image-frame {
@@ -1844,7 +1833,7 @@ h1:focus {
     justify-content: center;
     padding: 1rem;
     margin-bottom: 1rem;
-    background: var(--bg-base);
+    background: var(--mud-palette-background);
     border-radius: 12px;
 }
 
@@ -1867,7 +1856,7 @@ h1:focus {
     font-weight: 700;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .receipt-value {
@@ -1876,7 +1865,7 @@ h1:focus {
     gap: 0.4rem;
     margin-top: 0.15rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .receipt-swatch {
@@ -1898,14 +1887,14 @@ h1:focus {
     font-size: 0.7rem;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     border-bottom: 1px solid var(--border-strong);
 }
 
 .receipt-table td {
     padding: 0.6rem 0.5rem;
-    border-bottom: 1px solid var(--border);
-    color: var(--text-primary);
+    border-bottom: 1px solid var(--mud-palette-lines-default);
+    color: var(--mud-palette-text-primary);
 }
 
 .receipt-num {
@@ -1921,7 +1910,7 @@ h1:focus {
     display: flex;
     justify-content: space-between;
     padding: 0.25rem 0;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
     font-variant-numeric: tabular-nums;
 }
 
@@ -1931,7 +1920,7 @@ h1:focus {
     border-top: 1px solid var(--border-strong);
     font-size: 1.2rem;
     font-weight: 800;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .receipt-chat {
@@ -1948,7 +1937,7 @@ h1:focus {
     flex: 1 1 0;
     min-height: 0;
     overflow-y: auto;
-    background-color: var(--bg-base);
+    background-color: var(--mud-palette-background);
     border-radius: 8px;
     padding: 16px;
 }
@@ -1963,13 +1952,13 @@ h1:focus {
     margin: 0;
     font-size: 1.15rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .receipt-chat-subtitle {
     margin: 0.2rem 0 0;
     font-size: 0.85rem;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .statement-sheet {
@@ -1998,7 +1987,7 @@ h1:focus {
 .statement-shop-name {
     font-size: 1.25rem;
     font-weight: 800;
-    color: #541B2E;
+    color: var(--mud-palette-tertiary);
 }
 
 .statement-heading {
@@ -2015,9 +2004,9 @@ h1:focus {
 .statement-notice {
     margin-top: 1.25rem !important;
     padding: 0.75rem 1rem;
-    border: 1px solid #C8243B;
+    border: 1px solid var(--mud-palette-primary);
     border-radius: 8px;
-    color: #C8243B;
+    color: var(--mud-palette-primary);
     font-weight: 600;
 }
 

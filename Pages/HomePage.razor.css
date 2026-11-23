@@ -6,10 +6,10 @@
     height: calc(100vh - 64px);
     height: calc(100dvh - 64px);
     min-height: 520px;
-    max-width: 1200px;
+    max-width: var(--page-max);
     margin: 0 auto;
     padding: clamp(1rem, 3vh, 2rem) 1.5rem;
-    background-color: var(--bg-base);
+    background-color: var(--mud-palette-background);
     overflow: hidden;
 }
 
@@ -20,7 +20,7 @@
 
 .home-eyebrow {
     margin-bottom: clamp(0.75rem, 2.5vh, 1.5rem);
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
     font-size: 0.8rem;
     font-weight: 600;
     letter-spacing: 0.16em;
@@ -33,7 +33,7 @@
     font-weight: 300;
     line-height: 0.98;
     letter-spacing: -0.045em;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .home-title strong {
@@ -41,7 +41,7 @@
 }
 
 .home-title-accent {
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
 }
 
 .home-lead {
@@ -49,7 +49,7 @@
     margin: clamp(0.75rem, 2.5vh, 1.75rem) 0 0;
     font-size: clamp(1rem, 2.2vh, 1.2rem);
     line-height: 1.55;
-    color: var(--text-secondary);
+    color: var(--mud-palette-text-secondary);
 }
 
 .home-actions {
@@ -71,43 +71,43 @@
 
 ::deep .home-btn-outline {
     border-color: var(--border-strong);
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 ::deep .home-btn-outline:hover {
-    border-color: var(--text-primary);
+    border-color: var(--mud-palette-text-primary);
     background-color: rgba(255, 255, 255, 0.04);
 }
 
 .home-track {
     margin: clamp(0.75rem, 2vh, 1.25rem) 0 0;
     font-size: 0.95rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .home-track a {
-    color: var(--accent);
+    color: var(--mud-palette-secondary);
     font-weight: 600;
 }
 
 .home-feature-title {
     font-size: 0.95rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
 }
 
 .home-feature-text {
     font-size: 0.88rem;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .home-stage {
     position: relative;
     height: 100%;
-    max-height: 680px;
-    border: 1px solid var(--border);
+    max-height: none;
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 24px;
-    background-color: var(--bg-card);
+    background-color: var(--mud-palette-surface);
     overflow: hidden;
 }
 
@@ -139,8 +139,8 @@
     justify-content: space-between;
     gap: 1rem;
     padding: 0.85rem 0.85rem 0.85rem 1.25rem;
-    background-color: rgba(14, 15, 19, 0.8);
-    border: 1px solid var(--border);
+    background-color: color-mix(in srgb, var(--mud-palette-background) 80%, transparent);
+    border: 1px solid var(--mud-palette-lines-default);
     border-radius: 16px;
     backdrop-filter: blur(8px);
 }
@@ -157,14 +157,14 @@
     font-weight: 600;
     letter-spacing: 0.12em;
     text-transform: uppercase;
-    color: var(--text-muted);
+    color: var(--mud-palette-text-disabled);
 }
 
 .home-stage-name {
     overflow: hidden;
     font-size: 1rem;
     font-weight: 600;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     text-overflow: ellipsis;
     white-space: nowrap;
 }
@@ -180,7 +180,7 @@
     min-height: 44px;
     border-color: var(--border-strong);
     border-radius: 12px;
-    color: var(--text-primary);
+    color: var(--mud-palette-text-primary);
     font-weight: 600;
     text-transform: none;
 }
@@ -199,7 +199,7 @@
     }
 
     .home-stage {
-        height: 460px;
+        height: clamp(320px, 90vw, 460px);
         max-height: none;
     }
 }

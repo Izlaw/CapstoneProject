@@ -6,12 +6,12 @@
 
 <PageTitle>Customer Dashboard - 7 Guys House of Fashion</PageTitle>
 
-<div class="pa-6 pa-md-8" style="background-color: var(--bg-base); min-height: calc(100vh - 64px);">
+<div class="pa-6 pa-md-8" style="background-color: var(--mud-palette-background); min-height: calc(100vh - 64px);">
     <!-- Page Header -->
     <div class="d-flex justify-space-between align-center mb-6" style="flex-wrap: wrap; gap: 1rem;">
         <div>
-            <MudText Typo="Typo.h4" Style="font-weight: 900; letter-spacing: -0.02em; color: var(--text-primary);">My Orders</MudText>
-            <MudText Typo="Typo.body2" Style="color: var(--text-secondary);">Track your custom garments from production to pickup.</MudText>
+            <MudText Typo="Typo.h4" Style="font-weight: 900; letter-spacing: -0.02em; color: var(--mud-palette-text-primary);">My Orders</MudText>
+            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary);">Track your custom garments from production to pickup.</MudText>
         </div>
         <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary" StartIcon="@Icons.Material.Filled.Add"
                    Style="border-radius: 100px; font-weight: 700;">
@@ -45,7 +45,7 @@
     </MudGrid>
 
     <!-- Orders Table -->
-    <MudPaper Elevation="0" Class="pa-2" Style="background-color: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden;">
+    <MudPaper Elevation="0" Class="pa-2" Style="background-color: var(--mud-palette-surface); border: 1px solid var(--mud-palette-lines-default); border-radius: 16px; overflow: hidden;">
         @if (_isLoading)
         {
             <div class="d-flex justify-center align-center pa-12">
@@ -56,8 +56,8 @@
         {
             <div class="d-flex flex-column justify-center align-center text-center pa-12" style="gap: 1rem;">
                 <div style="font-size: 4rem; opacity: 0.5;">🧵</div>
-                <MudText Typo="Typo.h6" Style="font-weight: 700; color: var(--text-primary);">No orders yet</MudText>
-                <MudText Typo="Typo.body2" Style="color: var(--text-secondary); max-width: 320px;">
+                <MudText Typo="Typo.h6" Style="font-weight: 700; color: var(--mud-palette-text-primary);">No orders yet</MudText>
+                <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary); max-width: 320px;">
                     You haven't placed any orders yet. Head to the designer to create your first custom garment!
                 </MudText>
                 <MudButton Href="/designer" Variant="Variant.Filled" Color="Color.Primary" Style="border-radius: 100px; margin-top: 0.5rem; font-weight: 700;">
@@ -69,16 +69,16 @@
         {
             <MudTable Items="@Orders" Dense="true" Hover="true" Breakpoint="Breakpoint.Sm" Elevation="0" Style="background: transparent;">
                 <HeaderContent>
-                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Order ID</MudText></MudTh>
-                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Type</MudText></MudTh>
-                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Date</MudText></MudTh>
-                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Status</MudText></MudTh>
-                    <MudTh><MudText Style="color: var(--text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Total</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--mud-palette-text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Order ID</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--mud-palette-text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Type</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--mud-palette-text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Date</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--mud-palette-text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Status</MudText></MudTh>
+                    <MudTh><MudText Style="color: var(--mud-palette-text-secondary); font-weight: 600; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;">Total</MudText></MudTh>
                     <MudTh></MudTh>
                 </HeaderContent>
                 <RowTemplate>
                     <MudTd DataLabel="Order ID">
-                        <MudText Typo="Typo.body2" Style="font-family: monospace; color: var(--accent);">#@context.Id.Substring(0, 8)</MudText>
+                        <MudText Typo="Typo.body2" Style="font-family: monospace; color: var(--mud-palette-secondary);">#@context.Id.Substring(0, 8)</MudText>
                     </MudTd>
                     <MudTd DataLabel="Type">
                         @if (context.OrderType == "custom")
@@ -110,7 +110,7 @@
                         <span class="status-badge @cls">@label</span>
                     </MudTd>
                     <MudTd DataLabel="Total">
-                        <MudText Typo="Typo.body1" Style="font-weight: 700; color: var(--text-primary);">₱@context.TotalPrice.ToString("N2")</MudText>
+                        <MudText Typo="Typo.body1" Style="font-weight: 700; color: var(--mud-palette-text-primary);">₱@context.TotalPrice.ToString("N2")</MudText>
                     </MudTd>
                     <MudTd DataLabel="Action">
                         <MudButton Href="@($"/order-preview/{context.Id}")" Variant="Variant.Outlined" Color="Color.Primary" Size="Size.Small"

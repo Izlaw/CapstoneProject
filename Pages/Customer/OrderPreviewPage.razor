@@ -182,15 +182,15 @@
                         }
                         else if (!_messages.Any())
                         {
-                            <MudText Typo="Typo.body2" Style="color: var(--text-secondary); text-align: center;">No messages yet. Send a message to start chatting with support.</MudText>
+                            <MudText Typo="Typo.body2" Style="color: var(--mud-palette-text-secondary); text-align: center;">No messages yet. Send a message to start chatting with support.</MudText>
                         }
                         else
                         {
                             foreach (var msg in _messages)
                             {
                                 bool isMyMessage = msg.SenderId == _currentUserId;
-                                string msgStyle = (isMyMessage ? "background-color: var(--primary); color: white; border-radius: 8px 8px 0 8px;" : "background-color: var(--bg-elevated); color: var(--text-primary); border-radius: 8px 8px 8px 0;") + " max-width: 85%;";
-                                string timeStyle = (isMyMessage ? "color: #e0e0e0;" : "color: var(--text-muted);") + " display: block; text-align: right; margin-top: 4px;";
+                                string msgStyle = (isMyMessage ? "background-color: var(--mud-palette-primary); color: white; border-radius: 8px 8px 0 8px;" : "background-color: var(--bg-elevated); color: var(--mud-palette-text-primary); border-radius: 8px 8px 8px 0;") + " max-width: 85%;";
+                                string timeStyle = (isMyMessage ? "color: #e0e0e0;" : "color: var(--mud-palette-text-disabled);") + " display: block; text-align: right; margin-top: 4px;";
 
                                 <div class="d-flex mb-4" style="justify-content: @(isMyMessage ? "flex-end" : "flex-start")">
                                     <MudPaper Elevation="0" Class="pa-3" Style="@msgStyle">
